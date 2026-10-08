@@ -1,0 +1,735 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — contrato de reservas",
+    "version": "1.0.0",
+    "description": "Contrato inicial de diseño para la Entrega 1 del 9 de octubre de 2026, documentado el 7 de octubre de 2026. Períodos [startsOn,endsOn) de 1 a 30 días calendario en America/Buenos_Aires; precio = tarifa diaria × días, en centavos ARS. El mock local demuestra reservas y disponibilidad en memoria reiniciable, con datos de demostración y sin persistencia distribuida ni integraciones externas. Admite fechas pasadas para reproducibilidad; producción deberá validar inicio igual o posterior a la fecha actual de la sucursal."
+  },
+  "externalDocs": {
+    "description": "Especificación formal OpenAPI 3.0.3",
+    "url": "https://spec.openapis.org/oas/v3.0.3"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Mock local; configurable mediante MOCK_ADDR. Datos de demostración."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Availability",
+      "description": "Consulta de disponibilidad y cotización."
+    },
+    {
+      "name": "Reservations",
+      "description": "Creación, consulta y cancelación de reservas."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/availability": {
+      "get": {
+        "tags": [
+          "Availability"
+        ],
+        "operationId": "getAvailability",
+        "summary": "Consultar disponibilidad y precio de un período",
+        "description": "Requiere los tres parámetros una sola vez. Devuelve 200 incluso si available=false; 404 si el vehículo no existe. endsOn es exclusivo. Una reserva CANCELLED deja de ocupar el período.",
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "query",
+            "required": true,
+            "description": "Identificador del vehículo. El mock tiene auto-001 y auto-002.",
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            },
+            "example": "auto-001"
+          },
+          {
+            "name": "startsOn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CalendarDate"
+            },
+            "example": "2026-10-15"
+          },
+          {
+            "name": "endsOn",
+            "in": "query",
+            "required": true,
+            "description": "Fecha de devolución exclusiva; no se cobra este día.",
+            "schema": {
+              "$ref": "#/components/schemas/CalendarDate"
+            },
+            "example": "2026-10-18"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disponibilidad y cotización actual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "startsOn": "2026-10-15",
+                  "endsOn": "2026-10-18",
+                  "available": true,
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          }
+        }
+      }
+    },
+    "/v1/reservations": {
+      "post": {
+        "tags": [
+          "Reservations"
+        ],
+        "operationId": "createReservation",
+        "summary": "Crear una reserva con ocupación atómica",
+        "description": "Comprueba cliente, fechas, precio esperado y solapamiento antes de ocupar el período en una única sección crítica del mock. Una misma Idempotency-Key y la misma carga canónica devuelven el HTTP y cuerpo originales, incluidos rechazos de fechas o negocio una vez decodificados los campos obligatorios. Orden y espacios del JSON no modifican la carga. Otro contenido con la misma clave devuelve 409 IDEMPOTENCY_KEY_REUSED. Una repetición idempotente exitoso conserva RESERVED aunque luego se haya cancelado; GET muestra el estado actual. La memoria de claves dura hasta reiniciar. Un nuevo intento tras un rechazo exige una clave nueva. Fallas de autenticación, media type, estructura JSON o campos obligatorios no consumen la clave.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Clave de intento entre 1 y 128 caracteres ASCII visibles, sin espacios. Scope: POST /v1/reservations durante la ejecución del mock. La propuesta completa distingue aplicación consumidora + operación + clave; el mock tiene un consumidor.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[!-~]{1,128}$"
+            },
+            "example": "demo-reserva-001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Los cinco campos son obligatorios; no se admiten campos extra. Máximo 16 KiB en el mock.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reserva creada o respuesta original repetida por idempotencia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reservation"
+                },
+                "example": {
+                  "id": "res-000001",
+                  "status": "RESERVED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2026-10-15",
+                  "endsOn": "2026-10-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "description": "PRICE_CHANGED si expectedTotalMinor no coincide con tarifa × días; VEHICLE_UNAVAILABLE si hay solapamiento; IDEMPOTENCY_KEY_REUSED si la misma clave tiene otro contenido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "priceChanged": {
+                    "value": {
+                      "code": "PRICE_CHANGED",
+                      "message": "El importe esperado no coincide con la tarifa vigente; consulte disponibilidad y use una nueva clave."
+                    }
+                  },
+                  "overlap": {
+                    "value": {
+                      "code": "VEHICLE_UNAVAILABLE",
+                      "message": "El vehículo ya tiene una reserva que se solapa con el período."
+                    }
+                  },
+                  "idempotencyCollision": {
+                    "value": {
+                      "code": "IDEMPOTENCY_KEY_REUSED",
+                      "message": "La clave ya se usó con otro contenido."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/CustomerNotEligible"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identificador de la reserva, por ejemplo res-000001.",
+          "schema": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "example": "res-000001"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Reservations"
+        ],
+        "operationId": "getReservation",
+        "summary": "Consultar el estado actual de una reserva",
+        "responses": {
+          "200": {
+            "description": "Estado actual de la reserva; el contrato contempla RESERVED, ACTIVE, COMPLETED y CANCELLED. El mock genera únicamente RESERVED/CANCELLED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reservation"
+                },
+                "example": {
+                  "id": "res-000001",
+                  "status": "RESERVED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2026-10-15",
+                  "endsOn": "2026-10-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reservations"
+        ],
+        "operationId": "cancelReservation",
+        "summary": "Cancelar una reserva y liberar su período",
+        "description": "Cambia RESERVED a CANCELLED y libera la ocupación. Repetir sobre CANCELLED devuelve 200 con la misma representación. ACTIVE/COMPLETED devuelve 409 INVALID_STATE. El mock solo genera RESERVED/CANCELLED y no implementa retiro ni devolución. No requiere Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Reserva cancelada; mismo resultado al repetir la cancelación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reservation"
+                },
+                "example": {
+                  "id": "res-000001",
+                  "status": "CANCELLED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2026-10-15",
+                  "endsOn": "2026-10-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Solo se pueden cancelar reservas en estado RESERVED; CANCELLED admite repetición.",
+                  "code": "INVALID_STATE"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "INVALID_STATE: solamente RESERVED puede cancelarse; CANCELLED admite repetición."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "El mock exige Authorization: Bearer demo-token, dato público de demostración local. MOCK_API_TOKEN configura otro valor de demostración. No es JWT ni autenticación productiva."
+      }
+    },
+    "schemas": {
+      "Identifier": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+        "example": "auto-001"
+      },
+      "CalendarDate": {
+        "type": "string",
+        "format": "date",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Día calendario válido YYYY-MM-DD en America/Buenos_Aires, sin hora ni offset.",
+        "example": "2026-10-15"
+      },
+      "Days": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1,
+        "maximum": 30,
+        "description": "Días calendario de [startsOn,endsOn). Límite de 1 a 30 propuesto para el TP."
+      },
+      "MoneyMinor": {
+        "type": "integer",
+        "format": "int64",
+        "minimum": 0,
+        "description": "Importe entero en centavos de ARS; 100 centavos = 1 peso. No se usan valores decimales."
+      },
+      "Currency": {
+        "type": "string",
+        "enum": [
+          "ARS"
+        ]
+      },
+      "CreateReservationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "customerId",
+          "startsOn",
+          "endsOn",
+          "expectedTotalMinor"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "customerId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "expectedTotalMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          }
+        },
+        "example": {
+          "vehicleId": "auto-001",
+          "customerId": "cli-001",
+          "startsOn": "2026-10-15",
+          "endsOn": "2026-10-18",
+          "expectedTotalMinor": 15000000
+        }
+      },
+      "Reservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "vehicleId",
+          "customerId",
+          "startsOn",
+          "endsOn",
+          "days",
+          "dailyRateMinor",
+          "totalMinor",
+          "currency"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESERVED",
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "days": {
+            "$ref": "#/components/schemas/Days"
+          },
+          "dailyRateMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "totalMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "customerId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "example": {
+          "id": "res-000001",
+          "status": "RESERVED",
+          "vehicleId": "auto-001",
+          "customerId": "cli-001",
+          "startsOn": "2026-10-15",
+          "endsOn": "2026-10-18",
+          "days": 3,
+          "dailyRateMinor": 5000000,
+          "totalMinor": 15000000,
+          "currency": "ARS"
+        }
+      },
+      "Availability": {
+        "description": "available=true omite unavailableReason; available=false lo requiere. Una consulta no retiene el vehículo: POST vuelve a comprobar disponibilidad.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AvailablePeriod"
+          },
+          {
+            "$ref": "#/components/schemas/UnavailablePeriod"
+          }
+        ]
+      },
+      "AvailablePeriod": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "startsOn",
+          "endsOn",
+          "days",
+          "dailyRateMinor",
+          "totalMinor",
+          "currency",
+          "available"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "days": {
+            "$ref": "#/components/schemas/Days"
+          },
+          "dailyRateMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "totalMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "available": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "example": {
+          "vehicleId": "auto-001",
+          "startsOn": "2026-10-15",
+          "endsOn": "2026-10-18",
+          "available": true,
+          "days": 3,
+          "dailyRateMinor": 5000000,
+          "totalMinor": 15000000,
+          "currency": "ARS"
+        }
+      },
+      "UnavailablePeriod": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "startsOn",
+          "endsOn",
+          "days",
+          "dailyRateMinor",
+          "totalMinor",
+          "currency",
+          "available",
+          "unavailableReason"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "days": {
+            "$ref": "#/components/schemas/Days"
+          },
+          "dailyRateMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "totalMinor": {
+            "$ref": "#/components/schemas/MoneyMinor"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "available": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "OVERLAPPING_RESERVATION"
+            ]
+          }
+        },
+        "example": {
+          "vehicleId": "auto-001",
+          "startsOn": "2026-10-15",
+          "endsOn": "2026-10-18",
+          "available": false,
+          "days": 3,
+          "dailyRateMinor": 5000000,
+          "totalMinor": 15000000,
+          "currency": "ARS",
+          "unavailableReason": "OVERLAPPING_RESERVATION"
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_INPUT",
+              "UNAUTHORIZED",
+              "NOT_FOUND",
+              "PRICE_CHANGED",
+              "VEHICLE_UNAVAILABLE",
+              "CUSTOMER_NOT_ELIGIBLE",
+              "IDEMPOTENCY_KEY_REUSED",
+              "METHOD_NOT_ALLOWED",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INVALID_STATE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "example": {
+          "code": "VEHICLE_UNAVAILABLE",
+          "message": "El vehículo ya tiene una reserva que se solapa con el período."
+        }
+      }
+    },
+    "responses": {
+      "InvalidInput": {
+        "description": "Datos, parámetros, fecha o período inválidos, JSON incorrecto o clave ausente.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "INVALID_INPUT",
+              "message": "El período [startsOn, endsOn) debe durar entre 1 y 30 días calendario."
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente o incorrecto.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "Se requiere un token Bearer válido."
+            }
+          }
+        },
+        "headers": {
+          "WWW-Authenticate": {
+            "description": "Esquema exigido por el mock.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Bearer"
+              ]
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Vehículo, cliente, reserva o ruta inexistente.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "Reserva inexistente."
+            }
+          }
+        }
+      },
+      "CustomerNotEligible": {
+        "description": "Cliente conocido pero bloqueado para reservar.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "CUSTOMER_NOT_ELIGIBLE",
+              "message": "El cliente está bloqueado para reservar."
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Se requiere Content-Type: application/json.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "UNSUPPORTED_MEDIA_TYPE",
+              "message": "Content-Type debe ser application/json."
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "Método no admitido para esta ruta.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "METHOD_NOT_ALLOWED",
+              "message": "Método no admitido para esta ruta."
+            }
+          }
+        },
+        "headers": {
+          "Allow": {
+            "description": "Métodos HTTP permitidos en esta ruta.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

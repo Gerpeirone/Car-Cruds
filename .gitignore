@@ -1,0 +1,10 @@
+# Archivos de trabajo y datos locales
+tmp/
+output/
+.env
+.env.*
+!.env.example
+*.log
+coverage.out
+*.exe
+.DS_Store
