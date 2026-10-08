@@ -82,7 +82,7 @@ El servidor conserva datos de demostración en memoria; reiniciarlo restablece s
 
 | Archivo | Contenido |
 | --- | --- |
-| [Enunciado TP Final.md](Enunciado%20TP%20Final.md) | Enunciado completo en Markdown compacto, con requisitos, hitos y decisiones obligatorias |
+| [Enunciado TP Final.md](Enunciado%20TP%20Final.md) | Requisitos académicos en Markdown compacto, con hitos y decisiones obligatorias |
 | [clases.zip](clases.zip) | Material de cátedra: 17 documentos Markdown de teoría y práctica |
 | [SPEC.md](SPEC.md) | Alcance, reglas de negocio, estados y criterios de aceptación |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Contexto, contenedores, servicios, datos y comunicaciones |

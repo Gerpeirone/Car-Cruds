@@ -7,7 +7,7 @@
 | Fecha | 7 de octubre de 2026 |
 | Estado | Documentación y mock disponibles para revisión |
 | Presentación | Viernes 9 de octubre de 2026 |
-| Referencia | Enunciado del TP Integrador, secciones 6.1 y 6.2, páginas 7 y 8 |
+| Referencia | [Enunciado del TP Integrador](../Enunciado%20TP%20Final.md), secciones 6.1 y 6.2 |
 
 ## 1. Matriz de entregables
 
