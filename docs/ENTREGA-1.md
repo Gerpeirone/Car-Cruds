@@ -35,6 +35,7 @@ Fecha de ejecución: **7 de octubre de 2026**.
 - Enlaces internos de la documentación revisados, sin destinos faltantes.
 - Presentación de los documentos revisada en vista renderizada: tablas legibles y diagramas de contexto, contenedores y comunicaciones sin recortes ni superposición de etiquetas.
 - Recorrido de demostración ejecutado en Windows PowerShell 5.1 y PowerShell 7: la repetición conserva el identificador, una reserva superpuesta devuelve `409 VEHICLE_UNAVAILABLE` y la cancelación libera el período.
+- Publicación verificada desde una clonación nueva del repositorio público, commit [ade372c](https://github.com/Gerpeirone/Car-Cruds/commit/ade372c791e42a04735e4260ce243e83ee9b599f): `go -C mocks/rentals test -race ./...` aprobado. El contrato y la estructura necesarios para ejecutar las pruebas se encuentran versionados.
 
 La evidencia corresponde al mock local de la primera entrega. Las garantías con persistencia, múltiples instancias e integración externa requieren pruebas adicionales en los hitos de implementación.
 
@@ -46,8 +47,8 @@ La evidencia corresponde al mock local de la primera entrega. Las garantías con
 - [ ] Revisar las convenciones del dominio: fechas por días, tarifa, duración y cancelación.
 - [ ] Confirmar tecnologías y patrones internos vistos en la materia.
 - [ ] Revisar y acordar D1/D8; conservar D3/D5 como versiones iniciales que se validarán al implementar.
-- [ ] Probar el mock desde una copia del repositorio y demostrar los escenarios siguientes.
-- [ ] Subir documentación, contrato, estructura y mock al repositorio accesible a la cátedra.
+- [x] Verificar el mock desde una copia nueva del repositorio público.
+- [x] Subir documentación, contrato, estructura y mock al repositorio accesible a la cátedra.
 - [ ] Verificar las condiciones de acceso al mock que solicite la cátedra para este hito.
 
 Los ADR utilizan una estructura uniforme de contexto, decisión, alternativas, consecuencias y validación. El enunciado remite a una plantilla en la sección 8 que no aparece en el documento disponible; corresponde verificar si la cátedra dispone de un formato complementario.
