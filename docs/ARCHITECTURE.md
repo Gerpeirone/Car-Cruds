@@ -1,4 +1,3 @@
-<img width="2679" height="1954" alt="image" src="https://github.com/user-attachments/assets/94e53cc3-1c37-4586-a6a3-94f11a077d0e" /># Documento de arquitectura — Car Cruds
 
 | Campo | Valor |
 | --- | --- |
