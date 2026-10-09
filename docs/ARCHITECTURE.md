@@ -26,33 +26,6 @@ Este documento define los límites de los servicios, la propiedad de los datos, 
 ## 2. Contexto del sistema
 
 ```mermaid
-flowchart LR
-    subgraph Actors["Actores"]
-        Client["Cliente"]
-        Operator["Operador"]
-    end
-    System["Car Cruds<br/>Alquiler de autos"]
-    subgraph External["Sistemas externos"]
-        Consumer["Grupo consumidor"]
-        Provider["Grupo proveedor"]
-    end
-    Client -->|Buscar y reservar| System
-    Operator -->|Gestionar y entregar| System
-    Consumer -->|Disponibilidad y reservas| System
-    System -->|Capacidad de negocio| Provider
-    classDef person fill:#f0f6f3,stroke:#52776a,color:#1f332b
-    classDef system fill:#eaf0f8,stroke:#526d91,color:#23364e
-    classDef external fill:#f3f3f3,stroke:#7a7a7a,color:#333333
-    class Client,Operator person
-    class System system
-    class Consumer,Provider external
-```
-
-**Figura 1. Contexto de Car Cruds.** El cliente y el operador acceden mediante la interfaz web. El grupo consumidor utiliza la capacidad publicada. La capacidad del grupo proveedor se incorporará en un flujo de negocio desde el servicio responsable. La cátedra asignará ambos grupos.
-
-## 3. Contenedores y distribución de responsabilidades
-
-```mermaid
 flowchart TB
     Client["Cliente<br/>[Persona]<br/>Busca vehículos y realiza reservas"]
     Operator["Operador<br/>[Persona]<br/>Administra flota, retiros y devoluciones"]
@@ -75,12 +48,89 @@ flowchart TB
     class System system;
     class Consumer,Provider external;
 ```
+
+**Figura 1. Diagrama de contexto de Car Cruds — C4, nivel 1. El Cliente busca vehículos y realiza reservas. El Operador administra la flota y gestiona retiros y devoluciones. El grupo consumidor utiliza la capacidad publicada por Car Cruds y el grupo proveedor aporta una capacidad externa pendiente de acordar.
+Leyenda: azul oscuro = persona; azul = sistema propio; gris = sistema externo. Las flechas indican dirección y propósito de la interacción. Los grupos externos serán asignados por la cátedra.
+
+## 3. Contenedores y distribución de responsabilidades
+
+```mermaid
+flowchart TB
+    Client["Cliente<br/>[Persona]"]
+    Operator["Operador<br/>[Persona]"]
+    Consumer["Grupo consumidor<br/>[Sistema externo]"]
+    Provider["Grupo proveedor<br/>[Sistema externo]<br/>Capacidad por acordar"]
+
+    subgraph System["Car Cruds — límite del sistema"]
+        Web["Frontend web<br/>[Tecnología por definir]<br/>Interfaz de clientes y operadores"]
+
+        GW["API Gateway<br/>[Tecnología por definir]<br/>Autentica y dirige solicitudes"]
+
+        Customers["Servicio Clientes<br/>[API HTTP/JSON; tecnología por definir]<br/>Gestiona perfiles y habilitación del conductor"]
+
+        Fleet["Servicio Flota<br/>[API HTTP/JSON; tecnología por definir]<br/>Gestiona vehículos, catálogo y tarifas"]
+
+        Rentals["Servicio Alquileres<br/>[API HTTP/JSON; tecnología por definir]<br/>Gestiona disponibilidad, reservas, retiros y devoluciones"]
+
+        CDB[("PostgreSQL Clientes<br/>[Base relacional propuesta]<br/>Perfiles, licencias e historial")]
+
+        FDB[("MongoDB Flota<br/>[Base documental propuesta]<br/>Vehículos, características y tarifas")]
+
+        RDB[("PostgreSQL Alquileres<br/>[Base relacional propuesta]<br/>Reservas, agenda, importes e idempotencia")]
+
+        Broker["RabbitMQ<br/>[Broker propuesto]<br/>Distribuye eventos de dominio"]
+
+        Indexer["Indexador de Flota<br/>[Worker propuesto; tecnología por definir]<br/>Actualiza el índice mediante eventos"]
+
+        Search[("Solr<br/>[Motor de búsqueda propuesto]<br/>Índice de vehículos y tarifas")]
+
+        Cache[("Redis<br/>[Caché propuesta]<br/>Fichas consultadas con frecuencia")]
+    end
+
+    Client -->|"Busca y reserva mediante la web [HTTPS]"| Web
+    Operator -->|"Administra y opera mediante la web [HTTPS]"| Web
+
+    Web -->|"Invoca funcionalidades [HTTPS/JSON]"| GW
+    Consumer -->|"Consulta disponibilidad y gestiona reservas [HTTPS/JSON]"| GW
+
+    GW -->|"Gestiona perfiles [HTTP/JSON]"| Customers
+    GW -->|"Consulta y administra catálogo [HTTP/JSON]"| Fleet
+    GW -->|"Gestiona disponibilidad y alquileres [HTTP/JSON]"| Rentals
+
+    Customers -->|"Lee y escribe perfiles e historial [PostgreSQL/SQL]"| CDB
+    Fleet -->|"Lee y escribe vehículos y tarifas [protocolo MongoDB]"| FDB
+    Rentals -->|"Lee y escribe reservas y agenda [PostgreSQL/SQL]"| RDB
+
+    Rentals -->|"Valida habilitación del conductor [HTTP/JSON]"| Customers
+    Rentals -->|"Obtiene ficha y tarifa autoritativas [HTTP/JSON]"| Fleet
+    Rentals -->|"Consume capacidad externa [protocolo por definir]"| Provider
+
+    Rentals -.->|"Publica RentalCompleted.v1 [AMQP]"| Broker
+    Fleet -.->|"Publica VehicleChanged.v1 [AMQP]"| Broker
+
+    Broker -.->|"Entrega eventos para actualizar historial [AMQP]"| Customers
+    Broker -.->|"Entrega cambios de vehículos [AMQP]"| Indexer
+
+    Indexer -->|"Actualiza índice [HTTP/JSON]"| Search
+    Fleet -->|"Busca con filtros y paginación [HTTP/JSON]"| Search
+    Fleet -->|"Lee, escribe e invalida fichas [RESP]"| Cache
+
+    classDef person fill:#16324f,color:#ffffff,stroke:#16324f;
+    classDef external fill:#8a8a8a,color:#ffffff,stroke:#606060;
+    classDef app fill:#2f80ed,color:#ffffff,stroke:#2f80ed;
+    classDef data fill:#27ae60,color:#ffffff,stroke:#207c48;
+    classDef support fill:#c98b2b,color:#ffffff,stroke:#91631e;
+
+    class Client,Operator person;
+    class Consumer,Provider external;
+    class Web,GW,Customers,Fleet,Rentals,Indexer app;
+    class CDB,FDB,RDB,Search,Cache data;
+    class Broker support;
+```
     
-**Figura 2. Contenedores principales.** Se distinguen el acceso público, los tres servicios de negocio y sus almacenes operativos dentro de la frontera de Car Cruds. La figura 3 detalla la comunicación interna y las estructuras de lectura.
-
-Cada base pertenece a un servicio. Las bases de Clientes y Alquileres podrán compartir un servidor PostgreSQL en desarrollo, con bases y credenciales separadas. El acceso entre servicios se realiza mediante contratos; se evita el acceso directo a almacenes ajenos.
-
-Solr, Redis y RabbitMQ son alternativas tecnológicas propuestas. Su selección se justificará y validará en los ADR correspondientes. La comunicación con el proveedor se origina directamente en el microservicio que utiliza su capacidad. El diagrama sitúa ese adaptador en Alquileres; su ubicación definitiva dependerá del contrato asignado.
+Figura 2. Diagrama de contenedores de Car Cruds — C4, nivel 2. Representa la arquitectura objetivo. Clientes gestiona perfiles y habilitación del conductor; Flota administra vehículos y tarifas; Alquileres controla la disponibilidad temporal, las reservas, los retiros y las devoluciones. Cada servicio es propietario de su almacenamiento.
+Leyenda: azul oscuro = persona; gris = sistema externo; azul = aplicación, servicio o worker; verde = almacenamiento, índice o caché; ocre = mensajería. Flecha continua = interacción síncrona o acceso a datos; flecha discontinua = comunicación mediante eventos.
+Estado del diseño: persistencia, RabbitMQ, Solr, Redis e indexador son propuestas para los próximos hitos. Las tecnologías pendientes se indican dentro de cada contenedor. El indexador pertenece a Flota y se representa como un worker desplegable propuesto. Los protocolos internos y la ubicación de la integración externa se confirmarán durante la implementación.
 
 
 
