@@ -1,4 +1,4 @@
-# Documento de arquitectura — Car Cruds
+<img width="2679" height="1954" alt="image" src="https://github.com/user-attachments/assets/94e53cc3-1c37-4586-a6a3-94f11a077d0e" /># Documento de arquitectura — Car Cruds
 
 | Campo | Valor |
 | --- | --- |
@@ -54,43 +54,6 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    Users["Cliente / Operador"]
-    Consumer["Grupo consumidor"]
-    Provider["Grupo proveedor"]
-    subgraph System["Car Cruds"]
-        subgraph Access["Interfaz y acceso"]
-            Web["Frontend web"]
-            GW["API Gateway"]
-        end
-        subgraph Services["Servicios de negocio"]
-            Customers["Clientes"]
-            Rentals["Alquileres"]
-            Fleet["Flota"]
-        end
-        subgraph Stores["Almacenamiento operativo"]
-            CDB[("PostgreSQL<br/>Clientes")]
-            RDB[("PostgreSQL<br/>Alquileres")]
-            FDB[("MongoDB<br/>Flota")]
-        end
-        Web -->|HTTPS| GW
-        GW --> Customers
-        GW --> Rentals
-        GW --> Fleet
-        Customers --> CDB
-        Rentals --> RDB
-        Fleet --> FDB
-    end
-    Users --> Web
-    Consumer -->|HTTPS: API v1| GW
-    Rentals -->|Capacidad externa| Provider
-    classDef app fill:#eaf0f8,stroke:#526d91,color:#23364e
-    classDef data fill:#f0f6f3,stroke:#52776a,color:#1f332b
-    classDef external fill:#f3f3f3,stroke:#7a7a7a,color:#333333
-    class Web,GW,Customers,Rentals,Fleet app
-    class CDB,RDB,FDB data
-    class Users,Consumer,Provider external
-```
-flowchart TB
     Client["Cliente<br/>[Persona]<br/>Busca vehículos y realiza reservas"]
     Operator["Operador<br/>[Persona]<br/>Administra flota, retiros y devoluciones"]
 
@@ -111,7 +74,7 @@ flowchart TB
     class Client,Operator person;
     class System system;
     class Consumer,Provider external;
-
+```
     
 **Figura 2. Contenedores principales.** Se distinguen el acceso público, los tres servicios de negocio y sus almacenes operativos dentro de la frontera de Car Cruds. La figura 3 detalla la comunicación interna y las estructuras de lectura.
 
