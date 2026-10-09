@@ -90,12 +90,36 @@ flowchart TB
     class CDB,RDB,FDB data
     class Users,Consumer,Provider external
 ```
+flowchart TB
+    Client["Cliente<br/>[Persona]<br/>Busca vehículos y realiza reservas"]
+    Operator["Operador<br/>[Persona]<br/>Administra flota, retiros y devoluciones"]
 
+    System["Car Cruds<br/>[Sistema de software]<br/>Gestiona alquileres de autos"]
+
+    Consumer["Grupo consumidor<br/>[Sistema externo]<br/>Consulta disponibilidad y gestiona reservas"]
+    Provider["Grupo proveedor<br/>[Sistema externo]<br/>Provee una capacidad de negocio por acordar"]
+
+    Client -->|"Busca y reserva mediante la interfaz web"| System
+    Operator -->|"Administra flota y gestiona alquileres"| System
+    Consumer -->|"Consulta disponibilidad y gestiona reservas [HTTPS/JSON]"| System
+    System -->|"Consume capacidad externa [capacidad y protocolo por definir]"| Provider
+
+    classDef person fill:#16324f,color:#ffffff,stroke:#16324f;
+    classDef system fill:#2f80ed,color:#ffffff,stroke:#2f80ed;
+    classDef external fill:#8a8a8a,color:#ffffff,stroke:#606060;
+
+    class Client,Operator person;
+    class System system;
+    class Consumer,Provider external;
+
+    
 **Figura 2. Contenedores principales.** Se distinguen el acceso público, los tres servicios de negocio y sus almacenes operativos dentro de la frontera de Car Cruds. La figura 3 detalla la comunicación interna y las estructuras de lectura.
 
 Cada base pertenece a un servicio. Las bases de Clientes y Alquileres podrán compartir un servidor PostgreSQL en desarrollo, con bases y credenciales separadas. El acceso entre servicios se realiza mediante contratos; se evita el acceso directo a almacenes ajenos.
 
 Solr, Redis y RabbitMQ son alternativas tecnológicas propuestas. Su selección se justificará y validará en los ADR correspondientes. La comunicación con el proveedor se origina directamente en el microservicio que utiliza su capacidad. El diagrama sitúa ese adaptador en Alquileres; su ubicación definitiva dependerá del contrato asignado.
+
+
 
 ### Propiedad de los datos
 
