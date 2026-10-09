@@ -48,7 +48,7 @@ flowchart TB
     class Consumer,Provider external;
 ```
 
-**Figura 1. Diagrama de contexto de Car Cruds — C4, nivel 1. El Cliente busca vehículos y realiza reservas. El Operador administra la flota y gestiona retiros y devoluciones. El grupo consumidor utiliza la capacidad publicada por Car Cruds y el grupo proveedor aporta una capacidad externa pendiente de acordar.
+**Figura 1. Diagrama de contexto de Car Cruds — C4, nivel 1**. El Cliente busca vehículos y realiza reservas. El Operador administra la flota y gestiona retiros y devoluciones. El grupo consumidor utiliza la capacidad publicada por Car Cruds y el grupo proveedor aporta una capacidad externa pendiente de acordar.
 Leyenda: azul oscuro = persona; azul = sistema propio; gris = sistema externo. Las flechas indican dirección y propósito de la interacción. Los grupos externos serán asignados por la cátedra.
 
 ## 3. Contenedores y distribución de responsabilidades
@@ -131,7 +131,9 @@ Figura 2. Diagrama de contenedores de Car Cruds — C4, nivel 2. Representa la a
 Leyenda: azul oscuro = persona; gris = sistema externo; azul = aplicación, servicio o worker; verde = almacenamiento, índice o caché; ocre = mensajería. Flecha continua = interacción síncrona o acceso a datos; flecha discontinua = comunicación mediante eventos.
 Estado del diseño: persistencia, RabbitMQ, Solr, Redis e indexador son propuestas para los próximos hitos. Las tecnologías pendientes se indican dentro de cada contenedor. El indexador pertenece a Flota y se representa como un worker desplegable propuesto. Los protocolos internos y la ubicación de la integración externa se confirmarán durante la implementación.
 
+Cada base pertenece a un servicio. Las bases de Clientes y Alquileres podrán compartir un servidor PostgreSQL en desarrollo, con bases y credenciales separadas. El acceso entre servicios se realiza mediante contratos; se evita el acceso directo a almacenes ajenos.
 
+Solr, Redis y RabbitMQ son alternativas tecnológicas propuestas. Su selección se justificará y validará en los ADR correspondientes. La comunicación con el proveedor se origina directamente en el microservicio que utiliza su capacidad. El diagrama sitúa ese adaptador en Alquileres; su ubicación definitiva dependerá del contrato asignado.
 
 ### Propiedad de los datos
 
