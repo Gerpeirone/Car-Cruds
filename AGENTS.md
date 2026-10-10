@@ -4,7 +4,9 @@
 
 - Repositorio: https://github.com/Gerpeirone/Car-Cruds.
 - Remoto local: `origin`. Rama principal: `main`.
-- Existe autorización para registrar y subir los cambios del proyecto a GitHub al finalizar cada tarea. Esta preferencia se aplica a las tareas posteriores; no se requiere una nueva confirmación para cada publicación ordinaria.
+- Existe autorización para registrar y subir los cambios del proyecto a una rama de trabajo en GitHub al finalizar cada tarea. Esta preferencia se aplica a las tareas posteriores; no se requiere una nueva confirmación para publicar la rama.
+- La documentación de la entrega 2 se revisa en `segunda-entrega`. Mantener las propuestas en ramas y presentarlas mediante pull request para discutirlas con el equipo.
+- Integrar una propuesta en `main` únicamente después de la aprobación del equipo. La autorización para subir una rama no autoriza su integración anticipada en `main`.
 - Revisar el estado local y el remoto, ejecutar las verificaciones pertinentes y crear commits con mensajes descriptivos antes de publicar la rama de trabajo.
 - Conservar el historial y los cambios de otros integrantes. Si el remoto avanzó, integrar sus cambios antes de subir; no utilizar push forzado.
 - Respetar las ramas y revisiones utilizadas por el grupo. La carga inicial de la entrega 1 se publica en `main`.
