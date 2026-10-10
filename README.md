@@ -6,11 +6,11 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.1 |
-| Fecha | 7 de octubre de 2026 |
-| Estado | Diseño preliminar |
-| Hito | Entrega 1: diseño y contrato con mock |
-| Fecha de presentación | Viernes 9 de octubre de 2026 |
+| Versión documental | 0.2 |
+| Fecha | 10 de octubre de 2026 |
+| Estado | Preparación documental; implementación de entrega 2 pendiente |
+| Hito | Entrega 2: dominio propio de punta a punta |
+| Fecha de entrega | Viernes 23 de octubre de 2026 |
 
 ## Presentación del proyecto
 
@@ -18,18 +18,20 @@ Car Cruds es un sistema diseñado para administrar el alquiler de vehículos de 
 
 La operación central consiste en asignar un vehículo a un cliente durante un período. Esta asignación requiere validar al conductor, calcular el importe y resolver solicitudes concurrentes: un mismo auto no puede reservarse para períodos superpuestos. Además, una devolución tardía debe impedir su entrega física a otro cliente.
 
-## Alcance de la primera entrega
+La revisión de diseño añade Empleados y un Load Balancer según el feedback docente. La gestión de personal publicará una lista al gimnasio, registrará el uso de membresías comunicado por ese sistema y consumirá turnos de una clínica para revisiones de posibles incorporaciones. Los informes apoyarán el control administrativo de beneficios y el seguimiento de turnos. Los acuerdos externos se mantienen explícitamente pendientes.
+
+## Estado del proyecto
 
 | Componente | Resultado disponible |
 | --- | --- |
-| Especificación | Alcance, actores, reglas de negocio, estados y criterios de aceptación |
-| Arquitectura | Diagramas de contexto y contenedores, responsabilidades y propiedad de los datos |
-| Decisiones arquitectónicas | D1 y D8; versiones iniciales de D3 y D5 |
-| Contrato de integración | API de disponibilidad y reservas, documentada en OpenAPI 3.0.3 |
-| Mock | Servidor HTTP local con datos de demostración y pruebas automatizadas |
-| Estructura del proyecto | Directorios iniciales de servicios, gateway y frontend |
+| Especificación y planificación | Alcance, 8 épicas, 22 historias y requerimientos trazables; criterios de aceptación diseñados |
+| Arquitectura | Cuatro servicios, gateway y Load Balancer explícitos; diagramas y propiedad de datos |
+| Decisiones arquitectónicas | Propuestas para entrega 2 e historial de D1/D3/D5/D8 reemplazados; validación operativa pendiente |
+| Integraciones de personal | Gimnasio y clínica identificados; borrador propio de empleados y acuerdos externos pendientes |
+| Ejecutable disponible | Mock histórico de reservas en memoria, con contrato 1.0.0 y pruebas de entrega 1 |
+| Servicios, infraestructura y frontend reales | Diseño y estructura documental; implementación pendiente |
 
-El hito comprende el diseño y la simulación del contrato. La implementación de los microservicios, la persistencia, la interfaz web y el despliegue corresponden a las siguientes etapas del proyecto.
+Esta revisión prepara documentación antes de programar. No acredita la entrega 2: el 23 de octubre se requiere un servicio operativo además de la capacidad compartida, almacenamiento real, logs correlacionados y una primera traza, junto con las decisiones y evidencias correspondientes. Ver [el control de entrega 2](docs/ENTREGA-2.md).
 
 ## Flujo principal
 
@@ -48,10 +50,18 @@ La consulta de disponibilidad es informativa y no bloquea el vehículo. La creac
 | **Clientes** | Administrar perfiles y verificar la habilitación del conductor |
 | **Flota** | Administrar el catálogo de autos, sus características y la tarifa diaria vigente |
 | **Alquileres** | Controlar reservas, períodos ocupados, precios acordados, retiro y devolución |
+| **Empleados** | Gestionar candidatos y empleados, la lista para el gimnasio y los informes administrativos de membresías y turnos de clínica |
 
-Alquileres es la autoridad sobre la disponibilidad temporal. El API Gateway centraliza el acceso al sistema. La distribución de componentes y sus dependencias se detalla en [la arquitectura](docs/ARCHITECTURE.md).
+Alquileres es la autoridad sobre la disponibilidad temporal. Empleados concentra las integraciones de personal; la clínica se consume directamente desde ese servicio. El API Gateway centraliza acceso y autenticación. El Load Balancer previsto distribuye llamadas a Flota entre dos réplicas; su puesta en marcha y verificación siguen pendientes. La distribución se detalla en [la arquitectura](docs/ARCHITECTURE.md).
 
-## Ejecución local
+## Flujos de personal previstos
+
+1. Mantener empleados; publicar la población autorizada al gimnasio; registrar su devolución de uso/no uso e informar uso, no uso o datos faltantes por período.
+2. Registrar posibles incorporaciones; solicitar revisiones conforme al contrato de la clínica; conciliar turnos e informar quién tiene turno confirmado, quién no y qué información falta verificar.
+
+Un candidato no es automáticamente un empleado. Un timeout no confirma “sin turno”; un dato faltante no confirma “no usa la membresía”. No hay tarifas acordadas para calcular gastos monetarios, ni se incorporan diagnósticos, aptitud o contratación automática. Ver [integraciones y acuerdos pendientes](docs/INTEGRACIONES.md).
+
+## Ejecución local del mock histórico
 
 **Requisito:** Go 1.22 o posterior. El mock utiliza la biblioteca estándar y no requiere bases de datos ni servicios externos.
 
@@ -76,7 +86,7 @@ go -C mocks/rentals test -race ./...
 
 Las pruebas verifican concurrencia, repetición idempotente, cancelación, validaciones y respuestas del contrato. Los requisitos adicionales de `-race` en Windows se describen en [la guía del mock](mocks/rentals/README.md).
 
-El servidor conserva datos de demostración en memoria; reiniciarlo restablece su estado. El token local es ficticio. El recorrido completo de consulta, reserva y cancelación está en [la guía de demostración](mocks/rentals/README.md), y los formatos y errores se documentan en [el contrato](docs/contracts/README.md).
+El servidor conserva datos de demostración en memoria; reiniciarlo restablece su estado. El token local es ficticio. El recorrido completo está en [la guía de demostración](mocks/rentals/README.md), y sus formatos y errores en [el contrato histórico de reservas](docs/contracts/RESERVAS.md). Este mock no implementa Empleados ni las integraciones nuevas.
 
 ## Documentación
 
@@ -85,11 +95,17 @@ El servidor conserva datos de demostración en memoria; reiniciarlo restablece s
 | [Enunciado TP Final.md](Enunciado%20TP%20Final.md) | Requisitos académicos en Markdown compacto, con hitos y decisiones obligatorias |
 | [clases.zip](clases.zip) | Material de cátedra: 17 documentos Markdown de teoría y práctica |
 | [SPEC.md](SPEC.md) | Alcance, reglas de negocio, estados y criterios de aceptación |
+| [docs/BACKLOG.md](docs/BACKLOG.md) | Épicas e historias con prioridades, dependencias y criterios Dado/Cuando/Entonces |
+| [docs/REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | Requerimientos funcionales y de calidad con trazabilidad |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Contexto, contenedores, servicios, datos y comunicaciones |
-| [docs/ENTREGA-1.md](docs/ENTREGA-1.md) | Matriz de entregables, evidencia de verificación y control de presentación |
-| [docs/adr/](docs/adr/) | D1, D8 y versiones iniciales de D3 y D5 |
-| [docs/contracts/README.md](docs/contracts/README.md) | Capacidad ofrecida, ejemplos y errores |
-| [docs/contracts/openapi-v1.json](docs/contracts/openapi-v1.json) | Contrato OpenAPI, versión de API 1.0.0 |
+| [docs/ENTREGA-2.md](docs/ENTREGA-2.md) | Preparación y evidencia pendiente para el 23 de octubre |
+| [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md) | Gimnasio, clínica y acuerdos pendientes EXT-01 a EXT-14 |
+| [docs/ENTREGA-1.md](docs/ENTREGA-1.md) | Control y evidencia históricos de la primera entrega |
+| [docs/adr/README.md](docs/adr/README.md) | Decisiones propuestas vigentes, patrones e historia de reemplazos |
+| [docs/contracts/README.md](docs/contracts/README.md) | Índice de contratos, borradores y estado real |
+| [docs/contracts/EMPLOYEES.md](docs/contracts/EMPLOYEES.md) | Propuesta propia de lista de empleados, todavía no acordada |
+| [docs/contracts/CLINIC.md](docs/contracts/CLINIC.md) | Condiciones para consumir el contrato real de la clínica |
+| [docs/contracts/openapi-v1.json](docs/contracts/openapi-v1.json) | Contrato histórico de reservas 1.0.0, utilizado por el mock |
 | [mocks/rentals/README.md](mocks/rentals/README.md) | Ejecución y recorrido de demostración del mock |
 
 ## Organización inicial
@@ -99,13 +115,15 @@ services/
   customers/     # Clientes y habilitación del conductor
   fleet/         # Catálogo, características y tarifas
   rentals/       # Reservas, agenda, retiro y devolución
+  employees/     # Gestión administrativa de personal e integraciones previstas
 gateway/         # Entrada única, autenticación y direccionamiento previstos
+load-balancer/   # Distribución prevista entre dos réplicas de Flota
 frontend/        # Interfaz web prevista
-mocks/rentals/   # Simulación ejecutable de la capacidad compartida
+mocks/rentals/   # Mock histórico de reservas; no implementa Empleados
 docs/            # Arquitectura, decisiones, contrato y control de entrega
 ```
 
-Los directorios de servicios contienen su estructura inicial y la descripción de responsabilidades y dependencias. La implementación ejecutable de esta entrega se encuentra en `mocks/rentals/`. Go se utiliza para la simulación del contrato; las tecnologías definitivas de los servicios se registrarán al iniciar su implementación.
+Los directorios describen responsabilidades y estructura prevista. Empleados y Load Balancer contienen documentación, sin implementación ejecutable. El código existente sigue en `mocks/rentals/`; Go se utiliza allí para la simulación del contrato. Las tecnologías y versiones definitivas se registrarán antes de implementar los servicios.
 
 ## Organización del trabajo
 
@@ -117,8 +135,9 @@ La modalidad prevista utiliza un tablero Kanban, ramas `feature/<tarea>` o `docs
 | --- | --- |
 | Integrantes | Por completar |
 | Repositorio público | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
-| Aprobación docente del dominio y alcance | Por confirmar |
-| Capacidad disponible en esta entrega | Mock local en `http://127.0.0.1:8080` |
-| Publicación de la capacidad real | Prevista para una etapa posterior; URL por definir |
+| Feedback de entrega 1 | Incorporado al diseño: Empleados y Load Balancer; documentación antes de código |
+| Validación del alcance ampliado y acuerdos externos | Pendiente de registro con cátedra y equipos externos |
+| Ejecutable disponible | Mock histórico local en `http://127.0.0.1:8080` |
+| Capacidad nueva para el gimnasio | Borrador de lista de empleados; sin servidor ni URL pública |
 
-La capacidad real deberá permanecer accesible al grupo consumidor hasta finalizar la evaluación. Los aspectos por resolver antes de presentar se registran en [el control de entrega](docs/ENTREGA-1.md).
+Una vez publicada, la capacidad real deberá permanecer accesible al consumidor hasta finalizar la evaluación. El avance y las evidencias pendientes se registran en [el control de entrega 2](docs/ENTREGA-2.md).

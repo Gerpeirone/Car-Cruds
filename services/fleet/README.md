@@ -23,18 +23,23 @@ Flota administra las fichas de vehículos y sus tarifas. La búsqueda es una pro
 
 | Relación | Propósito |
 | --- | --- |
-| Alquileres → Flota, HTTP | Consultar ficha y tarifa autoritativa para confirmar |
+| Gateway / Alquileres → Load Balancer → Flota, HTTP | Consultar catálogo o ficha y tarifa autoritativa para confirmar |
 | Flota → MongoDB | Mantener catálogo y tarifa vigente |
 | Flota → mensajería, `VehicleChanged.v1` | Publicar cambios para el indexador |
 | Indexador de Flota → motor de búsqueda | Actualizar la proyección por identificador y versión |
 | Flota → caché | Reutilizar fichas consultadas frecuentemente |
 
-Solr, Redis y RabbitMQ son las tecnologías propuestas para búsqueda, caché y mensajería. Las decisiones y mediciones de búsqueda y caché se formalizarán en D6 y D7 durante la entrega 2; la mensajería se describe en ADR-005. Una modificación administrativa del catálogo conserva las reservas existentes; los cambios que bloqueen entregas requieren coordinación explícita con Alquileres.
+Solr, Redis y RabbitMQ son las tecnologías propuestas para búsqueda, caché y mensajería. D6 y D7 registran el diseño; sus mediciones e implementación siguen pendientes. D5 vigente describe la mensajería. Una modificación administrativa del catálogo conserva las reservas existentes; los cambios que bloqueen entregas requieren coordinación explícita con Alquileres.
+
+Se prevén dos réplicas stateless detrás del Load Balancer, con los mismos almacenes propios de Flota y sin sesión o caché obligatoria en la memoria de una réplica. Este directorio no implementa todavía ese despliegue ni prueba distribución o retirada de instancias.
 
 ## Referencias
 
 - [SPEC.md — alcance y reglas](../../SPEC.md).
 - [Arquitectura del sistema](../../docs/ARCHITECTURE.md).
-- [ADR-001 — límites de servicios](../../docs/adr/ADR-001-limites-de-servicios.md).
-- [ADR-003 — persistencia](../../docs/adr/ADR-003-persistencia.md).
-- [ADR-005 — comunicación](../../docs/adr/ADR-005-comunicacion.md).
+- [D1 vigente — límites](../../docs/adr/ADR-014-limites-servicios-v2.md).
+- [D2 — arquitectura interna](../../docs/adr/ADR-002-arquitectura-interna.md).
+- [D3 vigente — persistencia](../../docs/adr/ADR-015-persistencia-v2.md).
+- [D5 vigente — comunicación](../../docs/adr/ADR-016-comunicacion-v2.md).
+- [D6 — búsqueda](../../docs/adr/ADR-006-busqueda.md) y [D7 — caché](../../docs/adr/ADR-007-cache.md).
+- [D12 — balanceo](../../docs/adr/ADR-012-balanceo-carga.md).
