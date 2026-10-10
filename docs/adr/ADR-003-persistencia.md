@@ -5,8 +5,11 @@
 | Decisión del enunciado | D3: persistencia |
 | Versión | 0.1 — inicial |
 | Fecha | 7 de octubre de 2026 |
-| Estado | Propuesto |
+| Estado | Reemplazado |
 | Hito | Entrega 1 — 9 de octubre de 2026 |
+| Reemplazado por | [ADR-015 — D3, revisión 2](ADR-015-persistencia-v2.md), 10 de octubre de 2026 |
+
+Este registro conserva la selección histórica de la entrega 1. La propuesta vigente incorpora el almacenamiento propio de Empleados en ADR-015.
 
 ## 1. Contexto
 

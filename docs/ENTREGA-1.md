@@ -1,5 +1,7 @@
 # Entrega 1: diseño y contrato con mock
 
+> Referencia histórica del hito del 9 de octubre. La revisión actual se registra en [ENTREGA-2.md](ENTREGA-2.md); los enlaces generales de arquitectura y especificación muestran el diseño vigente. El [estado previo a esta revisión](https://github.com/Gerpeirone/Car-Cruds/tree/f516e72) conserva los documentos de la primera etapa en Git.
+
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
