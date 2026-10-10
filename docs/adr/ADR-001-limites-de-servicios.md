@@ -5,11 +5,8 @@
 | Decisión del enunciado | D1: límites de los servicios |
 | Versión | 0.1 |
 | Fecha | 7 de octubre de 2026 |
-| Estado | Reemplazado |
+| Estado | Propuesto |
 | Hito | Entrega 1 — 9 de octubre de 2026 |
-| Reemplazado por | [ADR-014 — D1, revisión 2](ADR-014-limites-servicios-v2.md), 10 de octubre de 2026 |
-
-Este registro conserva el diseño histórico de la entrega 1. La propuesta vigente incorpora Empleados y reubica las integraciones administrativas en ADR-014.
 
 ## 1. Contexto
 

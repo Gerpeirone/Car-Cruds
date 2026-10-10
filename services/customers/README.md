@@ -10,8 +10,6 @@
 
 Clientes administra el perfil y la habilitación del conductor. El historial se obtiene de alquileres completados; la reserva y la disponibilidad temporal pertenecen a Alquileres.
 
-Los registros de candidatos, empleados e integraciones de personal pertenecen a Empleados. Una persona que también sea cliente requiere una vinculación explícita entre identidades; no se comparte la base ni se fusionan sus funciones.
-
 ## Organización prevista
 
 | Directorio | Responsabilidad |
@@ -34,7 +32,6 @@ La autenticación individual y los permisos se integrarán con el gateway. La se
 
 - [SPEC.md — alcance y reglas](../../SPEC.md).
 - [Arquitectura del sistema](../../docs/ARCHITECTURE.md).
-- [D1 vigente — límites](../../docs/adr/ADR-014-limites-servicios-v2.md).
-- [D2 — arquitectura interna](../../docs/adr/ADR-002-arquitectura-interna.md).
-- [D3 vigente — persistencia](../../docs/adr/ADR-015-persistencia-v2.md).
-- [D5 vigente — comunicación](../../docs/adr/ADR-016-comunicacion-v2.md).
+- [ADR-001 — límites de servicios](../../docs/adr/ADR-001-limites-de-servicios.md).
+- [ADR-003 — persistencia](../../docs/adr/ADR-003-persistencia.md).
+- [ADR-005 — comunicación](../../docs/adr/ADR-005-comunicacion.md).
