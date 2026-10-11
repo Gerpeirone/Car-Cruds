@@ -135,7 +135,7 @@ La modalidad prevista utiliza un tablero Kanban, ramas `feature/<tarea>` o `docs
 
 | Dato | Estado |
 | --- | --- |
-| Integrantes | Por completar |
+| Integrantes | Alterman, Ivo · Peirone, German · Grbavac, Darko |
 | Repositorio público | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
 | Feedback de entrega 1 | Incorporado al diseño: Empleados y Load Balancer; documentación antes de código |
 | Validación del alcance ampliado y acuerdos externos | Pendiente de registro con cátedra y equipos externos |
