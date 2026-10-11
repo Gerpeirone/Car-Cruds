@@ -43,13 +43,13 @@ La evidencia corresponde al mock local de la primera entrega. Las garantías con
 
 - [x] Incorporar nombres de integrantes (Alterman, Ivo · Peirone, German · Grbavac, Darko).
 - [x] Vincular el proyecto al repositorio público [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds).
-- [x] Confirmar que dominio y alcance fueron aprobados por los profesores, como pide la instancia inicial del 2 de octubre.
-- [x] Revisar las convenciones del dominio: fechas por días, tarifa, duración y cancelación.
-- [x] Confirmar tecnologías y patrones internos vistos en la materia.
-- [x] Revisar y acordar D1/D8; conservar D3/D5 como versiones iniciales que se validarán al implementar.
+- [ ] Confirmar que dominio y alcance fueron aprobados por los profesores, como pide la instancia inicial del 2 de octubre.
+- [ ] Revisar las convenciones del dominio: fechas por días, tarifa, duración y cancelación.
+- [ ] Confirmar tecnologías y patrones internos vistos en la materia.
+- [ ] Revisar y acordar D1/D8; conservar D3/D5 como versiones iniciales que se validarán al implementar.
 - [x] Verificar el mock desde una copia nueva del repositorio público.
 - [x] Subir documentación, contrato, estructura y mock al repositorio accesible a la cátedra.
-- [x] Verificar las condiciones de acceso al mock que solicite la cátedra para este hito.
+- [ ] Verificar las condiciones de acceso al mock que solicite la cátedra para este hito.
 
 Los ADR utilizan una estructura uniforme de contexto, decisión, alternativas, consecuencias y validación. El enunciado remite a una plantilla en la sección 8 que no aparece en el documento disponible; corresponde verificar si la cátedra dispone de un formato complementario.
 
