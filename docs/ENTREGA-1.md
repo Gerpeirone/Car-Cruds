@@ -41,7 +41,7 @@ La evidencia corresponde al mock local de la primera entrega. Las garantías con
 
 ## 3. Control previo a la presentación
 
-- [ ] Incorporar nombres de integrantes.
+- [x] Incorporar nombres de integrantes (Alterman, Ivo · Peirone, German · Grbavac, Darko).
 - [x] Vincular el proyecto al repositorio público [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds).
 - [ ] Confirmar que dominio y alcance fueron aprobados por los profesores, como pide la instancia inicial del 2 de octubre.
 - [ ] Revisar las convenciones del dominio: fechas por días, tarifa, duración y cancelación.
