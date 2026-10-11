@@ -1,5 +1,7 @@
 # Car Cruds
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
 Universidad Católica de Córdoba · Facultad de Ingeniería
@@ -18,7 +20,7 @@ Car Cruds es un sistema diseñado para administrar el alquiler de vehículos de 
 
 La operación central consiste en asignar un vehículo a un cliente durante un período. Esta asignación requiere validar al conductor, calcular el importe y resolver solicitudes concurrentes: un mismo auto no puede reservarse para períodos superpuestos. Además, una devolución tardía debe impedir su entrega física a otro cliente.
 
-La revisión de diseño añade Empleados y un Load Balancer según el feedback docente. La gestión de personal publicará una lista al gimnasio, registrará el uso de membresías comunicado por ese sistema y consumirá turnos de una clínica para revisiones de posibles incorporaciones. Los informes apoyarán el control administrativo de beneficios y el seguimiento de turnos. Los acuerdos externos se mantienen explícitamente pendientes.
+La revisión de diseño añade Empleados y un Load Balancer según el feedback docente. La gestión de personal publicará una lista al gimnasio, registrará el uso de membresías comunicado por ese sistema y consumirá turnos de una clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Los informes apoyarán el control administrativo de beneficios y el seguimiento de turnos. Los acuerdos externos se mantienen explícitamente pendientes.
 
 ## Estado del proyecto
 
@@ -141,3 +143,14 @@ La modalidad prevista utiliza un tablero Kanban, ramas `feature/<tarea>` o `docs
 | Capacidad nueva para el gimnasio | Borrador de lista de empleados; sin servidor ni URL pública |
 
 Una vez publicada, la capacidad real deberá permanecer accesible al consumidor hasta finalizar la evaluación. El avance y las evidencias pendientes se registran en [el control de entrega 2](docs/ENTREGA-2.md).
+
+
+## Aclaración de alcance — 11 de octubre de 2026
+
+El gimnasio de Pablo consume nuestra lista de empleados y administra membresías y costos. Empleados deberá recibir o consultar afiliación, costo por membresía, gastos por empleado y costos totales por período/moneda; el informe de uso es complementario y no reemplaza el económico. Se conservarán origen, referencias y correcciones, sin duplicar gastos ni asumir cero ante datos faltantes. El borrador de lista no define todavía el intercambio económico.
+
+Car Cruds consume el hospital de Octi para empleados registrados: identificar quién necesita consulta mediante información recibida/consultada al hospital, solicitar el turno desde Empleados, conservar referencias y resultado, y reflejar cambios de estado, cancelaciones y reprogramaciones administrados por el hospital. La gestión de candidatos existente se mantiene como flujo adicional y separado. No se infieren diagnósticos ni asistencia a partir del turno.
+
+Contratos, operaciones externas, mecanismos de actualización, identificadores y configuración operativa siguen pendientes. No se inventan endpoints externos ni valores de tarifas/timeouts. El gateway encamina el acceso entrante a Empleados; el adaptador saliente llama al hospital directamente. PostgreSQL propio, Docker Compose, configuración y pruebas de estos componentes aún no existen. El balanceador y las dos réplicas de Flota siguen como diseño pendiente de implementación y demostración.
+
+La trazabilidad detallada está en SPEC (RN-16, RN-21 y RN-22), REQUERIMIENTOS (RF-13 a RF-17 y RF-19), BACKLOG (HU-13 a HU-17 y HU-23) e INTEGRACIONES (EXT-02, EXT-04 a EXT-10 y EXT-15). Esta aclaración registra el alcance solicitado por el grupo; no acredita aprobación externa ni implementación.

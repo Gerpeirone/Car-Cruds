@@ -1,5 +1,7 @@
 # Preparación de la entrega 2 — dominio propio de punta a punta
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
@@ -11,7 +13,7 @@
 
 ## 1. Cambios a partir del feedback
 
-Se conserva el negocio de alquiler de autos y se incorpora el microservicio de Empleados para gestión administrativa de personal. El Load Balancer aparece como componente explícito, con dos réplicas de Flota previstas. El gimnasio consumirá empleados y devolverá uso de membresías; Car Cruds consumirá turnos de una clínica para revisiones de posibles incorporaciones.
+Se conserva el negocio de alquiler de autos y se incorpora el microservicio de Empleados para gestión administrativa de personal. El Load Balancer aparece como componente explícito, con dos réplicas de Flota previstas. El gimnasio consumirá empleados y devolverá uso de membresías; Car Cruds consumirá turnos de una clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones.
 
 Se documentan épicas, historias, requerimientos y patrones antes de programar. Este trabajo actual es documental. El único ejecutable sigue siendo el mock de reservas de la entrega 1; no hay nuevos servicios, persistencia, Load Balancer o integraciones operativas.
 
@@ -24,7 +26,7 @@ Se documentan épicas, historias, requerimientos y patrones antes de programar. 
 | [REQUERIMIENTOS.md](REQUERIMIENTOS.md) | RF/RNF verificables y trazabilidad |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Contexto C4, contenedores, propiedad de datos y distribución prevista |
 | [ADR](adr/README.md) | Estilos, patrones, alternativas y consecuencias; historia de reemplazos |
-| [INTEGRACIONES.md](INTEGRACIONES.md) | Alcance comunicado, propuestas locales y EXT-01 a EXT-14 pendientes |
+| [INTEGRACIONES.md](INTEGRACIONES.md) | Alcance comunicado, propuestas locales y EXT-01 a EXT-15 pendientes |
 | [Contratos](contracts/README.md) | Borrador propio de lista de empleados y condiciones que faltan del proveedor |
 
 ## 3. Correspondencia con lo exigido el 23 de octubre
@@ -45,7 +47,7 @@ Un borrador procesable, una historia escrita o un directorio no equivalen a un s
 ## 4. Orden de trabajo propuesto
 
 1. Revisar alcance y prioridades de épicas/historias con el grupo y la cátedra; asignar responsables.
-2. Cerrar los acuerdos indispensables EXT-01 a EXT-05 y EXT-07 a EXT-13 para las integraciones. EXT-06 solo bloquea montos; el informe de uso puede avanzar sin tarifas.
+2. Cerrar los acuerdos indispensables EXT-01 a EXT-05 y EXT-07 a EXT-13 para las integraciones. EXT-06 bloquea el informe económico requerido; el informe de uso puede avanzar como resultado parcial sin sustituirlo. EXT-15 define la información del hospital sobre empleados que necesitan consulta.
 3. Validar patrones y dependencias de los cuatro servicios, el balanceador y la propiedad de datos.
 4. Implementar un flujo propio de alquiler con persistencia y sus dependencias necesarias; implementar Empleados y la lista revisada para el consumidor.
 5. Instrumentar logs correlacionados y una traza del flujo, agregar pruebas de integración y contrato sobre dependencias reales.
@@ -71,3 +73,14 @@ Estos criterios no están cumplidos por la preparación documental actual. No se
 ## 7. Referencia a la primera entrega
 
 [ENTREGA-1.md](ENTREGA-1.md) conserva el control histórico. El contrato [openapi-v1.json](contracts/openapi-v1.json), el código y las pruebas del mock de alquileres conservan su comportamiento. La nueva integración no presenta ese mock como una implementación de Empleados.
+
+
+## Aclaración de alcance — 11 de octubre de 2026
+
+El gimnasio de Pablo consume nuestra lista de empleados y administra membresías y costos. Empleados deberá recibir o consultar afiliación, costo por membresía, gastos por empleado y costos totales por período/moneda; el informe de uso es complementario y no reemplaza el económico. Se conservarán origen, referencias y correcciones, sin duplicar gastos ni asumir cero ante datos faltantes. El borrador de lista no define todavía el intercambio económico.
+
+Car Cruds consume el hospital de Octi para empleados registrados: identificar quién necesita consulta mediante información recibida/consultada al hospital, solicitar el turno desde Empleados, conservar referencias y resultado, y reflejar cambios de estado, cancelaciones y reprogramaciones administrados por el hospital. La gestión de candidatos existente se mantiene como flujo adicional y separado. No se infieren diagnósticos ni asistencia a partir del turno.
+
+Contratos, operaciones externas, mecanismos de actualización, identificadores y configuración operativa siguen pendientes. No se inventan endpoints externos ni valores de tarifas/timeouts. El gateway encamina el acceso entrante a Empleados; el adaptador saliente llama al hospital directamente. PostgreSQL propio, Docker Compose, configuración y pruebas de estos componentes aún no existen. El balanceador y las dos réplicas de Flota siguen como diseño pendiente de implementación y demostración.
+
+La trazabilidad detallada está en SPEC (RN-16, RN-21 y RN-22), REQUERIMIENTOS (RF-13 a RF-17 y RF-19), BACKLOG (HU-13 a HU-17 y HU-23) e INTEGRACIONES (EXT-02, EXT-04 a EXT-10 y EXT-15). Esta aclaración registra el alcance solicitado por el grupo; no acredita aprobación externa ni implementación.

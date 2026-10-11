@@ -1,5 +1,7 @@
 # Integraciones de personal — Car Cruds
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
@@ -13,8 +15,8 @@ Este documento distingue lo comunicado por el grupo de las propuestas de Car Cru
 
 | Integración | Alcance comunicado | Resultado administrativo |
 | --- | --- | --- |
-| Gimnasio | Consume la lista de empleados expuesta por Car Cruds y comunica quién usa o no usa la membresía | Informe de uso de beneficios para controlar gastos de la empresa |
-| Clínica | Car Cruds consume el servicio de turnos para solicitar revisiones de posibles incorporaciones | Informe de personas con turno y sin turno, acompañado de la información que aún falta verificar |
+| Gimnasio | Consume la lista de empleados; administra membresías y proporciona afiliación, uso, costos individuales, gastos y totales | Informe de membresías y gastos por empleado y totales por período, con evidencia y datos faltantes |
+| Clínica | Car Cruds consume turnos para empleados registrados y conserva el flujo adicional de candidatos | Informe de personas con turno y sin turno, acompañado de la información que aún falta verificar |
 
 El alquiler de autos conserva su flujo principal de clientes. El seguimiento de incorporaciones y beneficios constituye el flujo de gestión de personal de la concesionaria. La integración debe demostrarse con consecuencias en estos informes y su uso administrativo. La validación docente del alcance y de la relevancia de este flujo se registra como pendiente; una llamada aislada no basta.
 
@@ -52,19 +54,19 @@ No se acumulan cantidades, consumos o gastos simplemente al recibir otra vez el 
 
 ### Gastos
 
-El objetivo de negocio es apoyar el control de gastos. Con la información confirmada hoy se puede diseñar un informe de uso, no una liquidación monetaria. Tarifas, vigencia, moneda, período facturado, población cobrada y reglas de imputación siguen pendientes. No se desactivan beneficios ni se generan pagos automáticamente a partir del informe.
+El alcance requerido incluye empleados con membresía, costo de cada membresía, gastos por empleado y costos totales por período. El gimnasio administra y proporciona la información económica; Car Cruds la recibe o consulta y presenta un informe administrativo. Afiliación, uso y gasto son hechos distintos: no se deduce un costo a partir de asistencia. Tarifas, vigencia, moneda, período facturado, población cobrada y reglas de imputación siguen pendientes. Los totales usarán registros únicos, separarán monedas y señalarán datos incompletos; una corrección reemplazará la evidencia anterior según el contrato sin sumar dos veces. No se generan pagos ni facturas automáticamente.
 
 ## 4. Clínica: solicitud y seguimiento de turnos
 
 ### Flujo previsto
 
-1. El responsable registra la persona considerada para una incorporación y solicita una revisión.
+1. Empleados identifica un empleado registrado que necesita consulta a partir de una indicación administrativa o información recibida/consultada al hospital. El mecanismo externo se acordará; el flujo de candidatos permanece separado.
 2. Empleados conserva una referencia local de la intención y los datos mínimos autorizados antes de comunicarse con la clínica.
-3. Su adaptador utiliza exclusivamente operaciones publicadas por el contrato de la clínica.
+3. Su adaptador solicita el turno al hospital mediante las operaciones del contrato publicado, vinculando empleado, intención local y referencia de solicitud externa.
 4. Si una respuesta válida confirma un turno, se conserva la referencia y el estado administrativo. Si falta confirmación, se mantiene la incertidumbre y se concilia según las operaciones disponibles.
 5. El informe identifica personas con turno confirmado, personas sin turno confirmado con evidencia suficiente y personas con estado pendiente de verificar.
 
-**Solicitar una revisión, obtener un turno y asistir son hechos distintos.** Está pendiente acordar si Car Cruds reserva un turno directamente, si la persona completa la reserva o si existen ambos caminos. Esta decisión condiciona las historias HU-15 y HU-16 y el contenido del informe HU-17.
+**Solicitar una consulta, obtener un turno y asistir son hechos distintos.** Car Cruds solicita el turno por la API del hospital. Se acordarán operaciones, confirmación y pasos adicionales del empleado. El hospital administra cambios de estado, cancelaciones y reprogramaciones; Car Cruds los refleja sin asumir control de su agenda.
 
 ### Recuperación ante fallas
 
@@ -86,16 +88,17 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | EXT-01 | Población de empleados compartida, activos/inactivos y cambios de altas/bajas | Gimnasio y responsable de personal | Define qué lista puede publicarse |
 | EXT-02 | Identificadores y vinculación de personas; campos mínimos y permisos | Ambos equipos externos | Evita vincular información a la persona incorrecta |
 | EXT-03 | Formato, versión, paginación y compatibilidad de la lista | Gimnasio | Permite cerrar el borrador de contrato propio |
-| EXT-04 | Mecanismo y contrato de devolución del uso | Gimnasio | Define adaptador, entradas y prueba de contrato |
+| EXT-04 | Mecanismo y contrato de devolución/consulta de membresías, uso y costos | Gimnasio | Define adaptador, entradas y prueba de contrato |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
-| EXT-06 | Tarifas y reglas de imputación, si se requieren montos | Gimnasio y empresa | Bloquea únicamente la liquidación monetaria |
+| EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Bloquea únicamente la liquidación monetaria |
 | EXT-07 | Contrato publicado de turnos y operaciones disponibles | Clínica | Define el adaptador de consumo y el test de contrato |
-| EXT-08 | Quién confirma/reserva y qué debe completar la persona | Clínica y empresa | Define el flujo de revisión y la confirmación |
+| EXT-08 | Solicitud desde Car Cruds, confirmación del hospital y pasos adicionales del empleado | Clínica y empresa | Define el flujo de revisión y la confirmación |
 | EXT-09 | Consulta de estado, cancelación, reprogramación e idempotencia | Clínica | Define reconciliación y recuperación de respuestas perdidas |
 | EXT-10 | Autenticación, autorización, entornos y URLs accesibles | Ambos equipos externos | Necesario para integración y publicación reales |
 | EXT-11 | Datos administrativos permitidos, acceso y conservación | Empresa y equipos externos | Limita los datos compartidos y registrados |
 | EXT-12 | Tiempos de espera, límites, disponibilidad y cambios compatibles | Ambos equipos externos | Permite fijar políticas operativas realistas |
 | EXT-13 | Responsables por equipo y ejemplos de prueba controlados | Ambos equipos externos | Permite validar con el contrato vigente |
+| EXT-15 | Información del hospital sobre empleados que requieren consulta: consulta/notificación, identidad, vigencia y correcciones | Hospital de Octi | Define identificación y seguimiento de la necesidad de consulta |
 | EXT-14 | Validación docente de la ampliación y su flujo de negocio | Cátedra y grupo | Confirma correspondencia con el enunciado |
 
 Todos estos acuerdos están **pendientes**, sin fechas ni aprobaciones inventadas. Los dos sistemas externos ya fueron identificados por el grupo; lo pendiente son sus condiciones de integración, no elegir sistemas diferentes.

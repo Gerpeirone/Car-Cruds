@@ -1,5 +1,7 @@
 # Registro de decisiones arquitectónicas
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.2 |

@@ -1,12 +1,14 @@
 # Contratos e integración
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.2 |
 | Fecha | 10 de octubre de 2026 |
 | Estado | Preparación documental de la entrega 2 |
 
-La integración comunicada por el grupo publica una lista de empleados al gimnasio y consume turnos de una clínica para revisiones de posibles incorporaciones. El servicio responsable es Empleados. Los acuerdos externos se siguen en [INTEGRACIONES.md](../INTEGRACIONES.md).
+La integración comunicada por el grupo publica una lista de empleados al gimnasio y consume turnos de una clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. El servicio responsable es Empleados. Los acuerdos externos se siguen en [INTEGRACIONES.md](../INTEGRACIONES.md).
 
 | Artefacto | Capacidad | Estado real |
 | --- | --- | --- |

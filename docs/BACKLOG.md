@@ -1,5 +1,7 @@
 # Backlog del producto — Car Cruds
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
@@ -11,7 +13,7 @@
 
 ## 1. Alcance y situación de la entrega
 
-El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión de la primera entrega. El gimnasio consume la lista de empleados y comunica uso o no uso de membresía; Car Cruds consume la capacidad de turnos de la clínica para revisiones de posibles incorporaciones. Estas integraciones pertenecen a Empleados y conservan independiente la operación de alquileres.
+El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión de la primera entrega. El gimnasio consume la lista de empleados y comunica uso o no uso de membresía; Car Cruds consume la capacidad de turnos de la clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Estas integraciones pertenecen a Empleados y conservan independiente la operación de alquileres.
 
 Los contratos, campos, protocolos, identidad de consumidores y mecanismos de devolución o consulta externos están pendientes de acuerdo. Los criterios que dependen de esos acuerdos son obligaciones de comportamiento para el diseño; todavía no constituyen endpoints, eventos o esquemas publicados.
 
@@ -33,14 +35,14 @@ Las historias están **diseñadas**. El único componente ejecutable disponible 
 | E-02 | Clientes y reservas | Validar al conductor y confirmar una asignación con precio acordado. | Clientes / Alquileres | HU-03 a HU-06 |
 | E-03 | Operación de alquiler | Controlar retiro, devolución y mantenimiento. | Alquileres | HU-07 a HU-09 |
 | E-04 | Personal | Distinguir posibles incorporaciones del registro de empleados. | Empleados | HU-10, HU-11 |
-| E-05 | Integración con gimnasio | Publicar empleados y recibir uso de membresía para revisión del beneficio. | Empleados | HU-12 a HU-14 |
-| E-06 | Integración con clínica | Solicitar revisiones y seguir la existencia confirmada de turnos. | Empleados | HU-15 a HU-17 |
+| E-05 | Integración con gimnasio | Publicar empleados y recibir/consultar membresías, uso y costos individuales/totales. | Empleados | HU-12 a HU-14 |
+| E-06 | Integración con clínica | Identificar empleados que necesitan consulta, solicitar turnos y reflejar cambios del hospital. | Empleados | HU-15 a HU-17, HU-23 |
 | E-07 | Plataforma | Controlar acceso y balancear consultas de Flota. | Gateway / Load Balancer / servicios | HU-18, HU-19 |
 | E-08 | Evidencia y reproducción | Verificar, observar y reproducir el sistema. | Transversal | HU-20 a HU-22 |
 
 ## 4. Historias y criterios de aceptación
 
-Las reglas RN-01 a RN-12 conservan su significado en [SPEC.md](../SPEC.md). Las reglas RN-13 a RN-20 cubren personal e integraciones. Los requisitos RF y RNF se detallan en [REQUERIMIENTOS.md](REQUERIMIENTOS.md).
+Las reglas RN-01 a RN-12 conservan su significado en [SPEC.md](../SPEC.md). Las reglas RN-13 a RN-22 cubren personal e integraciones. Los requisitos RF y RNF se detallan en [REQUERIMIENTOS.md](REQUERIMIENTOS.md).
 
 ### HU-01 — Administrar vehículos y tarifas
 
@@ -206,9 +208,9 @@ Como **aplicación del gimnasio autorizada**, quiero consultar la lista de emple
 1. **Dado** el contrato de lista acordado y un consumidor autorizado, **cuando** solicita la lista dentro de su ámbito, **entonces** recibe los empleados correspondientes con únicamente los datos mínimos pactados.
 2. **Dado** candidatos o información de revisiones clínicas en Empleados, **cuando** el gimnasio obtiene la lista, **entonces** esos datos quedan excluidos de la capacidad; no se publica información médica.
 
-### HU-13 — Recibir uso de membresía
+### HU-13 — Recibir membresías, uso y costos
 
-Como **responsable de personal**, quiero recibir del gimnasio la información de uso o no uso de membresía por período para apoyar el control de gastos.
+Como **responsable de personal**, quiero recibir o consultar al gimnasio membresías, uso, costos individuales y gastos por período para controlar beneficios y costos.
 
 **Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
 
@@ -219,9 +221,9 @@ Como **responsable de personal**, quiero recibir del gimnasio la información de
 1. **Dado** un empleado, un período y una comunicación válida conforme al contrato acordado, **cuando** el gimnasio informa uso o no uso, **entonces** se conserva el resultado asociado al período y la evidencia de origen acordada.
 2. **Dado** una comunicación duplicada, antigua, incompleta o una dependencia indisponible, **cuando** se procesa o falta la información, **entonces** no se duplica ni sustituye un resultado más reciente indebidamente; la ausencia de evidencia se distingue de no uso confirmado.
 
-### HU-14 — Consultar el informe de uso
+### HU-14 — Consultar el informe de membresías y gastos
 
-Como **responsable de personal**, quiero consultar uso, no uso y datos desconocidos por período para revisar el beneficio del gimnasio.
+Como **responsable de personal**, quiero consultar afiliación, uso, costo individual, gastos por empleado y costos totales por período para revisar el beneficio del gimnasio.
 
 **Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
 
@@ -232,17 +234,23 @@ Como **responsable de personal**, quiero consultar uso, no uso y datos desconoci
 1. **Dado** un período con empleados y evidencia válida de uso o no uso, **cuando** consulta el informe, **entonces** se muestran los grupos y conteos correspondientes con referencia al período y a su evidencia.
 2. **Dado** empleados sin información confirmada del gimnasio, **cuando** consulta el mismo informe, **entonces** aparecen como desconocidos y no como no usuarios; el informe no calcula tarifas, cobros ni gastos monetarios no acordados.
 
+Criterios adicionales de HU-13 y HU-14:
+
+3. **Dado** datos económicos válidos del gimnasio, **cuando** se incorporan y consulta el informe, **entonces** se vinculan al empleado y se muestran costo de membresía, gasto individual y total del período por moneda según el contrato.
+4. **Dado** un cargo duplicado o corregido, **cuando** se actualiza el informe, **entonces** no se acumula dos veces el mismo gasto y la corrección conserva trazabilidad.
+5. **Dado** información económica faltante, **cuando** se consulta el total, **entonces** se identifica como incompleto; uso, ausencia de uso y falta de costo no se equiparan a un importe cero.
+
 ### HU-15 — Solicitar revisión o turno a la clínica
 
-Como **responsable de personal**, quiero solicitar una revisión para una posible incorporación mediante la capacidad de turnos de la clínica.
+Como **responsable de personal**, quiero solicitar por la API del hospital de Octi un turno para un empleado registrado que necesita consulta médica. El flujo adicional de candidatos se conserva separado.
 
 **Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
 
-**Hito objetivo:** E2: acuerdo de consumo y primer flujo; PG: integración completa. **Dependencias:** HU-10; HU-18; contrato publicado por la clínica.
+**Hito objetivo:** E2: acuerdo de consumo y primer flujo; PG: integración completa. **Dependencias:** HU-11; HU-18; contrato publicado por el hospital; HU-10 para el flujo adicional de candidatos.
 
 **Trazabilidad:** RF-15, RNF-02, RNF-03, RNF-05, RNF-12, RN-17, RN-18, RN-19, RN-20.
 
-1. **Dado** un candidato y los datos mínimos requeridos por el contrato acordado, **cuando** se solicita una revisión o turno, **entonces** se conserva la solicitud y el resultado que el proveedor efectivamente confirme; pedir un turno no acredita confirmación ni asistencia.
+1. **Dado** un empleado registrado y los datos mínimos requeridos por el contrato acordado, **cuando** se solicita una revisión o turno, **entonces** se conserva la solicitud y el resultado que el proveedor efectivamente confirme; pedir un turno no acredita confirmación ni asistencia.
 2. **Dado** una respuesta perdida o un timeout después de solicitar, **cuando** finaliza la espera, **entonces** se informa resultado pendiente de comprobación y no se crea otro turno a ciegas; el modo de recuperación respeta el contrato de la clínica.
 
 ### HU-16 — Conciliar el estado del turno
@@ -258,13 +266,19 @@ Como **responsable de personal**, quiero comprobar el estado de las solicitudes 
 1. **Dado** una solicitud con respuesta tardía o estado no confirmado, **cuando** el mecanismo acordado obtiene evidencia vigente, **entonces** se actualiza la clasificación y se conserva la relación con la solicitud y el origen.
 2. **Dado** una caída del proveedor, falta de evidencia o respuesta inválida, **cuando** se concilia el estado, **entonces** permanece desconocido; solamente una ausencia informada válidamente permite clasificar sin turno.
 
+Criterios adicionales de HU-16:
+
+3. **Dado** un turno vinculado a un empleado, **cuando** el hospital notifica o permite consultar una cancelación, reprogramación o cambio de estado, **entonces** Empleados actualiza referencia, estado y fecha conservando historia.
+4. **Dado** una actualización repetida o anterior, **cuando** se recibe, **entonces** no duplica efectos ni revierte evidencia vigente según la regla de orden acordada.
+5. **Dado** un turno cancelado, **cuando** se actualiza su estado, **entonces** no se crea automáticamente otro turno ni se elimina la solicitud original.
+
 ### HU-17 — Consultar el informe de turnos
 
-Como **responsable de personal**, quiero consultar posibles incorporaciones con turno, sin turno y con estado desconocido para gestionar revisiones pendientes.
+Como **responsable de personal**, quiero consultar empleados y, por separado, posibles incorporaciones con turno, sin turno y con estado desconocido para gestionar revisiones pendientes.
 
 **Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
 
-**Hito objetivo:** PG; definición en E2. **Dependencias:** HU-10; HU-16.
+**Hito objetivo:** PG; definición en E2. **Dependencias:** HU-11; HU-16; HU-10 para candidatos.
 
 **Trazabilidad:** RF-17, RNF-05, RNF-07, RN-13, RN-17, RN-18.
 
@@ -337,13 +351,23 @@ Como **integrante del grupo o evaluador**, quiero iniciar el sistema con un proc
 1. **Dado** una copia limpia del repositorio y los requisitos públicos documentados, **cuando** ejecuta el procedimiento único, **entonces** se crean o inician las dependencias y componentes declarados y puede probarse el flujo entregado.
 2. **Dado** configuración sensible necesaria para la ejecución, **cuando** se prepara el entorno, **entonces** se suministra fuera del repositorio, sin pasos exclusivos de las computadoras del grupo.
 
+### HU-23 — Identificar la necesidad de consulta de un empleado
+
+Como **responsable de personal**, quiero recibir o consultar qué empleados requieren atención en el hospital de Octi para solicitar y seguir sus turnos.
+
+**Épica:** E-06. **Prioridad:** P1. **Estado:** Diseñada, no implementada. **Dependencias:** HU-11; HU-18; EXT-02 y EXT-15. **Trazabilidad:** RF-19, RN-21, RN-19, RNF-02, RNF-05, RNF-12. **Hito objetivo:** PG; acuerdo y diseño en E2.
+
+1. **Dado** un empleado registrado y una indicación válida del hospital, **cuando** se recibe o consulta la necesidad, **entonces** queda vinculada al empleado con origen y vigencia y puede iniciar HU-15.
+2. **Dado** información repetida, desactualizada o una identidad no vinculada, **cuando** se procesa, **entonces** no se duplican necesidades ni se solicita un turno para otra persona; los casos sin evidencia suficiente quedan pendientes.
+3. **Dado** una falla del hospital, **cuando** no se puede actualizar la necesidad, **entonces** se conserva la última evidencia con su fecha y se indica que falta verificarla.
+
 ## 5. Acuerdos previos a implementar integraciones
 
 | Acuerdo pendiente | Historias afectadas | Condición de preparación |
 | --- | --- | --- |
 | Lista para el gimnasio | HU-12 | Definir datos mínimos, alcance, identidad, actualización y contrato formal; separar candidatos y datos clínicos |
 | Devolución del gimnasio | HU-13, HU-14 | Acordar quién comunica, por qué mecanismo, período, evidencia de uso/no uso, duplicados, orden y correcciones |
-| Capacidad de turnos de la clínica | HU-15 a HU-17 | Obtener contrato publicado; distinguir solicitud, confirmación y ausencia informada; acordar recuperación e identificación |
+| Capacidad de turnos de la clínica | HU-15 a HU-17, HU-23 | Obtener contrato publicado; distinguir solicitud, confirmación y ausencia informada; acordar recuperación e identificación |
 | Datos internos y permisos | HU-03, HU-10, HU-11, HU-18 | Definir datos obligatorios y matriz de acceso, conservando minimización y separación de responsabilidades |
 | Objetivos de operación | HU-19 a HU-21 | Registrar balanceo, detección de fallas, tiempos de espera, alertas y mediciones en los ADR correspondientes |
 

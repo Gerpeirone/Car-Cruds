@@ -1,5 +1,7 @@
 # API Gateway
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Aspecto | Diseño propuesto de entrega 2 |
 | --- | --- |
 | Estado | Estructura de directorios y responsabilidades; implementación pendiente |

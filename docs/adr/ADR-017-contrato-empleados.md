@@ -42,3 +42,12 @@ La lista por sí sola no determina cuánto debe pagar la empresa: las tarifas y 
 Revisar el borrador con el consumidor, validar formato y referencias, aportar ejemplos acordados, probar autenticación/población/paginación y compatibilidad y demostrar el informe con devolución real. No se ejecutaron estas verificaciones operativas.
 
 Acuerdos pendientes y fuentes de referencia: [INTEGRACIONES.md](../INTEGRACIONES.md). Material de cátedra: teoría 02, 06 y 08; práctica 01 y 02 dentro de `clases.zip`.
+
+
+## Revisión de alcance — 11 de octubre de 2026
+
+Se amplía la propuesta sin cambiar las fronteras ni las tecnologías: Gimnasio corresponde al grupo de Pablo y Clínica al hospital de Octi. El gimnasio consume empleados y administra membresías/costos; Empleados incorporará los datos económicos individuales y totales por período, con deduplicación, correcciones y separación por moneda. Uso y gasto se tratan como evidencias distintas.
+
+El flujo del hospital comprende empleados registrados, además del flujo previo de candidatos: información de quién necesita consulta, solicitud de turno desde Empleados y seguimiento de modificaciones/cancelaciones/reprogramaciones administradas por el proveedor. Persistirá la relación entre empleado, necesidad, intención local, turno externo y evidencia de estado, sin interpretar un timeout como ausencia ni repetir comandos sin recuperación acordada.
+
+La propuesta continúa no implementada y no acordada con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.

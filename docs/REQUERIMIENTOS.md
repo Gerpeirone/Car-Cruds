@@ -1,5 +1,7 @@
 # Requerimientos del sistema — Car Cruds
 
+**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
@@ -10,9 +12,9 @@
 
 ## 1. Criterios de especificación
 
-Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-18 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
+Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-19 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
 
-La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos de la clínica para posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La preparación documental no agrega componentes ejecutables: solo está disponible el mock de reservas de la primera entrega.
+La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados y posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La preparación documental no agrega componentes ejecutables: solo está disponible el mock de reservas de la primera entrega.
 
 Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni mecanismos de devolución. El comportamiento esperado se especifica sin imponer esas decisiones externas. Los informes permiten seguimiento y decisiones humanas; no determinan aptitud médica, contratación automática ni gastos monetarios a partir de tarifas inexistentes en los acuerdos.
 
@@ -114,25 +116,25 @@ El sistema deberá permitir al gimnasio autorizado obtener la lista acordada de 
 
 **Trazabilidad:** HU-12; RN-13, RN-14, RN-20. **Estado:** Diseñado.
 
-### RF-13 — Incorporar uso de membresía
+### RF-13 — Incorporar membresías, uso y costos
 
-El sistema deberá incorporar la comunicación válida del gimnasio sobre uso o no uso de membresía, vinculada al empleado, período y evidencia de origen acordados. Falta de evidencia significará desconocido.
+El sistema deberá recibir o consultar al gimnasio membresías, uso informado, costo individual, gastos por empleado y totales proporcionados, vinculados al empleado, período, moneda y evidencia de origen acordados. Falta de evidencia significará desconocido, no ausencia de membresía ni gasto cero.
 
 **Verificación:** Recepción conforme al mecanismo pendiente de acuerdo; pruebas de duplicado, orden y ausencia de respuesta.
 
 **Trazabilidad:** HU-13; RN-14, RN-15, RN-16, RN-19, RN-20. **Estado:** Diseñado.
 
-### RF-14 — Informar uso de membresía
+### RF-14 — Informar membresías y gastos
 
-El sistema deberá generar un informe por período con uso, no uso confirmado y casos desconocidos, para apoyar la revisión del beneficio y el control de gastos. No calculará tarifas ni importes externos no acordados.
+El sistema deberá generar un informe por período con empleados con membresía, uso informado, costo individual, gastos por empleado y costos totales por moneda. Usará datos del gimnasio y reglas acordadas; distinguirá datos faltantes y totales incompletos sin inferir gastos a partir del uso.
 
-**Verificación:** Conteos y agrupaciones coinciden con la evidencia; desconocidos permanecen separados del no uso.
+**Verificación:** Conteos, gastos individuales y totales coinciden con registros únicos del gimnasio; duplicados no incrementan gastos, correcciones no se suman como nuevos cargos y datos faltantes no se convierten en cero. Las monedas se presentan por separado.
 
 **Trazabilidad:** HU-14; RN-15, RN-16. **Estado:** Diseñado.
 
 ### RF-15 — Solicitar revisión o turno
 
-El sistema deberá permitir solicitar a la clínica una revisión para una posible incorporación, usando su contrato publicado y los datos mínimos acordados. Conservará solicitud y resultado sin equiparar petición, confirmación y asistencia.
+El sistema deberá solicitar por la API del hospital de Octi un turno para un empleado registrado que necesita consulta, usando el contrato publicado y los datos mínimos acordados. El flujo adicional de candidatos permanece separado. Conservará solicitud y resultado sin equiparar petición, confirmación y asistencia.
 
 **Verificación:** Solicitud trazable; confirmación solo con evidencia del proveedor; timeout sin afirmación de ausencia ni repetición insegura.
 
@@ -148,7 +150,7 @@ El sistema deberá actualizar el seguimiento mediante el mecanismo pactado con l
 
 ### RF-17 — Informar existencia de turno
 
-El sistema deberá presentar candidatos con turno confirmado, sin turno informado y estado desconocido, respaldados por evidencia. El informe no determinará asistencia, aptitud médica ni contratación.
+El sistema deberá presentar empleados y, en un ámbito separado, candidatos con turno confirmado, sin turno informado y estado desconocido, respaldados por evidencia. El informe no determinará asistencia, aptitud médica ni contratación.
 
 **Verificación:** Clasificación consistente con la conciliación y ausencia de conclusiones médicas o de contratación automáticas.
 
@@ -160,7 +162,21 @@ El sistema deberá comprobar identidad y permiso sobre operación, recurso y ám
 
 **Verificación:** Accesos permitidos y rechazados comprobados por rol y consumidor; identidad manipulada no aceptada.
 
-**Trazabilidad:** HU-18; transversal a HU-01 a HU-17; RN-12, RN-14. **Estado:** Diseñado.
+**Trazabilidad:** HU-18; transversal a HU-01 a HU-17 y HU-23; RN-12, RN-14. **Estado:** Diseñado.
+
+### RF-19 — Identificar empleados que necesitan consulta
+
+El sistema deberá recibir o consultar al hospital de Octi la información de empleados que requieren consulta y vincularla con su registro en Empleados. Conservará origen, vigencia y estado administrativo; una identidad no vinculada quedará pendiente de revisión y no generará un turno para otra persona.
+
+**Verificación:** Una indicación válida aparece para el empleado correcto; una repetición no duplica necesidades ni turnos; información inválida, antigua o no vinculada se conserva pendiente conforme al acuerdo. El responsable también podrá registrar una necesidad administrativa autorizada.
+
+**Trazabilidad:** HU-23; RN-21, RN-19; EXT-15. **Estado:** Diseñado, no implementado.
+
+### Ampliación de RF-16 y trazabilidad
+
+RF-16 deberá reflejar cancelaciones, reprogramaciones y cambios de estado administrados por el hospital, conservar historial y evitar nuevas reservas automáticas. Verificar duplicados y orden de actualizaciones mediante el contrato vigente. RN-22 se vincula con RF-15, RF-16 y RF-17; RN-21 con RF-19. EXT-15 agrega el acuerdo del mecanismo de información sobre necesidad de consulta.
+
+RF-15 usa HU-23 cuando la necesidad procede del hospital; HU-10 queda reservado al flujo adicional de candidatos. RF-19 requiere definir el contrato y el vínculo de identidad antes de probar el intercambio real.
 
 ## 3. Requerimientos no funcionales
 
@@ -271,11 +287,13 @@ Las reglas RN-01 a RN-12 de SPEC mantienen su definición. Las nuevas reglas se 
 | RN-13 | Separar candidato y empleado; alta autorizada | RF-10, RF-11, RF-12, RF-17 |
 | RN-14 | Datos mínimos y ámbito para el gimnasio | RF-12, RF-13, RF-18; RNF-05, RNF-12 |
 | RN-15 | Uso, no uso y desconocido por período y evidencia | RF-13, RF-14; RNF-03, RNF-07 |
-| RN-16 | Evitar tarifas o gastos monetarios externos no acordados | RF-13, RF-14 |
+| RN-16 | Costos y gastos individuales/totales respaldados por el gimnasio | RF-13, RF-14 |
 | RN-17 | Solicitud de turno distinta de confirmación o asistencia | RF-10, RF-15, RF-16, RF-17 |
 | RN-18 | Sin turno informado distinto de fallo o desconocimiento | RF-15, RF-16, RF-17; RNF-03 |
 | RN-19 | Proteger repetición y orden de comunicaciones | RF-13, RF-15, RF-16; RNF-02 |
 | RN-20 | Aislar alquileres de integraciones de personal | RF-10 a RF-13, RF-15, RF-16; RNF-04 |
+| RN-21 | Necesidad de consulta vinculada a empleado y evidencia vigente | RF-19; HU-23 |
+| RN-22 | Turno administrado por el hospital; cambios e historia conservados | RF-15, RF-16, RF-17; HU-15 a HU-17 |
 
 La política de desconocimiento aplica a todo fallo de integración: la ausencia válida comunicada por el proveedor es un hecho de negocio; un timeout, respuesta inválida, falta de evidencia o interrupción del canal es una condición técnica. El sistema conserva la última evidencia y su vigencia, indicando los límites conocidos sin fabricar una conclusión nueva.
 
@@ -308,8 +326,8 @@ Ni estas tablas ni las pruebas existentes del mock acreditan el cumplimiento com
 ## 7. Referencias y fundamento de patrones
 
 - [Enunciado académico](../Enunciado%20TP%20Final.md): requisitos de arquitectura, integración y Entrega 2.
-- [SPEC.md](../SPEC.md): reglas RN-01 a RN-20 y estados del dominio.
-- [BACKLOG.md](BACKLOG.md): E-01 a E-08 y HU-01 a HU-22.
+- [SPEC.md](../SPEC.md): reglas RN-01 a RN-22 y estados del dominio.
+- [BACKLOG.md](BACKLOG.md): E-01 a E-08 y HU-01 a HU-23.
 - [ARCHITECTURE.md](ARCHITECTURE.md), [D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D3 vigente](adr/ADR-015-persistencia-v2.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md): límites, propiedad de datos y comunicación.
 - [clases.zip](../clases.zip): teoría 02 para consistencia local; teoría 04 para outbox, duplicados y orden; teoría 06 para distinguir gateway de Load Balancer; teoría 07 para presupuestos, fallas y resultados desconocidos; teoría 08 para capas, Hexagonal y aislamiento mediante puertos/adaptadores.
 
