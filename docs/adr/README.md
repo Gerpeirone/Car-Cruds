@@ -17,7 +17,7 @@ El número de archivo ADR identifica el registro histórico; **D1–D13** identi
 | D1: límites | [ADR-014](ADR-014-limites-servicios-v2.md) | Cuatro servicios; validar límites y ausencia de bases compartidas |
 | D2: arquitectura interna | [ADR-002](ADR-002-arquitectura-interna.md) | Estilos y patrones definidos; verificar dependencias al programar |
 | D3: persistencia | [ADR-015](ADR-015-persistencia-v2.md) | Almacenes propios; integración y recuperación pendientes |
-| D4: consistencia y concurrencia | Sin registro definitivo | El mock verifica exclusión en un proceso; solución transaccional real pendiente |
+| D4: consistencia y concurrencia | [ADR-004](ADR-004-consistencia-concurrencia.md) | Garantías propuestas sobre PostgreSQL; prueba concurrente contra base real pendiente |
 | D5: comunicación | [ADR-016](ADR-016-comunicacion-v2.md) | Políticas propuestas; acuerdos externos y ensayos pendientes |
 | D6: búsqueda | [ADR-006](ADR-006-busqueda.md) | Índice por cambios; medición y reconstrucción pendientes |
 | D7: caché | [ADR-007](ADR-007-cache.md) | Necesidad y política propuestas; comparación antes/después pendiente |
@@ -28,7 +28,7 @@ El número de archivo ADR identifica el registro histórico; **D1–D13** identi
 | D12: balanceo | [ADR-012](ADR-012-balanceo-carga.md) | Flota con dos réplicas; demostración y mediciones pendientes |
 | D13: capacidad y costos | [ADR-013](ADR-013-capacidad-costos.md) | Plan de medición; resultados, límite y costos pendientes |
 
-D4 no se exige en el listado de ADR de la entrega 2, pero sigue siendo una decisión obligatoria para el proyecto final. Los registros D6/D7/D9/D10/D12/D13 actuales son preparación documental; sus validaciones no se consideran aprobadas por existir el archivo.
+D4 no se exige en el listado de ADR de la entrega 2, pero es obligatoria para el proyecto final; su primera propuesta ya está registrada. Los registros D6/D7/D9/D10/D12/D13 actuales son preparación documental; sus validaciones no se consideran aprobadas por existir el archivo.
 
 ## Registros reemplazados
 
