@@ -53,6 +53,8 @@ La evidencia corresponde al mock local de la primera entrega. Las garantías con
 - [x] Subir documentación, contrato, estructura y mock al repositorio accesible a la cátedra.
 - [x] Verificar las condiciones de acceso al mock que solicite la cátedra para este hito.
 
+Los controles completados registran las confirmaciones de la primera entrega comunicadas por el grupo el 11 de octubre en [el commit 3f09f44](https://github.com/Gerpeirone/Car-Cruds/commit/3f09f44). No acreditan implementación de la entrega 2 ni aprobación de su alcance ampliado, contratos externos o nuevas decisiones técnicas; esas validaciones se siguen en [ENTREGA-2.md](ENTREGA-2.md).
+
 Los ADR utilizan una estructura uniforme de contexto, decisión, alternativas, consecuencias y validación. El enunciado remite a una plantilla en la sección 8 que no aparece en el documento disponible; corresponde verificar si la cátedra dispone de un formato complementario.
 
 ## 4. Recorrido de demostración

@@ -5,7 +5,7 @@
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
+| Fecha | 12 de octubre de 2026 |
 | Estado | Preparación documental de la Entrega 2 |
 | Hito objetivo | Viernes 23 de octubre de 2026 |
 | Negocio principal | Alquiler de vehículos |
@@ -402,9 +402,9 @@ Como **cliente**, quiero que la consulta de la ficha de un vehículo responda r�
 
 **Trazabilidad:** RF-22, RNF-07, RNF-09, RNF-10.
 
-1. **Dado** una ficha consultada con frecuencia, **cuando** se vuelve a solicitar dentro de su vigencia (TTL propuesto de 60 segundos, a validar), **entonces** se responde desde la caché y las métricas registran aciertos, latencia y accesos a almacenamiento antes y después de incorporarla.
-2. **Dado** una ficha modificada, **cuando** se confirma el cambio, **entonces** la entrada se invalida o vence según la política y la consulta posterior devuelve la versión vigente.
-3. **Dado** la caché indisponible, **cuando** se consulta una ficha, **entonces** se lee de la fuente con capacidad acotada; la confirmación de una reserva siempre usa la tarifa autoritativa, sin caché.
+1. **Dado** una entrada de ficha presente y vigente en la caché (TTL propuesto de 60 segundos, a validar), **cuando** se solicita la ficha, **entonces** se responde desde la caché y las métricas registran aciertos, latencia y accesos a almacenamiento antes y después de incorporarla.
+2. **Dado** una ficha modificada, **cuando** se confirma el cambio, **entonces** se invalida la entrada según D7; después de la invalidación o del vencimiento, y resueltas las carreras de carga y actualización previstas, la consulta obtiene la versión vigente. Antes de ese momento puede existir el desfase permitido por la política; no se garantiza frescura instantánea.
+3. **Dado** la caché indisponible, **cuando** se consulta una ficha, **entonces** se intenta la fuente con capacidad acotada y se informa degradación o indisponibilidad controlada si no admite la carga; la confirmación de una reserva siempre usa la tarifa autoritativa, sin caché.
 
 ### HU-27 — Protegerse de la caída o lentitud de una dependencia
 
@@ -424,9 +424,9 @@ Como **equipo de operaciones**, quiero que el sistema limite el impacto de una d
 
 Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada para conocer el límite principal del sistema, la alternativa de escalado y una estimación de costos.
 
-**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
 
-**Hito objetivo:** E2: protocolo y primera medición; defensa: análisis completo. **Dependencias:** HU-04; HU-05; HU-19; HU-20; D13.
+**Hito objetivo:** E2: medición inicial documentada, límite principal identificado, alternativa de escalado y estimación de costos con fuente y fecha; defensa: ampliar y repetir el análisis sobre el sistema final. **Dependencias:** HU-04; HU-05; HU-20; D13. HU-19 se incorpora al escenario comparativo de réplicas cuando esté operativo; no bloquea la medición inicial del flujo real disponible.
 
 **Trazabilidad:** RNF-06, RNF-07, RNF-10.
 

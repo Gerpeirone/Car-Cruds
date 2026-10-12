@@ -26,7 +26,7 @@ La revisión de diseño añade Empleados y un Load Balancer según el feedback d
 
 | Componente | Resultado disponible |
 | --- | --- |
-| Especificación y planificación | Alcance, 8 épicas, 23 historias y requerimientos trazables; criterios de aceptación diseñados |
+| Especificación y planificación | Alcance, 9 épicas, 28 historias, 22 requerimientos funcionales y 12 no funcionales trazables; criterios de aceptación diseñados |
 | Arquitectura | Cuatro servicios, gateway y Load Balancer explícitos; diagramas y propiedad de datos |
 | Decisiones arquitectónicas | Propuestas para entrega 2 e historial de D1/D3/D5/D8 reemplazados; validación operativa pendiente |
 | Integraciones de personal | Gimnasio y clínica identificados; borrador propio de empleados y acuerdos externos pendientes |
@@ -138,6 +138,7 @@ La modalidad prevista utiliza un tablero Kanban, ramas `feature/<tarea>` o `docs
 | Integrantes | Alterman, Ivo · Peirone, German · Grbavac, Darko |
 | Repositorio público | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
 | Feedback de entrega 1 | Incorporado al diseño: Empleados y Load Balancer; documentación antes de código |
+| Dominio y alcance de entrega 1 | Confirmados por el grupo en [el control histórico de entrega 1](docs/ENTREGA-1.md) |
 | Validación del alcance ampliado y acuerdos externos | Pendiente de registro con cátedra y equipos externos |
 | Ejecutable disponible | Mock histórico local en `http://127.0.0.1:8080` |
 | Capacidad nueva para el gimnasio | Borrador de lista de empleados; sin servidor ni URL pública |

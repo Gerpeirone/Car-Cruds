@@ -8,7 +8,7 @@
 | Fecha | 10 de octubre de 2026 |
 | Estado | Propuesto — no validado |
 | Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
-| Decisiones relacionadas | D1/D3/D5 revisadas; D2, D6, D7, D9, D10, D12 y D13; primera versión de D11; D8 en documentación de contrato |
+| Decisiones relacionadas | D1/D3/D5 revisadas; D2, D4, D6, D7, D9, D10, D12 y D13; primera versión de D11; D8 en documentación de contrato |
 
 ## 1. Propósito y estado del sistema
 
@@ -188,7 +188,7 @@ La Clínica pertenece al puerto de Empleados. Alquileres no conserva el puerto g
 5. En una transacción local registra exclusión del período, reserva, precio, respuesta idempotente y outbox.
 6. Un publicador entrega el evento pendiente al broker. La caída temporal del broker conserva la reserva y la intención de publicación.
 
-D4 aún debe determinar y probar la restricción de rangos o mecanismo de bloqueo concreto. Usar PostgreSQL no basta para afirmar que no existen carreras. No hay transacción global con Clientes o Flota. El precio aceptado se congela; cambios posteriores no modifican el acuerdo.
+[D4](adr/ADR-004-consistencia-concurrencia.md) registra la propuesta de restricción de exclusión sobre rangos de agenda y un índice único parcial para admitir como máximo un alquiler activo por vehículo. También documenta idempotencia durable, transiciones condicionales y outbox. La propuesta permanece sin implementación ni validación contra una base real; usar PostgreSQL no basta para afirmar que no existen carreras. No hay transacción global con Clientes o Flota. El precio aceptado se congela; cambios posteriores no modifican el acuerdo.
 
 Retiro vuelve a validar conductor y ocupación física. Un alquiler activo impide otro retiro del mismo auto aunque haya vencido su fin previsto. Los cambios administrativos y las bajas con reservas futuras requieren coordinación por definir.
 
@@ -253,7 +253,7 @@ El frontend y gateway constituyen el acceso público. LB, servicios y almacenes 
 | --- | --- |
 | Contratos externos | Obtener/acordar listas, identidad, protocolo, estados, permisos, errores, idempotencia y entorno |
 | Servicio operativo de entrega 2 | Implementar flujo y almacenamiento, sin confundir documentación con ejecución |
-| Consistencia | D4, transacciones, concurrencia, outbox y recuperación de resultados desconocidos |
+| Consistencia | Implementar y validar las garantías propuestas en [D4](adr/ADR-004-consistencia-concurrencia.md): exclusión, idempotencia, retiro, transiciones y recuperación de fallas; resolver atomicidad de ficha/outbox en Flota |
 | Tecnologías | Framework/driver, versiones compatibles y operación de motores |
 | Flota replicada | Configuración NGINX, direcciones, detección pasiva, tiempos y ensayo con evidencia |
 | Evidencia técnica | Logs correlacionados, primera traza, medición de búsqueda/caché/carga y fallas |
@@ -264,7 +264,7 @@ El frontend y gateway constituyen el acceso público. LB, servicios y almacenes 
 
 Material de cátedra en `clases.zip`: teóricos 1 a 8; prácticas de Repository (2), caché (3), RabbitMQ (4), Solr (5) y NGINX (7). Los estilos y la diferencia gateway/LB se fundamentan respectivamente en los teóricos 8 y 6.
 
-[D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D2](adr/ADR-002-arquitectura-interna.md), [D3 vigente](adr/ADR-015-persistencia-v2.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md). Los ADR-001, ADR-003 y ADR-005 permanecen como registros reemplazados, conservando su cuerpo histórico. La capacidad compartida propuesta y su D8 se consultan en [contratos](contracts/README.md).
+[D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D2](adr/ADR-002-arquitectura-interna.md), [D3 vigente](adr/ADR-015-persistencia-v2.md), [D4](adr/ADR-004-consistencia-concurrencia.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md). Los ADR-001, ADR-003 y ADR-005 permanecen como registros reemplazados, conservando su cuerpo histórico. La capacidad compartida propuesta y su D8 se consultan en [contratos](contracts/README.md).
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |

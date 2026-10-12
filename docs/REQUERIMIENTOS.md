@@ -5,7 +5,7 @@
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
+| Fecha | 12 de octubre de 2026 |
 | Estado | Diseño y preparación documental de la Entrega 2 |
 | Hito objetivo | 23 de octubre de 2026 |
 | Relación con el alcance | Alquileres como negocio principal; Clientes, Flota, Alquileres y Empleados |
@@ -198,7 +198,7 @@ El sistema deberá mantener el índice de vehículos actualizado a partir de los
 
 El sistema deberá servir las consultas frecuentes de fichas de vehículos desde una caché con vigencia e invalidación definidas, sin usarla para confirmar precios de reserva.
 
-**Verificación:** Métricas de latencia, aciertos y accesos a almacenamiento antes y después de la caché; modificar una ficha la invalida o vence; con la caché caída la lectura continúa desde la fuente.
+**Verificación:** Métricas de latencia, aciertos y accesos a almacenamiento antes y después de la caché; invalidación tras un cambio y expiración según D7, comprobando el desfase permitido y las carreras de actualización. Con la caché caída se intenta la fuente con concurrencia acotada; si esta no admite la carga, se informa degradación o indisponibilidad controlada.
 
 **Trazabilidad:** HU-26; RNF-09. **Fuente:** 2.7; D7. **Estado:** Diseñado.
 

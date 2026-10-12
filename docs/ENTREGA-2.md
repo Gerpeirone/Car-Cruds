@@ -19,6 +19,8 @@ Se documentan épicas, historias, requerimientos y patrones antes de programar. 
 
 ## 2. Documentación preparada
 
+La versión consolidada reúne los aportes del grupo: 9 épicas, 28 historias de usuario, 22 requerimientos funcionales, 12 no funcionales, 22 reglas de negocio y 15 acuerdos externos pendientes. El índice de ADR contiene propuestas para las decisiones D1 a D13, incluida la nueva D4 de consistencia y concurrencia. Los controles completados de la primera entrega se conservan como antecedentes históricos.
+
 | Artefacto | Finalidad |
 | --- | --- |
 | [SPEC.md](../SPEC.md) | Alcance actualizado, actores y RN-01 a RN-22 |
@@ -37,7 +39,7 @@ Se documentan épicas, historias, requerimientos y patrones antes de programar. 
 | Al menos un almacenamiento integrado al flujo | Persistencia propuesta en D3 | Operación contra una base real y recuperación tras reinicio |
 | Logs estructurados y correlacionados, primera traza distribuida | Estrategia inicial D11 | Logs/traza de una operación real entre componentes; no salida simulada |
 | D2, D6, D7, D9, D10 y D12 | Propuestas documentadas | Aplicación y verificación de decisiones según el avance real |
-| D13: capacidad y costos | Protocolo de medición | Carga ejecutada, límite identificado, alternativa de escalado y estimación de costos con fuente |
+| D13: capacidad y costos | Protocolo de medición y HU-28 priorizada para E2 | Carga ejecutada sobre el flujo real disponible, límite identificado, alternativa de escalado y estimación de costos con fuente y fecha; estos resultados se requieren el 23 de octubre |
 | Validación de D1, D3 y D5 | Registros revisados con Empleados e integraciones | Evidencia de límites, almacenamiento y comunicaciones implementados |
 | Primera versión de D11 | Diseño de observabilidad | Instrumentación inicial del flujo principal |
 | Actualización de D8 si cambió contrato | ADR-017 y borrador propio de empleados | Acuerdo, contrato revisado, servidor accesible y validación con el consumidor |

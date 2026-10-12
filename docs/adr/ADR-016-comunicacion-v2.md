@@ -28,7 +28,7 @@ Las validaciones de una reserva requieren respuesta inmediata. Índice e histori
 
 La llamada clínica sale directamente de Empleados; no atraviesa el frontend ni el gateway propio. Alquileres deja de consumir la capacidad externa prevista de manera genérica en la entrega 1.
 
-Se mantienen como presupuestos internos iniciales una confirmación de reserva de hasta 5 segundos y llamadas internas de hasta 1 segundo, sujetos a medición. El LB y cada llamada deben respetar el tiempo restante. Las operaciones clínicas tendrán un presupuesto específico que se acordará después de conocer el contrato y sus consecuencias; no heredan automáticamente el presupuesto de reserva.
+Para el flujo de confirmación de reserva se mantienen como presupuestos iniciales hasta 5 segundos totales y hasta 1 segundo para cada llamada interna, sujetos a medición. El LB y cada llamada deben respetar el tiempo restante, incluidos sus intentos. Las consultas exploratorias del catálogo utilizan el perfil separado de [D12](ADR-012-balanceo-carga.md), cuyo deadline total se calibrará antes de implementar; sus límites por fase no amplían el presupuesto de validación de una reserva. Las operaciones clínicas tendrán un presupuesto específico que se acordará después de conocer el contrato y sus consecuencias; no heredan automáticamente el presupuesto de reserva.
 
 Las lecturas podrán tener como máximo un reintento ante falla transitoria si queda presupuesto. El dueño del reintento será único por operación; la configuración del proxy no debe multiplicarlo. Errores de negocio, permisos y datos inválidos no se reintentan. Comandos con resultado desconocido no se repiten automáticamente sin una garantía idempotente acordada.
 

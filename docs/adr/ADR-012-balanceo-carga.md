@@ -36,12 +36,19 @@ Valores de partida para calibrar con mediciones; no son resultados de Car Cruds.
 | --- | --- | --- |
 | Algoritmo | Round-robin, pesos iguales | Réplicas con configuración equivalente |
 | `max_fails` / `fail_timeout` | 3 fallas / 30 s | Retirar temporalmente una réplica que falla en solicitudes reales |
-| Tiempo de conexión al backend | 1 s | Coherente con el presupuesto de llamadas internas de D5 |
-| Tiempo de lectura del backend | 3 s | Acotado por el presupuesto de la confirmación de reserva (5 s) |
-| Cambio de destino ante falla | Un intento adicional, solo ante error de conexión o timeout | Evitar multiplicar reintentos; el proxy no reenvía comandos no idempotentes |
+| Tiempo de conexión al backend | 1 s como límite de fase para catálogo exploratorio | No representa el plazo completo de una validación de reserva |
+| Tiempo de lectura del backend | 3 s entre lecturas para catálogo exploratorio | Limitar inactividad de lectura; no equivale a un deadline de operación |
+| Validación de Flota desde Alquileres | Presupuesto total de como máximo 1 s, reducido al tiempo restante de la confirmación | Incluye conexión, envío, lectura y eventual reintento, según D5 |
+| Cambio de destino ante falla | Como máximo un intento adicional de lectura segura, solo si resta presupuesto | Un único dueño del reintento; no reiniciar el deadline ni reenviar comandos sin idempotencia |
 | Conexiones persistentes al backend | 32 | Reducir el costo de abrir conexiones por solicitud |
 | Identificación | Registro de acceso en JSON con réplica atendida e identificador de solicitud | Evidencia de distribución para D11 |
-| Exposición | Solo el balanceador publica puerto; las réplicas son internas | Evitar vías de acceso alternativas |
+| Exposición | Gateway como entrada externa de API; LB y réplicas internos | Evitar vías de acceso alternativas |
+
+Los límites por fase no reemplazan el deadline del caso de uso. `proxy_connect_timeout` limita el establecimiento de conexión; `proxy_read_timeout` mide el intervalo entre lecturas sucesivas, no la transferencia completa. [Semántica oficial de NGINX](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout).
+
+Los valores de conexión de 1 s y lectura de 3 s corresponden únicamente al perfil exploratorio del catálogo, cuyo deadline total debe calibrarse. No se aplican como presupuesto de una validación autoritativa de reserva. Alquileres limitará toda esa llamada a Flota a `mínimo(1 s, tiempo restante de la confirmación de 5 s)`, incluyendo todos sus intentos. LB y réplica deberán respetar el mismo plazo restante; ninguna fase o cambio de destino reiniciará el reloj. La propagación, cancelación y configuración específicas de ese perfil interno siguen pendientes de implementación y prueba.
+
+Se elegirá un único dueño del eventual reintento, cliente o proxy. Los límites de intentos y de tiempo para pasar al siguiente upstream se configurarán en coherencia con ese presupuesto; no sustituyen el deadline completo de la operación. Si el primer intento consume el tiempo disponible, no se inicia otro. [Controles oficiales de cambio de upstream](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream_timeout).
 
 ## 3. Alternativas consideradas
 
@@ -53,11 +60,11 @@ El LB único, gateway, MongoDB y demás dependencias continúan siendo puntos ú
 
 ## 5. Validación pendiente
 
-Identificar instancia en logs/métricas internas y demostrar tráfico desde gateway y Alquileres distribuido entre ambas. Detener una réplica, registrar errores iniciales, tiempo de retirada y continuidad; restaurarla y observar recuperación. Probar caída del LB y saturación común de la base. La configuración, contenedores y ensayos aún no existen.
+Identificar instancia en logs/métricas internas y demostrar tráfico desde gateway y Alquileres distribuido entre ambas. Detener una réplica, registrar errores iniciales, tiempo de retirada y continuidad; restaurarla y observar recuperación. Probar caída del LB y saturación común de la base. Medir una validación lenta y otra con cambio de réplica: el total debe caber en el presupuesto restante de D5, sin multiplicar intentos entre capas. La configuración, contenedores y ensayos aún no existen.
 
 ## 6. Referencias e historial
 
-Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-7-balanceo-nginx.md`. Fuentes oficiales consultadas el 10 de octubre de 2026. [D10](ADR-010-resiliencia.md), [D11](ADR-011-observabilidad.md). [Componente](../../load-balancer/README.md).
+Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-7-balanceo-nginx.md`. Fuentes oficiales consultadas el 10 de octubre de 2026; semántica de timeouts contrastada el 12 de octubre de 2026. [D5](ADR-016-comunicacion-v2.md), [D10](ADR-010-resiliencia.md), [D11](ADR-011-observabilidad.md). [Componente](../../load-balancer/README.md).
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |

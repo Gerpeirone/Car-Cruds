@@ -41,13 +41,13 @@ Alquileres guardará cambio de negocio, respuesta idempotente y outbox en una mi
 
 ## 4. Consecuencias y validación
 
-Se operarán al menos dos motores con respaldos y credenciales propios. Volúmenes, índices, migraciones y retención no están medidos. D4 determinará la garantía concreta de exclusión y retiro; la selección de PostgreSQL no demuestra por sí sola ausencia de carreras.
+Se operarán al menos dos motores con respaldos y credenciales propios. Volúmenes, índices, migraciones y retención no están medidos. [D4](ADR-004-consistencia-concurrencia.md) registra la propuesta concreta de exclusión sobre rangos de agenda y de índice único parcial para el retiro exclusivo. Su implementación y validación contra una base real continúan pendientes; la selección de PostgreSQL no demuestra por sí sola ausencia de carreras.
 
 Integrar almacenes reales, probar recuperación, concurrencia, duplicados y separación de permisos; verificar outbox y reconstrucción. Para Empleados, probar evidencia incompleta, correcciones y límites por período sin inferir no uso ni ausencia de turno a partir de errores.
 
 ## 5. Referencias e historial
 
-Material en `clases.zip`: `teoria/02-datos-en-microservicios.md`, `teoria/04-comunicacion-asincrona.md` y `practica/clase-2-mongodb-repository-pattern.md`. [D1](ADR-014-limites-servicios-v2.md), [D5](ADR-016-comunicacion-v2.md).
+Material en `clases.zip`: `teoria/02-datos-en-microservicios.md`, `teoria/04-comunicacion-asincrona.md` y `practica/clase-2-mongodb-repository-pattern.md`. [D1](ADR-014-limites-servicios-v2.md), [D4](ADR-004-consistencia-concurrencia.md), [D5](ADR-016-comunicacion-v2.md).
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
