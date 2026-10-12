@@ -37,8 +37,9 @@ Las historias están **diseñadas**. El único componente ejecutable disponible 
 | E-04 | Personal | Distinguir posibles incorporaciones del registro de empleados. | Empleados | HU-10, HU-11 |
 | E-05 | Integración con gimnasio | Publicar empleados y recibir/consultar membresías, uso y costos individuales/totales. | Empleados | HU-12 a HU-14 |
 | E-06 | Integración con clínica | Identificar empleados que necesitan consulta, solicitar turnos y reflejar cambios del hospital. | Empleados | HU-15 a HU-17, HU-23 |
-| E-07 | Plataforma | Controlar acceso y balancear consultas de Flota. | Gateway / Load Balancer / servicios | HU-18, HU-19 |
-| E-08 | Evidencia y reproducción | Verificar, observar y reproducir el sistema. | Transversal | HU-20 a HU-22 |
+| E-07 | Plataforma | Controlar acceso, balancear consultas de Flota y protegerse de fallas de dependencias. | Gateway / Load Balancer / servicios | HU-18, HU-19, HU-27 |
+| E-08 | Evidencia y reproducción | Verificar, observar y reproducir el sistema. | Transversal | HU-20 a HU-22, HU-28 |
+| E-09 | Datos derivados y eventos | Mantener búsqueda, caché y proyecciones coherentes con las fuentes mediante eventos. | Flota / Alquileres / Clientes | HU-24 a HU-26 |
 
 ## 4. Historias y criterios de aceptación
 
@@ -234,11 +235,11 @@ Como **responsable de personal**, quiero consultar afiliación, uso, costo indiv
 1. **Dado** un período con empleados y evidencia válida de uso o no uso, **cuando** consulta el informe, **entonces** se muestran los grupos y conteos correspondientes con referencia al período y a su evidencia.
 2. **Dado** empleados sin información confirmada del gimnasio, **cuando** consulta el mismo informe, **entonces** aparecen como desconocidos y no como no usuarios; el informe no calcula tarifas, cobros ni gastos monetarios no acordados.
 
-Criterios adicionales de HU-13 y HU-14:
-
 3. **Dado** datos económicos válidos del gimnasio, **cuando** se incorporan y consulta el informe, **entonces** se vinculan al empleado y se muestran costo de membresía, gasto individual y total del período por moneda según el contrato.
 4. **Dado** un cargo duplicado o corregido, **cuando** se actualiza el informe, **entonces** no se acumula dos veces el mismo gasto y la corrección conserva trazabilidad.
 5. **Dado** información económica faltante, **cuando** se consulta el total, **entonces** se identifica como incompleto; uso, ausencia de uso y falta de costo no se equiparan a un importe cero.
+
+Los criterios 3 a 5 también aplican a HU-13 en lo que respecta a la incorporación de datos económicos.
 
 ### HU-15 — Solicitar revisión o turno a la clínica
 
@@ -265,8 +266,6 @@ Como **responsable de personal**, quiero comprobar el estado de las solicitudes 
 
 1. **Dado** una solicitud con respuesta tardía o estado no confirmado, **cuando** el mecanismo acordado obtiene evidencia vigente, **entonces** se actualiza la clasificación y se conserva la relación con la solicitud y el origen.
 2. **Dado** una caída del proveedor, falta de evidencia o respuesta inválida, **cuando** se concilia el estado, **entonces** permanece desconocido; solamente una ausencia informada válidamente permite clasificar sin turno.
-
-Criterios adicionales de HU-16:
 
 3. **Dado** un turno vinculado a un empleado, **cuando** el hospital notifica o permite consultar una cancelación, reprogramación o cambio de estado, **entonces** Empleados actualiza referencia, estado y fecha conservando historia.
 4. **Dado** una actualización repetida o anterior, **cuando** se recibe, **entonces** no duplica efectos ni revierte evidencia vigente según la regla de orden acordada.
@@ -355,11 +354,84 @@ Como **integrante del grupo o evaluador**, quiero iniciar el sistema con un proc
 
 Como **responsable de personal**, quiero recibir o consultar qué empleados requieren atención en el hospital de Octi para solicitar y seguir sus turnos.
 
-**Épica:** E-06. **Prioridad:** P1. **Estado:** Diseñada, no implementada. **Dependencias:** HU-11; HU-18; EXT-02 y EXT-15. **Trazabilidad:** RF-19, RN-21, RN-19, RNF-02, RNF-05, RNF-12. **Hito objetivo:** PG; acuerdo y diseño en E2.
+**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada, no implementada.
+
+**Hito objetivo:** PG; acuerdo y diseño en E2. **Dependencias:** HU-11; HU-18; EXT-02 y EXT-15.
+
+**Trazabilidad:** RF-19, RNF-02, RNF-05, RNF-12, RN-19, RN-21.
 
 1. **Dado** un empleado registrado y una indicación válida del hospital, **cuando** se recibe o consulta la necesidad, **entonces** queda vinculada al empleado con origen y vigencia y puede iniciar HU-15.
 2. **Dado** información repetida, desactualizada o una identidad no vinculada, **cuando** se procesa, **entonces** no se duplican necesidades ni se solicita un turno para otra persona; los casos sin evidencia suficiente quedan pendientes.
 3. **Dado** una falla del hospital, **cuando** no se puede actualizar la necesidad, **entonces** se conserva la última evidencia con su fecha y se indica que falta verificarla.
+
+### HU-24 — Publicar y consumir eventos de dominio
+
+Como **equipo de desarrollo**, quiero que los cambios de Flota y los alquileres finalizados se comuniquen por eventos para que el índice y el historial se actualicen sin acoplar los servicios.
+
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+
+**Hito objetivo:** E2: primer evento publicado y consumido; PG: idempotencia y mensajes fallidos completos. **Dependencias:** HU-01; HU-08; broker de mensajería; D3 y D5 vigentes.
+
+**Trazabilidad:** RF-20, RNF-01, RNF-02, RNF-03, RNF-07, RNF-10.
+
+1. **Dado** un cambio de negocio confirmado en el servicio propietario, **cuando** se persiste, **entonces** la intención de publicar `VehicleChanged.v1` o `RentalCompleted.v1` se registra en la misma transacción y se entrega al broker después; si el broker no está disponible, el evento queda pendiente y el cambio de negocio se conserva.
+2. **Dado** un mensaje entregado más de una vez o fuera de orden, **cuando** el consumidor lo procesa, **entonces** el efecto se aplica una sola vez y una versión anterior no revierte una más reciente.
+3. **Dado** un mensaje inválido o que agotó los reintentos acordados, **cuando** el consumidor no puede procesarlo, **entonces** se aparta en la cola de mensajes fallidos con su causa, se genera una alerta y puede reprocesarse sin duplicar efectos.
+
+### HU-25 — Mantener sincronizado y reconstruible el índice de búsqueda
+
+Como **operador**, quiero que los cambios de un vehículo aparezcan en la búsqueda dentro de un retraso acotado, y poder reconstruir el índice, para que los clientes vean datos vigentes.
+
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+
+**Hito objetivo:** E2: diseño y primera sincronización; PG: reconstrucción y medición. **Dependencias:** HU-01; HU-02; HU-24; D6.
+
+**Trazabilidad:** RF-21, RNF-07, RNF-08, RNF-10.
+
+1. **Dado** un cambio confirmado de un vehículo, **cuando** el indexador lo procesa, **entonces** el cambio aparece en los resultados dentro del retraso máximo objetivo (5 segundos en operación normal, a validar) sin necesidad de ejecutar búsquedas.
+2. **Dado** un índice vacío, desactualizado o dañado, **cuando** el operador ejecuta la reconstrucción, **entonces** el índice se regenera desde la fuente de Flota aplicando identificador y versión, sin interrumpir las lecturas por identificador.
+3. **Dado** el motor de búsqueda o el indexador indisponible, **cuando** se registran cambios, **entonces** los cambios quedan pendientes, el retraso es observable y la confirmación de reservas no depende del índice.
+
+### HU-26 — Acelerar la consulta de fichas con caché medida
+
+Como **cliente**, quiero que la consulta de la ficha de un vehículo responda rápido para decidir con fluidez, con una mejora demostrada con métricas.
+
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+
+**Hito objetivo:** E2: justificación y política; PG: comparación antes/después. **Dependencias:** HU-01; HU-20; D7.
+
+**Trazabilidad:** RF-22, RNF-07, RNF-09, RNF-10.
+
+1. **Dado** una ficha consultada con frecuencia, **cuando** se vuelve a solicitar dentro de su vigencia (TTL propuesto de 60 segundos, a validar), **entonces** se responde desde la caché y las métricas registran aciertos, latencia y accesos a almacenamiento antes y después de incorporarla.
+2. **Dado** una ficha modificada, **cuando** se confirma el cambio, **entonces** la entrada se invalida o vence según la política y la consulta posterior devuelve la versión vigente.
+3. **Dado** la caché indisponible, **cuando** se consulta una ficha, **entonces** se lee de la fuente con capacidad acotada; la confirmación de una reserva siempre usa la tarifa autoritativa, sin caché.
+
+### HU-27 — Protegerse de la caída o lentitud de una dependencia
+
+Como **equipo de operaciones**, quiero que el sistema limite el impacto de una dependencia caída o lenta para que las operaciones independientes sigan funcionando y el resultado sea honesto.
+
+**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+
+**Hito objetivo:** E2: mecanismo inicial; defensa: caída provocada y `docs/POSTMORTEM.md`. **Dependencias:** HU-05; HU-15; HU-20; D5, D9 y D10.
+
+**Trazabilidad:** RNF-03, RNF-04, RNF-07, RNF-10; RN-18, RN-19, RN-20.
+
+1. **Dado** una dependencia que supera su tiempo de espera o falla repetidamente, **cuando** el umbral configurado se alcanza, **entonces** el circuito se abre, las llamadas siguientes fallan de inmediato sin saturar recursos y el sistema prueba la recuperación de forma periódica.
+2. **Dado** el gimnasio o la clínica fuera de servicio, **cuando** se opera el alquiler de autos, **entonces** la reserva continúa y los informes de personal indican resultado pendiente o desconocido, nunca ausencia confirmada.
+3. **Dado** una caída provocada de un componente durante un ensayo, **cuando** finaliza, **entonces** `docs/POSTMORTEM.md` registra impacto, línea temporal, detección, respuesta, causa y acciones de mejora.
+
+### HU-28 — Medir capacidad y costos con una prueba de carga
+
+Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada para conocer el límite principal del sistema, la alternativa de escalado y una estimación de costos.
+
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+
+**Hito objetivo:** E2: protocolo y primera medición; defensa: análisis completo. **Dependencias:** HU-04; HU-05; HU-19; HU-20; D13.
+
+**Trazabilidad:** RNF-06, RNF-07, RNF-10.
+
+1. **Dado** un escenario de carga definido sobre consulta de disponibilidad y confirmación de reserva, **cuando** se ejecuta, **entonces** se registran configuración, latencia, errores y recursos, y se identifica el límite principal.
+2. **Dado** los resultados obtenidos, **cuando** se analizan, **entonces** se documenta la alternativa de escalado y una estimación de costos con su fuente, sin atribuir mediciones al mock ni a las demostraciones de las clases.
 
 ## 5. Acuerdos previos a implementar integraciones
 
@@ -369,7 +441,7 @@ Como **responsable de personal**, quiero recibir o consultar qué empleados requ
 | Devolución del gimnasio | HU-13, HU-14 | Acordar quién comunica, por qué mecanismo, período, evidencia de uso/no uso, duplicados, orden y correcciones |
 | Capacidad de turnos de la clínica | HU-15 a HU-17, HU-23 | Obtener contrato publicado; distinguir solicitud, confirmación y ausencia informada; acordar recuperación e identificación |
 | Datos internos y permisos | HU-03, HU-10, HU-11, HU-18 | Definir datos obligatorios y matriz de acceso, conservando minimización y separación de responsabilidades |
-| Objetivos de operación | HU-19 a HU-21 | Registrar balanceo, detección de fallas, tiempos de espera, alertas y mediciones en los ADR correspondientes |
+| Objetivos de operación | HU-19 a HU-21, HU-27, HU-28 | Registrar balanceo, detección de fallas, tiempos de espera, alertas y mediciones en los ADR correspondientes |
 
 Un resultado desconocido conserva esa clasificación hasta contar con evidencia válida. Ni la falta de comunicación del gimnasio equivale a no uso, ni una caída de la clínica equivale a ausencia de turno. Los informes apoyan decisiones humanas: no calculan precios externos no acordados, no determinan aptitud médica y no generan contrataciones automáticas.
 

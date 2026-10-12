@@ -12,7 +12,7 @@
 
 ## 1. Criterios de especificación
 
-Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-19 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
+Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-22 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
 
 La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados y posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La preparación documental no agrega componentes ejecutables: solo está disponible el mock de reservas de la primera entrega.
 
@@ -178,6 +178,30 @@ RF-16 deberá reflejar cancelaciones, reprogramaciones y cambios de estado admin
 
 RF-15 usa HU-23 cuando la necesidad procede del hospital; HU-10 queda reservado al flujo adicional de candidatos. RF-19 requiere definir el contrato y el vínculo de identidad antes de probar el intercambio real.
 
+### RF-20 — Publicar y consumir eventos de dominio
+
+El sistema deberá publicar `VehicleChanged.v1` desde Flota y `RentalCompleted.v1` desde Alquileres mediante mensajería, registrando la intención de publicar junto con el cambio de negocio. Los consumidores serán idempotentes, respetarán la versión y apartarán los mensajes no procesables en una cola de fallidos con reproceso controlado.
+
+**Verificación:** Un evento publicado se consume una vez aunque se entregue repetido; una versión anterior no revierte una posterior; con el broker caído el cambio de negocio se conserva y el evento se entrega al recuperarse; un mensaje inválido llega a la cola de fallidos.
+
+**Trazabilidad:** HU-24; RNF-02, RNF-03. **Fuente:** 2.5; D4 y D5. **Estado:** Diseñado.
+
+### RF-21 — Sincronizar y reconstruir el índice de búsqueda
+
+El sistema deberá mantener el índice de vehículos actualizado a partir de los cambios de Flota dentro del retraso máximo documentado y ofrecer un procedimiento de reconstrucción desde la fuente.
+
+**Verificación:** Una modificación aparece en los resultados dentro del objetivo; la reconstrucción recupera todos los documentos sin retrocesos de versión; el retraso del índice es observable.
+
+**Trazabilidad:** HU-25; RNF-08. **Fuente:** 2.6; D6. **Estado:** Diseñado.
+
+### RF-22 — Consultar fichas con caché
+
+El sistema deberá servir las consultas frecuentes de fichas de vehículos desde una caché con vigencia e invalidación definidas, sin usarla para confirmar precios de reserva.
+
+**Verificación:** Métricas de latencia, aciertos y accesos a almacenamiento antes y después de la caché; modificar una ficha la invalida o vence; con la caché caída la lectura continúa desde la fuente.
+
+**Trazabilidad:** HU-26; RNF-09. **Fuente:** 2.7; D7. **Estado:** Diseñado.
+
 ## 3. Requerimientos no funcionales
 
 Los valores identificados como propuestas son objetivos de diseño que deben validarse; no son mediciones del sistema ni acuerdos de servicio externos. La verificación debe registrar configuración, carga y resultado utilizados.
@@ -327,7 +351,7 @@ Ni estas tablas ni las pruebas existentes del mock acreditan el cumplimiento com
 
 - [Enunciado académico](../Enunciado%20TP%20Final.md): requisitos de arquitectura, integración y Entrega 2.
 - [SPEC.md](../SPEC.md): reglas RN-01 a RN-22 y estados del dominio.
-- [BACKLOG.md](BACKLOG.md): E-01 a E-08 y HU-01 a HU-23.
+- [BACKLOG.md](BACKLOG.md): E-01 a E-09 y HU-01 a HU-28.
 - [ARCHITECTURE.md](ARCHITECTURE.md), [D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D3 vigente](adr/ADR-015-persistencia-v2.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md): límites, propiedad de datos y comunicación.
 - [clases.zip](../clases.zip): teoría 02 para consistencia local; teoría 04 para outbox, duplicados y orden; teoría 06 para distinguir gateway de Load Balancer; teoría 07 para presupuestos, fallas y resultados desconocidos; teoría 08 para capas, Hexagonal y aislamiento mediante puertos/adaptadores.
 

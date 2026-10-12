@@ -28,6 +28,21 @@ La ausencia de tráfico no permite al mecanismo pasivo descubrir una caída por 
 
 El proxy tendrá tiempos y eventual cambio de destino acotados por el presupuesto del caso de uso. Para evitar amplificación, se definirá un único dueño de reintentos. No se habilitarán reenvíos de comandos sin idempotencia de aplicación; la opción `non_idempotent` no constituye esa garantía. [Proxy oficial](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream).
 
+### Parámetros iniciales propuestos
+
+Valores de partida para calibrar con mediciones; no son resultados de Car Cruds.
+
+| Parámetro | Valor inicial | Propósito |
+| --- | --- | --- |
+| Algoritmo | Round-robin, pesos iguales | Réplicas con configuración equivalente |
+| `max_fails` / `fail_timeout` | 3 fallas / 30 s | Retirar temporalmente una réplica que falla en solicitudes reales |
+| Tiempo de conexión al backend | 1 s | Coherente con el presupuesto de llamadas internas de D5 |
+| Tiempo de lectura del backend | 3 s | Acotado por el presupuesto de la confirmación de reserva (5 s) |
+| Cambio de destino ante falla | Un intento adicional, solo ante error de conexión o timeout | Evitar multiplicar reintentos; el proxy no reenvía comandos no idempotentes |
+| Conexiones persistentes al backend | 32 | Reducir el costo de abrir conexiones por solicitud |
+| Identificación | Registro de acceso en JSON con réplica atendida e identificador de solicitud | Evidencia de distribución para D11 |
+| Exposición | Solo el balanceador publica puerto; las réplicas son internas | Evitar vías de acceso alternativas |
+
 ## 3. Alternativas consideradas
 
 Integrar LB dentro del gateway reduce componentes, pero mezcla la demostración de políticas públicas con selección de réplica. Least-connections puede evaluarse con operaciones de distinta duración; no se elige sin datos. Afinidad por IP es innecesaria con servicio stateless. Un registro dinámico de discovery agrega operación sin una necesidad demostrada para dos réplicas iniciales.
