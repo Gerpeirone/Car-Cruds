@@ -16,7 +16,7 @@ Alquileres es la autoridad de disponibilidad temporal y exclusión por vehículo
 | --- | --- |
 | `src/domain/` | Períodos, dinero, estados y reglas de negocio |
 | `src/application/` | Casos de uso y puertos de dependencias |
-| `src/adapters/` | HTTP, PostgreSQL, Clientes, Flota, proveedor y mensajería |
+| `src/adapters/` | HTTP, PostgreSQL, Clientes, Flota mediante el balanceador y mensajería |
 
 ## Interfaces y dependencias
 
@@ -24,21 +24,22 @@ Alquileres es la autoridad de disponibilidad temporal y exclusión por vehículo
 | --- | --- |
 | Gateway → Alquileres, HTTP | Consultar disponibilidad y gestionar reservas y alquileres |
 | Alquileres → Clientes, HTTP | Validar habilitación del conductor |
-| Alquileres → Flota, HTTP | Obtener ficha y tarifa autoritativa |
+| Alquileres → Load Balancer → Flota, HTTP | Obtener ficha y tarifa autoritativa |
 | Alquileres → PostgreSQL | Mantener agenda, estados, importes e idempotencia |
 | Alquileres → mensajería | Publicar eventos mediante outbox |
-| Alquileres → proveedor externo | Incorporar la capacidad asignada al flujo correspondiente |
 
 La reserva, la respuesta idempotente y el evento de outbox se almacenarán en una transacción local. La exclusión de rangos debe conservarse con múltiples instancias; un mutex de proceso es suficiente únicamente para la demostración del mock.
 
-El retiro comprueba que el vehículo no tenga otro alquiler activo, incluso si terminó su período previsto. La devolución es una operación explícita; el calendario no finaliza automáticamente un alquiler. D2 y D4 formalizarán el patrón interno y las garantías de consistencia en los hitos correspondientes.
+El retiro comprueba que el vehículo no tenga otro alquiler activo, incluso si terminó su período previsto. La devolución es una operación explícita; el calendario no finaliza automáticamente un alquiler. D2 propone el patrón interno y D4 debe cerrar las garantías de consistencia reales.
+
+Gimnasio y clínica pertenecen al flujo de Empleados. Alquileres conserva sus dependencias de Clientes y Flota; su confirmación no depende del estado de esas integraciones externas.
 
 ## Referencias
 
 - [SPEC.md — alcance, estados y reglas](../../SPEC.md).
 - [Arquitectura del sistema](../../docs/ARCHITECTURE.md).
-- [ADR-001 — límites de servicios](../../docs/adr/ADR-001-limites-de-servicios.md).
-- [ADR-003 — persistencia](../../docs/adr/ADR-003-persistencia.md).
-- [ADR-005 — comunicación](../../docs/adr/ADR-005-comunicacion.md).
-- [ADR-008 — contrato propio](../../docs/adr/ADR-008-contrato-propio.md).
-- [Contrato de disponibilidad y reservas](../../docs/contracts/README.md).
+- [D1 vigente — límites](../../docs/adr/ADR-014-limites-servicios-v2.md).
+- [D2 — arquitectura interna](../../docs/adr/ADR-002-arquitectura-interna.md).
+- [D3 vigente — persistencia](../../docs/adr/ADR-015-persistencia-v2.md).
+- [D5 vigente — comunicación](../../docs/adr/ADR-016-comunicacion-v2.md).
+- [Contrato histórico de reservas](../../docs/contracts/RESERVAS.md).

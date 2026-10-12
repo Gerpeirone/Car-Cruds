@@ -5,10 +5,12 @@
 | Decisión del enunciado | D8: contrato propio |
 | Versión | 0.1 |
 | Fecha | 7 de octubre de 2026 |
-| Estado | Propuesto |
+| Estado | Reemplazado para la integración entre grupos por [ADR-017](ADR-017-contrato-empleados.md) |
 | Hito | Entrega 1 — 9 de octubre de 2026 |
 
 ## 1. Contexto
+
+> Registro histórico de la entrega 1. El 10 de octubre de 2026 se revisó la capacidad compartida: el gimnasio consumirá una lista de empleados. ADR-017 registra la nueva decisión. Este documento conserva la propuesta original; el contrato y el mock de reservas siguen siendo evidencia ejecutable de esa etapa.
 
 Otro grupo deberá incorporar una capacidad de Car Cruds en un flujo de negocio. La integración requiere un contrato formal y procesable, documentación de errores, versión y ejemplos suficientes para trabajar de manera autónoma.
 
@@ -75,5 +77,6 @@ La versión 0.1 incluye ejecución local del mock. La publicación de la impleme
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.1 | 7 de octubre de 2026 | Selección de capacidad y políticas iniciales de contrato y publicación |
+| Revisión | 10 de octubre de 2026 | Reemplazado para la integración entre grupos por ADR-017; contrato y mock originales conservados |
 
 Una decisión sustitutiva deberá identificar este registro como reemplazado y conservar su historia.

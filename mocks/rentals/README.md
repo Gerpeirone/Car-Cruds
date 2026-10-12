@@ -1,5 +1,7 @@
 # Mock local de disponibilidad y reservas
 
+> Mock histórico de la entrega 1. Conserva el contrato y comportamiento de reservas; no implementa la nueva capacidad de empleados para el gimnasio ni la integración con la clínica. Ver [el contrato de reservas](../../docs/contracts/RESERVAS.md) y [la preparación de entrega 2](../../docs/ENTREGA-2.md).
+
 | Aspecto | Estado |
 | --- | --- |
 | Fecha | 7 de octubre de 2026 |

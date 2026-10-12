@@ -5,8 +5,11 @@
 | Decisión del enunciado | D5: comunicación entre servicios |
 | Versión | 0.1 — inicial |
 | Fecha | 7 de octubre de 2026 |
-| Estado | Propuesto |
+| Estado | Reemplazado |
 | Hito | Entrega 1 — 9 de octubre de 2026 |
+| Reemplazado por | [ADR-016 — D5, revisión 2](ADR-016-comunicacion-v2.md), 10 de octubre de 2026 |
+
+Este registro conserva la comunicación histórica de la entrega 1. ADR-016 ubica el consumo clínico en Empleados y actualiza las rutas de Flota mediante balanceo interno.
 
 ## 1. Contexto
 
