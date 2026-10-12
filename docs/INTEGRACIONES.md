@@ -5,7 +5,7 @@
 | Campo | Valor |
 | --- | --- |
 | Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
+| Fecha | 12 de octubre de 2026 |
 | Estado | Alcance comunicado por el grupo; diseño propuesto y acuerdos pendientes |
 | Responsable funcional | Servicio Empleados |
 
@@ -90,7 +90,7 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | EXT-03 | Formato, versión, paginación y compatibilidad de la lista | Gimnasio | Permite cerrar el borrador de contrato propio |
 | EXT-04 | Mecanismo y contrato de devolución/consulta de membresías, uso y costos | Gimnasio | Define adaptador, entradas y prueba de contrato |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
-| EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Bloquea únicamente la liquidación monetaria |
+| EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Bloquea el informe económico de gastos individuales y totales; el informe de uso puede avanzar parcialmente |
 | EXT-07 | Contrato publicado de turnos y operaciones disponibles | Clínica | Define el adaptador de consumo y el test de contrato |
 | EXT-08 | Solicitud desde Car Cruds, confirmación del hospital y pasos adicionales del empleado | Clínica y empresa | Define el flujo de revisión y la confirmación |
 | EXT-09 | Consulta de estado, cancelación, reprogramación e idempotencia | Clínica | Define reconciliación y recuperación de respuestas perdidas |

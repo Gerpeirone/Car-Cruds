@@ -6,7 +6,7 @@
 | --- | --- |
 | Proyecto | Car Cruds |
 | Versión documental | 0.2 |
-| Fecha de revisión | 10 de octubre de 2026 |
+| Fecha de revisión | 12 de octubre de 2026 |
 | Fecha de entrega | Viernes 23 de octubre de 2026 |
 | Estado | Documentación de diseño; implementación de entrega 2 pendiente |
 | Referencia | [Enunciado](../Enunciado%20TP%20Final.md), sección 6.3 y requisitos del sistema |
@@ -21,7 +21,7 @@ Se documentan épicas, historias, requerimientos y patrones antes de programar. 
 
 | Artefacto | Finalidad |
 | --- | --- |
-| [SPEC.md](../SPEC.md) | Alcance actualizado, actores y RN-01 a RN-20 |
+| [SPEC.md](../SPEC.md) | Alcance actualizado, actores y RN-01 a RN-22 |
 | [BACKLOG.md](BACKLOG.md) | Épicas, historias, prioridades y criterios de aceptación |
 | [REQUERIMIENTOS.md](REQUERIMIENTOS.md) | RF/RNF verificables y trazabilidad |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Contexto C4, contenedores, propiedad de datos y distribución prevista |

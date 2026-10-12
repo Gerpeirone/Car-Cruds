@@ -9,7 +9,7 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.2 |
-| Fecha | 10 de octubre de 2026 |
+| Fecha | 12 de octubre de 2026 |
 | Estado | Preparación documental; implementación de entrega 2 pendiente |
 | Hito | Entrega 2: dominio propio de punta a punta |
 | Fecha de entrega | Viernes 23 de octubre de 2026 |
@@ -26,7 +26,7 @@ La revisión de diseño añade Empleados y un Load Balancer según el feedback d
 
 | Componente | Resultado disponible |
 | --- | --- |
-| Especificación y planificación | Alcance, 8 épicas, 22 historias y requerimientos trazables; criterios de aceptación diseñados |
+| Especificación y planificación | Alcance, 8 épicas, 23 historias y requerimientos trazables; criterios de aceptación diseñados |
 | Arquitectura | Cuatro servicios, gateway y Load Balancer explícitos; diagramas y propiedad de datos |
 | Decisiones arquitectónicas | Propuestas para entrega 2 e historial de D1/D3/D5/D8 reemplazados; validación operativa pendiente |
 | Integraciones de personal | Gimnasio y clínica identificados; borrador propio de empleados y acuerdos externos pendientes |
@@ -101,7 +101,7 @@ El servidor conserva datos de demostración en memoria; reiniciarlo restablece s
 | [docs/REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | Requerimientos funcionales y de calidad con trazabilidad |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Contexto, contenedores, servicios, datos y comunicaciones |
 | [docs/ENTREGA-2.md](docs/ENTREGA-2.md) | Preparación y evidencia pendiente para el 23 de octubre |
-| [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md) | Gimnasio, clínica y acuerdos pendientes EXT-01 a EXT-14 |
+| [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md) | Gimnasio, clínica y acuerdos pendientes EXT-01 a EXT-15 |
 | [docs/ENTREGA-1.md](docs/ENTREGA-1.md) | Control y evidencia históricos de la primera entrega |
 | [docs/adr/README.md](docs/adr/README.md) | Decisiones propuestas vigentes, patrones e historia de reemplazos |
 | [docs/contracts/README.md](docs/contracts/README.md) | Índice de contratos, borradores y estado real |
