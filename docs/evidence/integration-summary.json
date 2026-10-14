@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-13",
+  "command": "go run ./cmd/smoke -history",
+  "exitCode": 0,
+  "runId": "daa7a7b1803c4bbabd2d640ce3bdb35e",
+  "requests": 75,
+  "scenarios": [
+    "roles401/403",
+    "lista empleados mínimos,candidatos separados",
+    "dos instancias Flota",
+    "versiones cache e indice",
+    "idempotencia y cancelación",
+    "dos reservas concurrentes:201/409",
+    "pickup/return repetibles",
+    "RentalCompleted outbox/inbox/history únicos PostgreSQL",
+    "cleanup"
+  ],
+  "requestId": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+  "traceId": "8a9219ca06093073a628894ecb11b1a8",
+  "externalProviders": "pendientes; sin contratos ni accesos",
+  "finalRetest": {
+    "publicationAndUniqueHistoryObservedMs": 1712,
+    "runId": "10ead0c0c22142bc968ec9e8ef55cb60",
+    "command": "go run ./cmd/smoke -history",
+    "requests": 78,
+    "date": "2026-10-14",
+    "allScenariosAndCleanupPassed": true,
+    "exitCode": 0,
+    "revision": "8327268",
+    "completedReservationId": "8e9ab84d-1577-4b58-82cf-48aa7a710c1f"
+  }
+}

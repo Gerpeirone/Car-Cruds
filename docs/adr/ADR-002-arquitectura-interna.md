@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D2: arquitectura interna |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Estilos implementados; validación local parcial |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto
 
@@ -43,7 +43,11 @@ Capas para todo reduce estructura, pero facilita filtrar detalles de Clínica a 
 
 ## 4. Consecuencias y validación
 
-Se aceptan interfaces y conversiones en las fronteras que cambian. DI no garantiza por sí sola el aislamiento. Revisar imports/dependencias, mantener reglas fuera de controladores y comprobar casos de uso con falsos; probar adaptadores contra dependencias reales y contrato clínico una vez publicado. No hay implementación de estos estilos en esta preparación documental.
+Se aceptan interfaces y conversiones en las fronteras que cambian. DI no garantiza por sí sola el aislamiento. Revisar imports/dependencias, mantener reglas fuera de controladores y comprobar casos de uso con falsos; probar adaptadores contra dependencias reales y contrato clínico una vez publicado. La implementación vigente y su validación parcial se registran en la sección de avance.
+
+## Avance de implementación — 14 de octubre de 2026
+
+Clientes y Flota aplican Capas; Alquileres y Empleados aplican Hexagonal, con núcleo ajeno a HTTP/SQL/SDK y ensamblado por constructores. Los adaptadores propios se probaron contra dependencias reales; los puertos de clínica y membresías todavía no tienen adaptadores externos. Outbox, consumidor idempotente y cache-aside están implementados. Circuit Breaker permanece previsto, sin implementación. La evidencia se registra en [ESTADO-IMPLEMENTACION](../ESTADO-IMPLEMENTACION.md).
 
 ## 5. Referencias e historial
 
@@ -52,3 +56,4 @@ Material en `clases.zip`: `teoria/08-estilos-arquitectura-backend.md`, `practica
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera propuesta de estilos y patrones para cuatro servicios |
+| 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |

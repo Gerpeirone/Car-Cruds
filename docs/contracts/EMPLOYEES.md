@@ -1,5 +1,7 @@
 # Capacidad propuesta de Empleados para el gimnasio
 
+> **Antecedente histórico — 10/11 de octubre de 2026.** Este documento conserva la propuesta inicial de lista y su estado previo a la implementación. La API propia actual está descrita en [employees-openapi.json](employees-openapi.json), y su evidencia/límites en [ESTADO-IMPLEMENTACION](../ESTADO-IMPLEMENTACION.md). Las afirmaciones posteriores sobre ausencia de servidor, PostgreSQL, Docker Compose o balanceador corresponden a esa fecha histórica. El contrato externo, acceso público y validación del gimnasio continúan pendientes.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |

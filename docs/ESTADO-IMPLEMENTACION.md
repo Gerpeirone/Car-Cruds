@@ -1,39 +1,80 @@
 # Estado de implementación de la entrega 2
 
-Fecha de corte: 13 de octubre de 2026. Rama de trabajo: `features`.
+| Campo | Valor |
+| --- | --- |
+| Versión documental | 0.3 |
+| Fecha de corte | 14 de octubre de 2026 |
+| Rama de trabajo | `features` |
+| Estado | Backend propio verificado en entorno local; aceptación e integración externas pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 
-La implementación se interrumpió a solicitud del integrante responsable para guardar el avance. Este estado es parcial y requiere completar las verificaciones antes de proponer su integración en `main`.
+## 1. Componentes disponibles
 
-## Avance registrado
+Clientes y Flota aplican una organización por capas; Alquileres y Empleados separan dominio, aplicación y adaptadores mediante arquitectura hexagonal. Clientes, Alquileres y Empleados utilizan bases PostgreSQL y credenciales propias. Flota persiste documentos versionados en MongoDB.
 
-- Servicios propios de Clientes, Flota, Alquileres y Empleados, con persistencia y pruebas por componente.
-- Gateway con autenticación por roles; balanceador NGINX para dos instancias de Flota.
-- Infraestructura Docker Compose con PostgreSQL, MongoDB, Redis, RabbitMQ, Solr y Jaeger.
-- Reservas con control de concurrencia e idempotencia; publicación mediante outbox y consumidores con deduplicación.
-- Separación de empleados y candidatos. Lista propia de empleados activos y contrato OpenAPI provisional.
-- Instrumentación de registros JSON, métricas y trazas; su recorrido completo todavía no fue comprobado.
-- Generación local de credenciales con `go run ./cmd/devsetup`. El archivo `.env` permanece fuera de Git.
+El gateway autentica aplicaciones, encamina llamadas y limita concurrencia. NGINX distribuye solicitudes internas entre `fleet-a` y `fleet-b`. Redis almacena fichas exploratorias; Solr ofrece búsqueda derivada. RabbitMQ transporta cambios de vehículos y finalizaciones de alquiler mediante outbox y consumidores idempotentes. Jaeger recibe las trazas HTTP instrumentadas.
 
-## Verificaciones realizadas
+Empleados implementa administración de personal y candidatos independientes. La lista activa pública para consumidores autorizados contiene exclusivamente `employeeId` y `displayName`, con paginación y conteo dentro de la misma instantánea de PostgreSQL. Es una API propia provisional, todavía sin aceptación ni acceso público acordados con el gimnasio.
 
-Se ejecutaron pruebas de persistencia y concurrencia contra PostgreSQL y MongoDB, de coherencia de caché contra Redis y de actualización de búsqueda contra Solr. Las pruebas dirigidas por componente con detector de carreras y las verificaciones de publicación AMQP con escritura bloqueada resultaron satisfactorias.
+La interfaz web y los adaptadores de gimnasio y hospital permanecen pendientes. El endpoint administrativo de estado de integraciones informa `503 NOT_CONFIGURED`; no inventa turnos, costos o datos del proveedor. El mock histórico de alquileres continúa en su módulo independiente.
 
-Las imágenes de los servicios se construyeron, pero esa construcción precedió a las últimas correcciones del transporte AMQP. Deben reconstruirse antes de validar el estado guardado. No se presenta este avance como un sistema completo validado ni como evidencia de aceptación académica.
+## 2. Evidencia local registrada
 
-## Trabajo pendiente al retomar
+| Evidencia | Fecha | Resultado y alcance |
+| --- | --- | --- |
+| Construcción y arranque Docker Compose | 13–14 de octubre | Construcción y `up --wait` satisfactorios; componentes propios saludables |
+| [Suite y análisis estático](evidence/tests-summary.json) | 14 de octubre | Go 1.26.1; `go test -race -count=1 -v ./cmd/... ./internal/... ./services/...`: 60 pruebas aprobadas, ninguna omitida; `go vet`: salida 0 |
+| Dependencias reales de la suite | 14 de octubre | PostgreSQL, MongoDB, Redis y Solr configurados mediante `TEST_*`; recursos de prueba aislados |
+| [Recorrido del conjunto](evidence/integration-summary.json) | 13 de octubre | `go run ./cmd/smoke -history`: salida 0, 75 solicitudes y limpieza satisfactoria |
+| [Persistencia y reconstrucción](evidence/runtime-persistence.json) | 14 de octubre | Reserva `COMPLETED` y empleado inactivo conservados tras reiniciar Clientes, Empleados y Alquileres; reindexación aceptada y comparación posterior de dos vehículos activos idéntica en fuente e índice |
+| Recorrido final del backend corregido | 14 de octubre | Revisión `8327268`; `go run ./cmd/smoke -history`: salida 0, 78 solicitudes y limpieza satisfactoria; ejecución `10ead0c0c22142bc968ec9e8ef55cb60` |
+| [Traza distribuida](evidence/trace-reservation.json) | 13 de octubre | Exportación real de Jaeger: siete spans con relaciones padre e hijo, abarcando gateway, Alquileres, Clientes y una réplica de Flota |
+| [Fallas y recuperación](evidence/resilience.json) | 14 de octubre | Ensayo PASS de réplica B, Redis, RabbitMQ y Solr; errores iniciales explícitos, restauración y limpieza verificadas |
+| [Mensaje incompatible](evidence/message-failure.json) | 14 de octubre | Rechazo y enrutamiento a cola de fallidos; sólo mensaje propio inspeccionado/confirmado |
+| [Carga de disponibilidad](evidence/load-availability.json) | 14 de octubre | Cinco etapas; 64 trabajadores: 1471,16 éxitos/s; 128: 68,2 % de 503 por admisión, límite y alternativa registrados en D13 |
+| Corrección posterior de Redis — prueba focal | 14 de octubre | Error de transporte separado de miss; una lectura fuente y ningún Put tras Get fallido; miss normal escribe una vez; TCP silencioso 76,0772 ms con contexto de 75 ms; detector de carreras y vet satisfactorios |
+| [Comparación de caché](evidence/cache-metrics.json) | 14 de octubre | Caliente: 8461 hits y cero lecturas de ficha MongoDB; fallback: 7395 errores Redis y lecturas fuente; todas las respuestas 200, sin mejora universal de latencia |
+| Presión de Redis aislado | 14 de octubre | Prueba focal con `volatile-lru`: 69 expulsiones; marca V2 sin TTL conservada, llenado atrasado V1 rechazado y ficha V2 utilizable |
 
-1. Rechazar respuestas de dependencias de Alquileres que contengan JSON seguido de datos adicionales; comprobar también el límite de tamaño del cuerpo.
-2. Reconstruir las imágenes y verificar el recorrido por gateway y balanceador, los roles, las reservas y el procesamiento de eventos entre servicios.
-3. Verificar trazas distribuidas reales, correlación de registros y métricas; completar las pruebas de recuperación y persistencia del conjunto.
-4. Incorporar pruebas reproducibles del conjunto y resultados iniciales de carga, límites observados, alternativa de escalamiento y estimación de costos con fuentes oficiales.
-5. Completar el contrato de la API implementada de Alquileres, la documentación de ejecución y la matriz de cobertura académica. Actualizar SPEC, arquitectura, backlog y ADR según evidencia real.
-6. Fijar también la imagen de NGINX por digest y completar la revisión de reproducibilidad del despliegue.
-7. Presentar la propuesta al equipo mediante pull request y obtener aprobación antes de integrar en `main`.
+La suite final y el nuevo recorrido se ejecutaron después de la corrección Redis y la reconstrucción del entorno, sobre la revisión `8327268`. Las pruebas de presión utilizaron además `TEST_REDIS_EVICTION_ADDR` y `TEST_REDIS_EVICTION_PASSWORD`, con Redis separado. El recorrido anterior de 75 solicitudes y la traza del 13 de octubre se conservan como antecedentes.
 
-Los contratos y accesos externos de clínica y gimnasio permanecen pendientes por indicación del equipo. No se implementaron integraciones reales ni se atribuyeron resultados a esos proveedores.
+El recorrido verifica respuestas `401/403`, permisos de gimnasio y cliente, exclusión de candidatos, ambas réplicas de Flota, actualización de caché/búsqueda, idempotencia y cancelación persistentes. Dos reservas concurrentes produjeron una confirmación `201` y un conflicto `409`. Retiro y devolución resultaron repetibles; `RentalCompleted` terminó publicado en outbox y aplicado una sola vez en inbox/historial de Clientes.
 
-## Ejecución prevista para la próxima sesión
+La actualización de Solr se observó en 1265 ms **desde el primer sondeo**. Ese intervalo no mide desde el commit de MongoDB y no acredita el objetivo de frescura extremo a extremo de D6.
 
-Se requiere Go 1.26 y Docker Desktop en funcionamiento. Generar `.env` con `go run ./cmd/devsetup` si todavía no existe y ejecutar `docker compose up -d --build --wait`. La entrada local prevista es `http://localhost:8080` y la interfaz de Jaeger es `http://localhost:16686`.
+El recorrido final de 78 solicitudes volvió a confirmar un único `RentalCompleted` aplicado; se observó en 1712 ms desde el primer sondeo. Ese intervalo no mide desde commit ni establece un SLO sostenido.
 
-Los datos locales se almacenan en volúmenes Docker. Conservarlos al detener o reiniciar los servicios. Las pruebas de integración utilizan variables `TEST_*` explícitas y recursos aislados; una ejecución sin esas variables no demuestra integración con bases de datos reales.
+La operación trazada del 13 de octubre utilizó request ID `7ec72466-c00a-4141-a4c5-69a21f5f7f3b` y trace ID `8a9219ca06093073a628894ecb11b1a8`, presentes en los registros de los cuatro servicios. Esta evidencia corresponde al recorrido HTTP; la propagación de contexto de traza por mensajes RabbitMQ sigue pendiente.
+
+## 3. Garantías y límites de implementación
+
+- Alquileres conserva agenda e idempotencia en PostgreSQL; utiliza exclusión de períodos y un único alquiler activo por vehículo. La devolución y su evento pendiente se guardan en una transacción local.
+- Flota confirma documento y evento pendiente mediante outbox embebido acotado. El índice se actualiza ante cambios; la reconstrucción inicial vuelve a encolar la fuente en el mismo core. El índice sombra con intercambio controlado permanece como mejora prevista.
+- La cotización autoritativa omite caché y búsqueda. La caída de Redis admite fallback a MongoDB con espera y concurrencia acotadas.
+- Las fichas Redis tienen TTL; las marcas de versión no lo tienen. `volatile-lru` permite expulsar fichas sin expulsar esas marcas. El rechazo de un llenado atrasado presupone invalidación exitosa y conservación de los datos de Redis; una pérdida o vaciado de Redis elimina esa garantía. Las marcas crecen con los vehículos retenidos: debe planificarse su limpieza. Al agotarse memoria, el error conduce a fallback, sin convertir Redis en autoridad.
+- Se implementaron deadlines, límites de concurrencia, pools, outbox y colas de fallidos. Las fallas controladas y su [postmortem](POSTMORTEM.md) están registrados; Circuit Breaker y alertas operativas siguen pendientes.
+- Las métricas están instrumentadas y disponibles internamente. No se incluyeron un colector Prometheus, tableros ni alertas.
+- Dos réplicas de Flota y detección pasiva NGINX no acreditan alta disponibilidad: gateway, balanceador y almacenes compartidos siguen siendo puntos únicos de falla.
+- Los tokens identifican aplicaciones de laboratorio. La gestión de cuentas personales y el despliegue HTTPS público no están incluidos en esta verificación.
+
+## 4. Reproducción
+
+```powershell
+go run ./cmd/devsetup
+docker compose up -d --build --wait --wait-timeout 300
+go run ./cmd/smoke -history
+```
+
+La configuración local se mantiene en `.env`, fuera de Git. Las pruebas contra almacenes requieren variables `TEST_*` explícitas; omitirlas produce omisiones que no deben contabilizarse como integración. Consultar las guías de [Clientes](../services/customers/README.md), [Flota](../services/fleet/README.md), [Alquileres](../services/rentals/README.md), [Empleados](../services/employees/README.md) y [smoke](../cmd/smoke/README.md).
+
+El [workflow](../.github/workflows/ci.yml) separa pruebas unitarias/análisis y un trabajo Compose con suite real sin omisiones, Redis de presión dedicado y smoke del historial. La evidencia local anterior no acredita una ejecución de GitHub Actions: su resultado se registrará después de publicar y ejecutar la propuesta.
+
+## 5. Pendientes de cierre
+
+1. Acordar población, identificadores, contrato, credenciales y acceso de la lista con el gimnasio; comprobar su consumo real y mantener la capacidad accesible durante la evaluación.
+2. Obtener los contratos y accesos de gimnasio/hospital para implementar gastos, uso, necesidad de consulta, turnos y conciliación. Registrar información desconocida sin inferir resultados negativos.
+3. Ampliar los ensayos locales de fallas/carga y la comparación de caché (fría y sin dependencia), validar la alternativa de escala y completar retención, alertas y operación conforme D10/D12/D13.
+4. Completar interfaz web, observabilidad operativa y condiciones de publicación cloud. Revisar la cobertura de las historias con el equipo y presentar la propuesta mediante pull request.
+5. Obtener aprobación antes de integrar en `main`; la verificación local no equivale a aceptación del consumidor ni de la cátedra.
+
+Esta sección se actualiza a medida que se incorporan informes reales. El control académico está en [ENTREGA-2](ENTREGA-2.md); [EVIDENCIA-E2](EVIDENCIA-E2.md) enlaza informes y comandos.

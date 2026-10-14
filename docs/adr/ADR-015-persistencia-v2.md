@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D3: persistencia |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Almacenes integrados y persistencia propia verificada |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 | Sustituye | [ADR-003](ADR-003-persistencia.md) |
 
 ## 1. Contexto
@@ -28,7 +28,7 @@ Empleados conservará únicamente información administrativa necesaria para el 
 
 Solr y Redis son estructuras derivadas de Flota, reconstruibles desde MongoDB. No autorizan precios de reserva ni disponibilidad. Las dos réplicas de Flota acceden al mismo almacén operativo y a la caché compartida; el estado de usuario no reside en memoria de una réplica.
 
-Alquileres guardará cambio de negocio, respuesta idempotente y outbox en una misma transacción. Flota requiere atomicidad de ficha y evento pendiente: antes de implementar se decidirá entre outbox embebido acotado o transacción entre colecciones con topología compatible. Un dual write independiente no cumple esa garantía.
+Alquileres guarda reserva y respuesta idempotente juntos; guarda devolución y outbox en otra transacción local. Flota confirma ficha y evento pendiente mediante outbox embebido acotado. Un dual write independiente no cumple esa garantía.
 
 ## 3. Alternativas consideradas
 
@@ -41,9 +41,13 @@ Alquileres guardará cambio de negocio, respuesta idempotente y outbox en una mi
 
 ## 4. Consecuencias y validación
 
-Se operarán al menos dos motores con respaldos y credenciales propios. Volúmenes, índices, migraciones y retención no están medidos. [D4](ADR-004-consistencia-concurrencia.md) registra la propuesta concreta de exclusión sobre rangos de agenda y de índice único parcial para el retiro exclusivo. Su implementación y validación contra una base real continúan pendientes; la selección de PostgreSQL no demuestra por sí sola ausencia de carreras.
+Se operarán al menos dos motores con respaldos y credenciales propios. Volúmenes, índices, migraciones y retención no están medidos. [D4](ADR-004-consistencia-concurrencia.md) registra la propuesta concreta de exclusión sobre rangos de agenda y de índice único parcial para el retiro exclusivo. La implementación se probó contra PostgreSQL; sus resultados y límites se registran en la sección de avance.
 
 Integrar almacenes reales, probar recuperación, concurrencia, duplicados y separación de permisos; verificar outbox y reconstrucción. Para Empleados, probar evidencia incompleta, correcciones y límites por período sin inferir no uso ni ausencia de turno a partir de errores.
+
+## Avance de implementación — 14 de octubre de 2026
+
+Clientes, Alquileres y Empleados utilizan PostgreSQL con bases/credenciales distintas; Flota MongoDB. Migraciones propias se aplican al iniciar. Flota eligió outbox embebido en el documento, acotado a 128 pendientes: un documento lleno rechaza nuevos cambios antes de confirmar. Alquileres guarda idempotencia con la reserva y outbox al finalizar el alquiler. La suite real y el reinicio de servicios verifican persistencia; datos económicos y de turnos permanecen pendientes de contrato. Solr/Redis son derivados, no fuentes del precio final o de la agenda. Ver [pruebas](../evidence/tests-summary.json) y [reinicio/reindexación](../evidence/runtime-persistence.json).
 
 ## 5. Referencias e historial
 
@@ -52,6 +56,7 @@ Material en `clases.zip`: `teoria/02-datos-en-microservicios.md`, `teoria/04-com
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Incorpora persistencia administrativa de Empleados y réplicas de Flota |
+| 0.3 | 14 de octubre de 2026 | Registra implementación propia, evidencia local y pendientes externos |
 
 
 ## Revisión de alcance — 11 de octubre de 2026
@@ -60,4 +65,4 @@ Se amplía la propuesta sin cambiar las fronteras ni las tecnologías: Gimnasio 
 
 El flujo del hospital comprende empleados registrados, además del flujo previo de candidatos: información de quién necesita consulta, solicitud de turno desde Empleados y seguimiento de modificaciones/cancelaciones/reprogramaciones administradas por el proveedor. Persistirá la relación entre empleado, necesidad, intención local, turno externo y evidencia de estado, sin interpretar un timeout como ausencia ni repetir comandos sin recuperación acordada.
 
-La propuesta continúa no implementada y no acordada con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.
+El alcance de membresías/costos y turnos continúa sin implementar ni acordar con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.

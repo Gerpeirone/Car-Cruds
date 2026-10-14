@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D5: comunicación |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Comunicación propia implementada; acuerdos externos pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 | Sustituye | [ADR-005](ADR-005-comunicacion.md) |
 
 ## 1. Contexto
@@ -28,11 +28,11 @@ Las validaciones de una reserva requieren respuesta inmediata. Índice e histori
 
 La llamada clínica sale directamente de Empleados; no atraviesa el frontend ni el gateway propio. Alquileres deja de consumir la capacidad externa prevista de manera genérica en la entrega 1.
 
-Para el flujo de confirmación de reserva se mantienen como presupuestos iniciales hasta 5 segundos totales y hasta 1 segundo para cada llamada interna, sujetos a medición. El LB y cada llamada deben respetar el tiempo restante, incluidos sus intentos. Las consultas exploratorias del catálogo utilizan el perfil separado de [D12](ADR-012-balanceo-carga.md), cuyo deadline total se calibrará antes de implementar; sus límites por fase no amplían el presupuesto de validación de una reserva. Las operaciones clínicas tendrán un presupuesto específico que se acordará después de conocer el contrato y sus consecuencias; no heredan automáticamente el presupuesto de reserva.
+Para el flujo de confirmación de reserva se mantienen como presupuestos iniciales hasta 5 segundos totales y hasta 1 segundo para cada llamada interna, sujetos a medición. El LB y cada llamada deben respetar el tiempo restante, incluidos sus intentos. Las consultas exploratorias del catálogo utilizan el perfil separado de [D12](ADR-012-balanceo-carga.md), cuyo deadline total debe calibrarse sobre la configuración vigente; sus límites por fase no amplían el presupuesto de validación de una reserva. Las operaciones clínicas tendrán un presupuesto específico que se acordará después de conocer el contrato y sus consecuencias; no heredan automáticamente el presupuesto de reserva.
 
 Las lecturas podrán tener como máximo un reintento ante falla transitoria si queda presupuesto. El dueño del reintento será único por operación; la configuración del proxy no debe multiplicarlo. Errores de negocio, permisos y datos inválidos no se reintentan. Comandos con resultado desconocido no se repiten automáticamente sin una garantía idempotente acordada.
 
-En Alquileres, la identidad de aplicación, operación y clave delimitan la idempotencia. Misma clave y carga recuperan respuesta original antes de revalidar agenda/precio; otra carga produce conflicto. Resultado y respuesta se guardan juntos. Su retención cubrirá el período admitido de reintentos y, como mínimo, la vida de la reserva. Esto permanece pendiente de implementación durable.
+En Alquileres, la identidad de aplicación, operación y clave delimitan la idempotencia. Misma clave y carga recuperan respuesta original antes de revalidar agenda/precio; otra carga produce conflicto. Resultado y respuesta se guardan juntos. Su retención cubrirá el período admitido de reintentos y, como mínimo, la vida de la reserva. La implementación durable y su evidencia se registran en la sección de avance.
 
 ### Comunicación asíncrona interna
 
@@ -50,6 +50,10 @@ Solo HTTP acopla proyecciones a los consumidores; solo eventos dificulta la conf
 
 Se aceptan consistencia eventual en lecturas derivadas y operación del broker/relay. Deben probarse respuestas perdidas, duplicados, desorden, DLQ y recuperación; trazar gateway, LB, servicio y dependencia. Con Clínica/Gimnasio, validar contratos antes de afirmar compatibilidad y separar información confirmada de pendiente o indeterminada.
 
+## Avance de implementación — 14 de octubre de 2026
+
+El recorrido HTTP por gateway/LB fue verificado con autorizaciones y deadlines. Alquileres aplica máximo 1 s por validación interna de confirmación y conserva respuesta idempotente en PostgreSQL. RabbitMQ transporta VehicleChanged.v1 y RentalCompleted.v1 mediante outbox, mensajes persistentes y confirmación del publicador; ACK se realiza después del efecto. La finalización publicó el evento y produjo un único inbox/historial real en Clientes. No se emite un evento de reserva sin consumidor. El ensayo de detención de RabbitMQ conservó un cambio en MongoDB y permitió observarlo en Solr al recuperar el broker. El mensaje incompatible propio terminó en la cola de fallidos de Clientes; el reproceso de negocios y la política propuesta de esperas/reintentos requieren validación adicional. Los adaptadores externos y la propagación de traza por AMQP siguen pendientes; los presupuestos externos solo se fijarán con el contrato. Ver [POSTMORTEM](../POSTMORTEM.md).
+
 ## 5. Referencias e historial
 
 Material en `clases.zip`: `teoria/04-comunicacion-asincrona.md`, `teoria/06-gateway-lb-discovery.md`, `teoria/07-resiliencia.md` y `practica/clase-4-rabbitmq.md`. [D9](ADR-009-consumo-clinica.md), [D10](ADR-010-resiliencia.md), [D12](ADR-012-balanceo-carga.md).
@@ -57,6 +61,7 @@ Material en `clases.zip`: `teoria/04-comunicacion-asincrona.md`, `teoria/06-gate
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Actualiza integración administrativa, destino externo y ruta balanceada |
+| 0.3 | 14 de octubre de 2026 | Registra implementación propia, evidencia local y pendientes externos |
 
 
 ## Revisión de alcance — 11 de octubre de 2026
@@ -65,4 +70,4 @@ Se amplía la propuesta sin cambiar las fronteras ni las tecnologías: Gimnasio 
 
 El flujo del hospital comprende empleados registrados, además del flujo previo de candidatos: información de quién necesita consulta, solicitud de turno desde Empleados y seguimiento de modificaciones/cancelaciones/reprogramaciones administradas por el proveedor. Persistirá la relación entre empleado, necesidad, intención local, turno externo y evidencia de estado, sin interpretar un timeout como ausencia ni repetir comandos sin recuperación acordada.
 
-La propuesta continúa no implementada y no acordada con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.
+El alcance de membresías/costos y turnos continúa sin implementar ni acordar con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.

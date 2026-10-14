@@ -4,9 +4,9 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.2 |
-| Fecha | 12 de octubre de 2026 |
-| Estado | Preparación documental de la Entrega 2 |
+| Versión | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Backlog con cobertura parcial del backend; cierre de historias pendiente |
 | Hito objetivo | Viernes 23 de octubre de 2026 |
 | Negocio principal | Alquiler de vehículos |
 | Servicios de negocio | Clientes, Flota, Alquileres y Empleados |
@@ -17,17 +17,38 @@ El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión 
 
 Los contratos, campos, protocolos, identidad de consumidores y mecanismos de devolución o consulta externos están pendientes de acuerdo. Los criterios que dependen de esos acuerdos son obligaciones de comportamiento para el diseño; todavía no constituyen endpoints, eventos o esquemas publicados.
 
-Las historias están **diseñadas**. El único componente ejecutable disponible es el mock de reservas en memoria; su evidencia parcial no acredita servicios reales ni las nuevas integraciones. Para cumplir la Entrega 2 faltan al menos un servicio operativo, la capacidad compartida funcionando, almacenamiento integrado, logs correlacionados y una primera traza distribuida, además de las decisiones exigidas por el [enunciado, sección 6.3](../Enunciado%20TP%20Final.md#63-viernes-23-de-octubre---entrega-2-dominio-propio-de-punta-a-punta).
+Los cuatro servicios propios, gateway, balanceador e infraestructura están implementados y cuentan con evidencia local. La lista de empleados es una API propia provisional; el acuerdo, acceso público y consumo real del gimnasio siguen pendientes. Los criterios y prioridades se conservan: disponer de código o un ensayo parcial no cierra automáticamente una historia. Ver [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) y [ENTREGA-2](ENTREGA-2.md).
+
 
 ## 2. Convenciones de planificación
 
 - **P1:** necesario para el primer flujo o para cerrar una dependencia crítica de E2. **P2:** completa la operación o la evidencia del sistema final.
 - **E2:** objetivo de la entrega del 23 de octubre. **PG:** presentación grupal del 11 o 13 de noviembre, según asignación. **Defensa:** evaluación individual, con fecha pendiente.
-- Los hitos indicados son objetivos de implementación. La preparación documental actual no implica que estén alcanzados.
+- Los hitos indicados son objetivos de aceptación; la matriz siguiente registra cobertura parcial y no equivale a aprobación del equipo o de la cátedra.
 - Las historias técnicas se identifican como **habilitadores** y se evalúan por evidencia operativa.
 - Una historia se considera terminada cuando satisface sus criterios, cuenta con verificaciones pertinentes y actualiza la documentación y los contratos afectados.
 
-## 3. Épicas
+## 3. Cobertura de implementación — 14 de octubre
+
+| Historias | Cobertura disponible | Validación o alcance pendiente |
+| --- | --- | --- |
+| HU-01 a HU-09 | Catálogo/búsqueda, perfil de conductor, disponibilidad, reserva, cancelación, retiro/devolución y mantenimiento propios | Revisión completa de criterios, interfaz web y operación definitiva; Clientes no implementa edición/baja de perfiles |
+| HU-10 y HU-11 | CRUD de candidatos y empleados, con registros independientes y bajas administrativas | Seguimiento externo de candidatos y criterios dependientes del hospital |
+| HU-12 | Lista activa mínima, autenticación, paginación e aislamiento verificados en PostgreSQL y por gateway | Aceptación del contrato, población, publicación y consumo real del gimnasio |
+| HU-13 a HU-17 y HU-23 | Puertos internos y condiciones de integración definidos | Contratos y accesos reales: membresías/uso/gastos, necesidad de consulta, solicitud y conciliación de turnos |
+| HU-18 | Tokens de aplicación y permisos de recurso implementados; respuestas 401/403 verificadas | Identidad personal, condiciones públicas y revisión final de todos los criterios |
+| HU-19 | Round-robin, dos réplicas y retirada/recuperación verificadas con errores iniciales documentados | Comparación representativa y caída de LB/fuente común |
+| HU-20 | Registros correlacionados y primera traza HTTP real; métricas instrumentadas | Propagación asíncrona, colector, tablero y alertas |
+| HU-21 y HU-22 | Suite real de 60 pruebas sin omisiones, vet y Compose/smoke aprobados localmente | Ejecución publicada de CI y ampliación de ensayos según alcance |
+| HU-24 | Outbox, efecto único, recuperación de broker y mensaje incompatible a DLQ verificados | Ensayos ampliados de desorden y reproceso de mensajes de negocio fallidos |
+| HU-25 | Indexación ante cambios y reconstrucción inicial en el mismo core verificadas | Frescura desde commit, reconstrucción operativa e índice sombra previsto |
+| HU-26 | Caché/versiones/expulsión y comparación caliente/fallback con reducción de lecturas MongoDB | Fase fría, línea base sin dependencia, duración sostenida y retención de marcas |
+| HU-27 | Deadlines, concurrencia, fallback/outbox y ensayo de fallas con postmortem | Circuit Breaker y ensayos ampliados/exteriores |
+| HU-28 | Disponibilidad medida; límite de admisión, alternativa y estimación de costos documentados | Ampliar a confirmación/mezcla, duración y prueba de alternativa |
+
+La evidencia verificable se enlaza desde [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md). Los pendientes externos no convierten información desconocida en ausencia de membresía, cero gastos ni ausencia de turno.
+
+## 4. Épicas
 
 | ID | Épica | Resultado | Propietario | Historias |
 | --- | --- | --- | --- | --- |
@@ -41,7 +62,7 @@ Las historias están **diseñadas**. El único componente ejecutable disponible 
 | E-08 | Evidencia y reproducción | Verificar, observar y reproducir el sistema. | Transversal | HU-20 a HU-22, HU-28 |
 | E-09 | Datos derivados y eventos | Mantener búsqueda, caché y proyecciones coherentes con las fuentes mediante eventos. | Flota / Alquileres / Clientes | HU-24 a HU-26 |
 
-## 4. Historias y criterios de aceptación
+## 5. Historias y criterios de aceptación
 
 Las reglas RN-01 a RN-12 conservan su significado en [SPEC.md](../SPEC.md). Las reglas RN-13 a RN-22 cubren personal e integraciones. Los requisitos RF y RNF se detallan en [REQUERIMIENTOS.md](REQUERIMIENTOS.md).
 
@@ -49,7 +70,7 @@ Las reglas RN-01 a RN-12 conservan su significado en [SPEC.md](../SPEC.md). Las 
 
 Como **operador**, quiero registrar y modificar vehículos y sus tarifas para mantener el catálogo disponible para alquiler.
 
-**Épica:** E-01. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-01. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: base del catálogo; PG: administración completa. **Dependencias:** HU-18; persistencia de Flota.
 
@@ -62,7 +83,7 @@ Como **operador**, quiero registrar y modificar vehículos y sus tarifas para ma
 
 Como **cliente**, quiero buscar vehículos por características y tarifa para seleccionar una alternativa de alquiler.
 
-**Épica:** E-01. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-01. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** PG; diseño de búsqueda en E2. **Dependencias:** HU-01; motor de búsqueda; D6 y D7.
 
@@ -75,7 +96,7 @@ Como **cliente**, quiero buscar vehículos por características y tarifa para se
 
 Como **operador**, quiero registrar el perfil y la habilitación del conductor para permitir reservas a clientes identificados.
 
-**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: soporte del flujo de reserva; PG: gestión completa. **Dependencias:** HU-18; definición de datos obligatorios de Clientes.
 
@@ -88,7 +109,7 @@ Como **operador**, quiero registrar el perfil y la habilitación del conductor p
 
 Como **cliente**, quiero consultar la disponibilidad y cotización de un auto por período para evaluar una reserva.
 
-**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: lectura real integrada. **Dependencias:** HU-01; agenda de Alquileres.
 
@@ -103,7 +124,7 @@ Como **cliente**, quiero consultar la disponibilidad y cotización de un auto po
 
 Como **cliente**, quiero confirmar una reserva con precio aceptado para asegurar la asignación del vehículo.
 
-**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: operación persistida. **Dependencias:** HU-03; HU-04; HU-18; D4.
 
@@ -119,7 +140,7 @@ Como **cliente**, quiero confirmar una reserva con precio aceptado para asegurar
 
 Como **cliente**, quiero consultar y cancelar una reserva propia antes del retiro para administrar mi solicitud.
 
-**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-02. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2. **Dependencias:** HU-05; HU-18.
 
@@ -135,7 +156,7 @@ Como **cliente**, quiero consultar y cancelar una reserva propia antes del retir
 
 Como **operador**, quiero registrar el retiro de un vehículo reservado para iniciar su alquiler.
 
-**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** PG. **Dependencias:** HU-05; HU-18; revalidación del conductor.
 
@@ -148,7 +169,7 @@ Como **operador**, quiero registrar el retiro de un vehículo reservado para ini
 
 Como **operador**, quiero registrar la devolución física del auto para finalizar el alquiler y actualizar su ocupación.
 
-**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** PG. **Dependencias:** HU-07; HU-18.
 
@@ -161,7 +182,7 @@ Como **operador**, quiero registrar la devolución física del auto para finaliz
 
 Como **operador**, quiero registrar bloqueos de agenda para impedir reservas durante mantenimiento.
 
-**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-03. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** PG. **Dependencias:** HU-04; HU-18; agenda transaccional.
 
@@ -174,7 +195,7 @@ Como **operador**, quiero registrar bloqueos de agenda para impedir reservas dur
 
 Como **responsable de personal**, quiero registrar una posible incorporación para gestionar su revisión y seguimiento.
 
-**Épica:** E-04. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-04. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: modelo de personal; PG: flujo completo. **Dependencias:** HU-18; definición de datos internos de candidatos.
 
@@ -187,7 +208,7 @@ Como **responsable de personal**, quiero registrar una posible incorporación pa
 
 Como **responsable de personal**, quiero mantener el registro de empleados de la concesionaria para organizar los servicios vinculados al personal.
 
-**Épica:** E-04. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-04. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: servicio Empleados operativo como objetivo. **Dependencias:** HU-18; reglas internas de alta y cambios de personal.
 
@@ -200,7 +221,7 @@ Como **responsable de personal**, quiero mantener el registro de empleados de la
 
 Como **aplicación del gimnasio autorizada**, quiero consultar la lista de empleados acordada para gestionar el beneficio de membresía.
 
-**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: capacidad compartida operativa como objetivo. **Dependencias:** HU-11; HU-18; contrato con gimnasio y publicación acordados.
 
@@ -213,7 +234,7 @@ Como **aplicación del gimnasio autorizada**, quiero consultar la lista de emple
 
 Como **responsable de personal**, quiero recibir o consultar al gimnasio membresías, uso, costos individuales y gastos por período para controlar beneficios y costos.
 
-**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada; bloqueada por contrato externo.
 
 **Hito objetivo:** E2: acuerdo y primer intercambio; PG: flujo completo. **Dependencias:** HU-12; acuerdo del mecanismo de devolución del gimnasio.
 
@@ -226,7 +247,7 @@ Como **responsable de personal**, quiero recibir o consultar al gimnasio membres
 
 Como **responsable de personal**, quiero consultar afiliación, uso, costo individual, gastos por empleado y costos totales por período para revisar el beneficio del gimnasio.
 
-**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-05. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada; bloqueada por contrato externo.
 
 **Hito objetivo:** PG; definición en E2. **Dependencias:** HU-11; HU-13.
 
@@ -245,7 +266,7 @@ Los criterios 3 a 5 también aplican a HU-13 en lo que respecta a la incorporaci
 
 Como **responsable de personal**, quiero solicitar por la API del hospital de Octi un turno para un empleado registrado que necesita consulta médica. El flujo adicional de candidatos se conserva separado.
 
-**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada; bloqueada por contrato externo.
 
 **Hito objetivo:** E2: acuerdo de consumo y primer flujo; PG: integración completa. **Dependencias:** HU-11; HU-18; contrato publicado por el hospital; HU-10 para el flujo adicional de candidatos.
 
@@ -258,7 +279,7 @@ Como **responsable de personal**, quiero solicitar por la API del hospital de Oc
 
 Como **responsable de personal**, quiero comprobar el estado de las solicitudes de revisión para distinguir turnos confirmados, ausencia informada y casos desconocidos.
 
-**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada; bloqueada por contrato externo.
 
 **Hito objetivo:** E2: diseño de recuperación; PG: flujo completo. **Dependencias:** HU-15; mecanismo de consulta o notificación que acuerde la clínica.
 
@@ -275,7 +296,7 @@ Como **responsable de personal**, quiero comprobar el estado de las solicitudes 
 
 Como **responsable de personal**, quiero consultar empleados y, por separado, posibles incorporaciones con turno, sin turno y con estado desconocido para gestionar revisiones pendientes.
 
-**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada; bloqueada por contrato externo.
 
 **Hito objetivo:** PG; definición en E2. **Dependencias:** HU-11; HU-16; HU-10 para candidatos.
 
@@ -288,7 +309,7 @@ Como **responsable de personal**, quiero consultar empleados y, por separado, po
 
 Como **administrador del sistema**, quiero establecer identidad y permisos por capacidad para limitar cada operación al actor autorizado.
 
-**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: acceso a capacidad publicada; PG: roles completos. **Dependencias:** matriz de permisos; acuerdo de identidad de consumidores.
 
@@ -301,7 +322,7 @@ Como **administrador del sistema**, quiero establecer identidad y permisos por c
 
 Como **equipo de operaciones**, quiero distribuir las consultas de Flota entre dos réplicas y retirar instancias no disponibles para sostener el acceso al catálogo.
 
-**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: diseño y primera demostración; defensa: evidencia completa. **Dependencias:** HU-01; HU-20; D12; mecanismo de disponibilidad por definir.
 
@@ -314,7 +335,7 @@ Como **equipo de operaciones**, quiero distribuir las consultas de Flota entre d
 
 Como **equipo de desarrollo y operaciones**, quiero seguir una operación entre componentes para diagnosticar su resultado y sus dependencias.
 
-**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: logs y primera traza distribuida; PG/defensa: métricas y tablero completos. **Dependencias:** flujo operativo; D11.
 
@@ -327,7 +348,7 @@ Como **equipo de desarrollo y operaciones**, quiero seguir una operación entre 
 
 Como **equipo de desarrollo**, quiero demostrar consistencia y comportamiento ante fallas mediante pruebas reproducibles.
 
-**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: pruebas del flujo operativo; defensa: integración, carga y postmortem completos. **Dependencias:** historias implementadas; contratos acordados; dependencias reales.
 
@@ -341,7 +362,7 @@ Como **equipo de desarrollo**, quiero demostrar consistencia y comportamiento an
 
 Como **integrante del grupo o evaluador**, quiero iniciar el sistema con un procedimiento documentado para reproducir la entrega desde el repositorio.
 
-**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: primer flujo y dependencias; PG: sistema completo. **Dependencias:** componentes implementados; configuración de entorno; publicación del repositorio.
 
@@ -368,7 +389,7 @@ Como **responsable de personal**, quiero recibir o consultar qué empleados requ
 
 Como **equipo de desarrollo**, quiero que los cambios de Flota y los alquileres finalizados se comuniquen por eventos para que el índice y el historial se actualicen sin acoplar los servicios.
 
-**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: primer evento publicado y consumido; PG: idempotencia y mensajes fallidos completos. **Dependencias:** HU-01; HU-08; broker de mensajería; D3 y D5 vigentes.
 
@@ -382,7 +403,7 @@ Como **equipo de desarrollo**, quiero que los cambios de Flota y los alquileres 
 
 Como **operador**, quiero que los cambios de un vehículo aparezcan en la búsqueda dentro de un retraso acotado, y poder reconstruir el índice, para que los clientes vean datos vigentes.
 
-**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: diseño y primera sincronización; PG: reconstrucción y medición. **Dependencias:** HU-01; HU-02; HU-24; D6.
 
@@ -396,7 +417,7 @@ Como **operador**, quiero que los cambios de un vehículo aparezcan en la búsqu
 
 Como **cliente**, quiero que la consulta de la ficha de un vehículo responda rápido para decidir con fluidez, con una mejora demostrada con métricas.
 
-**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Diseñada.
+**Épica:** E-09. **Tipo:** Habilitador técnico. **Prioridad:** P2. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: justificación y política; PG: comparación antes/después. **Dependencias:** HU-01; HU-20; D7.
 
@@ -410,7 +431,7 @@ Como **cliente**, quiero que la consulta de la ficha de un vehículo responda r�
 
 Como **equipo de operaciones**, quiero que el sistema limite el impacto de una dependencia caída o lenta para que las operaciones independientes sigan funcionando y el resultado sea honesto.
 
-**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-07. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: mecanismo inicial; defensa: caída provocada y `docs/POSTMORTEM.md`. **Dependencias:** HU-05; HU-15; HU-20; D5, D9 y D10.
 
@@ -424,7 +445,7 @@ Como **equipo de operaciones**, quiero que el sistema limite el impacto de una d
 
 Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada para conocer el límite principal del sistema, la alternativa de escalado y una estimación de costos.
 
-**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Diseñada.
+**Épica:** E-08. **Tipo:** Habilitador técnico. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
 
 **Hito objetivo:** E2: medición inicial documentada, límite principal identificado, alternativa de escalado y estimación de costos con fuente y fecha; defensa: ampliar y repetir el análisis sobre el sistema final. **Dependencias:** HU-04; HU-05; HU-20; D13. HU-19 se incorpora al escenario comparativo de réplicas cuando esté operativo; no bloquea la medición inicial del flujo real disponible.
 
@@ -433,7 +454,7 @@ Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada p
 1. **Dado** un escenario de carga definido sobre consulta de disponibilidad y confirmación de reserva, **cuando** se ejecuta, **entonces** se registran configuración, latencia, errores y recursos, y se identifica el límite principal.
 2. **Dado** los resultados obtenidos, **cuando** se analizan, **entonces** se documenta la alternativa de escalado y una estimación de costos con su fuente, sin atribuir mediciones al mock ni a las demostraciones de las clases.
 
-## 5. Acuerdos previos a implementar integraciones
+## 6. Acuerdos previos a implementar integraciones
 
 | Acuerdo pendiente | Historias afectadas | Condición de preparación |
 | --- | --- | --- |
@@ -445,7 +466,7 @@ Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada p
 
 Un resultado desconocido conserva esa clasificación hasta contar con evidencia válida. Ni la falta de comunicación del gimnasio equivale a no uso, ni una caída de la clínica equivale a ausencia de turno. Los informes apoyan decisiones humanas: no calculan precios externos no acordados, no determinan aptitud médica y no generan contrataciones automáticas.
 
-## 6. Referencias de diseño
+## 7. Referencias de diseño
 
 - [SPEC.md](../SPEC.md): reglas, estados y alcance.
 - [REQUERIMIENTOS.md](REQUERIMIENTOS.md): requisitos y verificación.
