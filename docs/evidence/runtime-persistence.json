@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-14",
+  "restart": [
+    "customers",
+    "employees",
+    "rentals"
+  ],
+  "reservationId": "66a89c13-e565-406f-af07-0eb8c8a2a397",
+  "reservationStateBefore": "COMPLETED",
+  "reservationStateAfter": "COMPLETED",
+  "reservationUnchanged": true,
+  "employeeId": "7f68aa01-9bba-48e7-bf88-673fe7c021b6",
+  "inactiveEmployeePreserved": true,
+  "reindexAccepted": {
+    "enqueued": 3,
+    "status": "pending"
+  },
+  "reindexActiveSourceCount": 2,
+  "reindexActiveSearchCount": 2,
+  "reindexSourceAndSearchEqual": true,
+  "reindexLimit": "Se verificó reencolado y coincidencia de la fuente e índice existente; no se simuló pérdida completa del core."
+}

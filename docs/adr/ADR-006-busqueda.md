@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D6: búsqueda |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Índice operativo; frescura y reconstrucción avanzada pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto
 
@@ -32,7 +32,11 @@ Consultas directas a MongoDB reducen piezas, pero no satisfacen la elección de 
 
 Se acepta consistencia eventual del descubrimiento. Si Solr cae, se informa búsqueda no disponible; ficha por identificador y confirmación pueden continuar con sus fuentes. No se presenta un error como lista vacía exitosa.
 
-Validar filtros, paginación y orden; duplicados, desorden, bajas y reconstrucción; medir latencia y retraso extremo a extremo bajo carga y recuperación. La evidencia y configuración faltan.
+Validar filtros, paginación y orden; duplicados, desorden, bajas y reconstrucción; medir latencia y retraso extremo a extremo bajo carga y recuperación. La evidencia disponible y los pendientes se distinguen en la sección de avance.
+
+## Avance de implementación — 14 de octubre de 2026
+
+Solr implementa filtros, orden y paginación; VehicleChanged se publica ante cambios. El indexador lee la versión vigente de MongoDB y aplica actualización condicional de Solr para impedir retroceso. Las bajas son lógicas y dejan de aparecer como activas. El recorrido observó una actualización en 1265 ms desde el primer sondeo; no mide el objetivo de 5 s desde commit. La reconstrucción inicial vuelve a encolar la fuente hacia el mismo core: la solicitud responde 202 pendiente y una comparación posterior verificó dos documentos activos y versiones iguales. La propuesta de índice nuevo con intercambio controlado sigue sin implementar. Ver [persistencia/reindexación](../evidence/runtime-persistence.json).
 
 ## 5. Referencias e historial
 
@@ -41,3 +45,4 @@ Material en `clases.zip`: `teoria/05-motores-de-busqueda.md` y `practica/clase-5
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera propuesta de búsqueda y actualización del índice |
+| 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |

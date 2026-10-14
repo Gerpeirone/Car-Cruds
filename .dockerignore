@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+tmp
+output
+clases.zip
+mocks
+*.exe
+*.log

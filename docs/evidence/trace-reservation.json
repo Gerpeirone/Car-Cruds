@@ -1,0 +1,116 @@
+{
+  "source": "Jaeger v2.22.0 API v3, consulta real de reserva",
+  "requestId": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+  "traceId": "8a9219ca06093073a628894ecb11b1a8",
+  "records": [
+    {
+      "service": "gateway",
+      "instance": "gateway",
+      "method": "POST",
+      "route": "/v1/reservations",
+      "status": 201,
+      "request_id": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+      "trace_id": "8a9219ca06093073a628894ecb11b1a8",
+      "span_id": "604f31c40c2d6ad7",
+      "duration_ms": 16.207
+    },
+    {
+      "service": "rentals",
+      "instance": "rentals",
+      "method": "POST",
+      "route": "POST /v1/reservations",
+      "status": 201,
+      "request_id": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+      "trace_id": "8a9219ca06093073a628894ecb11b1a8",
+      "span_id": "5f967132fb0a3457",
+      "duration_ms": 13.134
+    },
+    {
+      "service": "fleet",
+      "instance": "fleet-a",
+      "method": "GET",
+      "route": "GET /v1/vehicles/{id}/quote",
+      "status": 200,
+      "request_id": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+      "trace_id": "8a9219ca06093073a628894ecb11b1a8",
+      "span_id": "13ea6df71b211a16",
+      "duration_ms": 0.727
+    },
+    {
+      "service": "customers",
+      "instance": "customers",
+      "method": "GET",
+      "route": "GET /v1/customers/{id}",
+      "status": 200,
+      "request_id": "7ec72466-c00a-4141-a4c5-69a21f5f7f3b",
+      "trace_id": "8a9219ca06093073a628894ecb11b1a8",
+      "span_id": "d777bea3672249cc",
+      "duration_ms": 1.24
+    }
+  ],
+  "spans": [
+    {
+      "service": "gateway",
+      "name": "HTTP POST",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "f29bf4967b4c086e",
+      "parentSpanId": "604f31c40c2d6ad7",
+      "kind": 3,
+      "durationMs": 16.173824
+    },
+    {
+      "service": "gateway",
+      "name": "POST /v1/reservations",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "604f31c40c2d6ad7",
+      "parentSpanId": null,
+      "kind": 2,
+      "durationMs": 16.306944
+    },
+    {
+      "service": "fleet",
+      "name": "GET /v1/vehicles/{id}/quote",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "13ea6df71b211a16",
+      "parentSpanId": "cecb9f2904dd6ec3",
+      "kind": 2,
+      "durationMs": 0.904704
+    },
+    {
+      "service": "customers",
+      "name": "GET /v1/customers/{id}",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "d777bea3672249cc",
+      "parentSpanId": "25f36cc89ece4912",
+      "kind": 2,
+      "durationMs": 1.354752
+    },
+    {
+      "service": "rentals",
+      "name": "HTTP GET",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "25f36cc89ece4912",
+      "parentSpanId": "5f967132fb0a3457",
+      "kind": 3,
+      "durationMs": 3.053312
+    },
+    {
+      "service": "rentals",
+      "name": "HTTP GET",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "cecb9f2904dd6ec3",
+      "parentSpanId": "5f967132fb0a3457",
+      "kind": 3,
+      "durationMs": 1.7472
+    },
+    {
+      "service": "rentals",
+      "name": "POST /v1/reservations",
+      "traceId": "8a9219ca06093073a628894ecb11b1a8",
+      "spanId": "5f967132fb0a3457",
+      "parentSpanId": "f29bf4967b4c086e",
+      "kind": 2,
+      "durationMs": 13.284096
+    }
+  ]
+}

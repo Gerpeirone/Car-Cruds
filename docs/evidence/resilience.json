@@ -1,0 +1,1651 @@
+{
+  "schemaVersion": "1.0.0",
+  "runId": "ca07eded8eb2453398497e068a20c117",
+  "result": "PASS",
+  "startedAtUtc": "2026-10-14T03:08:59.7680849+00:00",
+  "completedAtUtc": "2026-10-14T03:10:43.2351495+00:00",
+  "elapsedMs": 103464.67,
+  "project": {
+    "name": "car-cruds",
+    "gateway": "local-loopback",
+    "composeFile": "compose.yaml"
+  },
+  "scope": "Componentes propios; sin integraciones de gimnasio o clínica",
+  "limits": {
+    "requestTimeoutSeconds": 8,
+    "dockerTimeoutSeconds": 30,
+    "recoveryTimeoutSeconds": 45
+  },
+  "steps": [
+    {
+      "name": "preconditions",
+      "startedAtUtc": "2026-10-14T03:08:59.7820823+00:00",
+      "status": "PASS",
+      "elapsedMs": 6572.61,
+      "evidence": {
+        "services": {
+          "gateway": "running",
+          "fleet-lb": "running",
+          "fleet-a": "running",
+          "fleet-b": "running",
+          "mongo": "running",
+          "redis": "running",
+          "rabbitmq": "running",
+          "solr": "running",
+          "indexer": "running",
+          "rentals": "running"
+        },
+        "gatewayReady": true,
+        "loopbackOnly": true
+      },
+      "errorCode": null
+    },
+    {
+      "name": "baseline_fixture",
+      "startedAtUtc": "2026-10-14T03:09:06.3548604+00:00",
+      "status": "PASS",
+      "elapsedMs": 1658.66,
+      "evidence": {
+        "fixture": "res-ca07eded8eb2-base",
+        "authoritativeRead": true,
+        "availability": true,
+        "search": {
+          "visible": true,
+          "attempts": 4,
+          "unavailableResponses": 0,
+          "elapsedMs": 1576.01
+        }
+      },
+      "errorCode": null
+    },
+    {
+      "name": "fleet_both_replicas",
+      "startedAtUtc": "2026-10-14T03:09:08.0136208+00:00",
+      "status": "PASS",
+      "elapsedMs": 834.08,
+      "evidence": {
+        "instances": [
+          "fleet-a",
+          "fleet-b"
+        ],
+        "successfulRequests": 8
+      },
+      "errorCode": null
+    },
+    {
+      "name": "fleet_b_stopped",
+      "startedAtUtc": "2026-10-14T03:09:08.8478601+00:00",
+      "status": "PASS",
+      "elapsedMs": 5734.45,
+      "evidence": {
+        "serviceState": "stopped",
+        "plannedRequests": 20,
+        "requests": 20,
+        "successfulRequests": 17,
+        "initialFailures": [
+          {
+            "request": 1,
+            "requestId": "res-ca07eded8eb2-0018",
+            "status": 503,
+            "instance": "gateway",
+            "errorCode": "SERVICE_UNAVAILABLE",
+            "elapsedMs": 1006.27,
+            "phase": "passive_detection"
+          },
+          {
+            "request": 3,
+            "requestId": "res-ca07eded8eb2-0020",
+            "status": 503,
+            "instance": "gateway",
+            "errorCode": "SERVICE_UNAVAILABLE",
+            "elapsedMs": 1003.89,
+            "phase": "passive_detection"
+          },
+          {
+            "request": 4,
+            "requestId": "res-ca07eded8eb2-0021",
+            "status": 503,
+            "instance": "gateway",
+            "errorCode": "SERVICE_UNAVAILABLE",
+            "elapsedMs": 1023.06,
+            "phase": "passive_detection"
+          }
+        ],
+        "initialFailureCount": 3,
+        "consecutiveHealthy": 16,
+        "requiredConsecutiveHealthy": 12,
+        "withdrawalObserved": true,
+        "observedInstance": "fleet-a",
+        "phase": "stable_fleet_a"
+      },
+      "errorCode": null
+    },
+    {
+      "name": "fleet_b_recovered",
+      "startedAtUtc": "2026-10-14T03:09:14.5824379+00:00",
+      "status": "PASS",
+      "elapsedMs": 31345.9,
+      "evidence": {
+        "recoveredInstance": "fleet-b",
+        "attempts": 58,
+        "elapsedMs": 29315.18,
+        "configuredNginxFailTimeoutSeconds": 30
+      },
+      "errorCode": null
+    },
+    {
+      "name": "redis_stopped",
+      "startedAtUtc": "2026-10-14T03:09:45.9285046+00:00",
+      "status": "PASS",
+      "elapsedMs": 2908.47,
+      "evidence": {
+        "serviceState": "stopped",
+        "detailReads": 2,
+        "availability": true,
+        "sourceFallback": "responded_with_valid_vehicle"
+      },
+      "errorCode": null
+    },
+    {
+      "name": "redis_recovered",
+      "startedAtUtc": "2026-10-14T03:09:48.8370834+00:00",
+      "status": "PASS",
+      "elapsedMs": 6509.81,
+      "evidence": {
+        "serviceState": "healthy",
+        "detailRead": true
+      },
+      "errorCode": null
+    },
+    {
+      "name": "rabbit_stopped_outbox_retained",
+      "startedAtUtc": "2026-10-14T03:09:55.3470214+00:00",
+      "status": "PASS",
+      "elapsedMs": 5191.04,
+      "evidence": {
+        "serviceState": "stopped",
+        "fixture": "res-ca07eded8eb2-rabbit",
+        "created": true,
+        "authoritativeRead": true,
+        "indexVisible": false,
+        "absentChecks": 3
+      },
+      "errorCode": null
+    },
+    {
+      "name": "rabbit_recovered_backlog_observed",
+      "startedAtUtc": "2026-10-14T03:10:00.5382175+00:00",
+      "status": "PASS",
+      "elapsedMs": 15323.06,
+      "evidence": {
+        "fixture": "res-ca07eded8eb2-rabbit",
+        "sourcePreserved": true,
+        "backlogRecoveryObserved": true,
+        "search": {
+          "visible": true,
+          "attempts": 26,
+          "unavailableResponses": 0,
+          "elapsedMs": 12931.1
+        }
+      },
+      "errorCode": null
+    },
+    {
+      "name": "solr_stopped_search_isolated",
+      "startedAtUtc": "2026-10-14T03:10:15.8614356+00:00",
+      "status": "PASS",
+      "elapsedMs": 4874.13,
+      "evidence": {
+        "serviceState": "stopped",
+        "searchStatus": 503,
+        "searchErrorCode": "SEARCH_UNAVAILABLE",
+        "detailRead": true,
+        "availability": true
+      },
+      "errorCode": null
+    },
+    {
+      "name": "solr_recovered",
+      "startedAtUtc": "2026-10-14T03:10:20.7356408+00:00",
+      "status": "PASS",
+      "elapsedMs": 13593.28,
+      "evidence": {
+        "search": {
+          "visible": true,
+          "attempts": 12,
+          "unavailableResponses": 11,
+          "elapsedMs": 11886.96
+        },
+        "indexDataPreserved": true
+      },
+      "errorCode": null
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "route": "/internal/ready",
+      "status": 200,
+      "instance": "gateway",
+      "requestId": "res-ca07eded8eb2-0001",
+      "correlated": true,
+      "elapsedMs": 119.13
+    },
+    {
+      "method": "POST",
+      "route": "/v1/vehicles",
+      "status": 201,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0002",
+      "correlated": true,
+      "elapsedMs": 36.66
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base/quote",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0003",
+      "correlated": true,
+      "elapsedMs": 5.43
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0004",
+      "correlated": true,
+      "elapsedMs": 5.41
+    },
+    {
+      "method": "GET",
+      "route": "/v1/availability",
+      "status": 200,
+      "instance": "rentals",
+      "requestId": "res-ca07eded8eb2-0005",
+      "correlated": true,
+      "elapsedMs": 7.84
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0006",
+      "correlated": true,
+      "elapsedMs": 11.14
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0007",
+      "correlated": true,
+      "elapsedMs": 9.59
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0008",
+      "correlated": true,
+      "elapsedMs": 10.06
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0009",
+      "correlated": true,
+      "elapsedMs": 13.04
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0010",
+      "correlated": true,
+      "elapsedMs": 4.74
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0011",
+      "correlated": true,
+      "elapsedMs": 4.56
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0012",
+      "correlated": true,
+      "elapsedMs": 8.06
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0013",
+      "correlated": true,
+      "elapsedMs": 4.93
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0014",
+      "correlated": true,
+      "elapsedMs": 5.59
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0015",
+      "correlated": true,
+      "elapsedMs": 5.28
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0016",
+      "correlated": true,
+      "elapsedMs": 6.24
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0017",
+      "correlated": true,
+      "elapsedMs": 6.02
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 503,
+      "instance": "gateway",
+      "requestId": "res-ca07eded8eb2-0018",
+      "correlated": true,
+      "elapsedMs": 1005.6
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0019",
+      "correlated": true,
+      "elapsedMs": 7.08
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 503,
+      "instance": "gateway",
+      "requestId": "res-ca07eded8eb2-0020",
+      "correlated": true,
+      "elapsedMs": 1003.18
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 503,
+      "instance": "gateway",
+      "requestId": "res-ca07eded8eb2-0021",
+      "correlated": true,
+      "elapsedMs": 1022.56
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0022",
+      "correlated": true,
+      "elapsedMs": 9.09
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0023",
+      "correlated": true,
+      "elapsedMs": 7.64
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0024",
+      "correlated": true,
+      "elapsedMs": 11.64
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0025",
+      "correlated": true,
+      "elapsedMs": 9.27
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0026",
+      "correlated": true,
+      "elapsedMs": 9.23
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0027",
+      "correlated": true,
+      "elapsedMs": 7.32
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0028",
+      "correlated": true,
+      "elapsedMs": 5.88
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0029",
+      "correlated": true,
+      "elapsedMs": 5.73
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0030",
+      "correlated": true,
+      "elapsedMs": 5.07
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0031",
+      "correlated": true,
+      "elapsedMs": 8.69
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0032",
+      "correlated": true,
+      "elapsedMs": 3.77
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0033",
+      "correlated": true,
+      "elapsedMs": 4.61
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0034",
+      "correlated": true,
+      "elapsedMs": 5.08
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0035",
+      "correlated": true,
+      "elapsedMs": 5.66
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0036",
+      "correlated": true,
+      "elapsedMs": 4.91
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0037",
+      "correlated": true,
+      "elapsedMs": 5.06
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0038",
+      "correlated": true,
+      "elapsedMs": 10.67
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0039",
+      "correlated": true,
+      "elapsedMs": 4.39
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0040",
+      "correlated": true,
+      "elapsedMs": 4.58
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0041",
+      "correlated": true,
+      "elapsedMs": 7.06
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0042",
+      "correlated": true,
+      "elapsedMs": 7.47
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0043",
+      "correlated": true,
+      "elapsedMs": 4.14
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0044",
+      "correlated": true,
+      "elapsedMs": 4.7
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0045",
+      "correlated": true,
+      "elapsedMs": 5.07
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0046",
+      "correlated": true,
+      "elapsedMs": 7.62
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0047",
+      "correlated": true,
+      "elapsedMs": 6.4
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0048",
+      "correlated": true,
+      "elapsedMs": 5.2
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0049",
+      "correlated": true,
+      "elapsedMs": 6.34
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0050",
+      "correlated": true,
+      "elapsedMs": 4.19
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0051",
+      "correlated": true,
+      "elapsedMs": 11.05
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0052",
+      "correlated": true,
+      "elapsedMs": 5.73
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0053",
+      "correlated": true,
+      "elapsedMs": 4.15
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0054",
+      "correlated": true,
+      "elapsedMs": 5.55
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0055",
+      "correlated": true,
+      "elapsedMs": 5.73
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0056",
+      "correlated": true,
+      "elapsedMs": 6.43
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0057",
+      "correlated": true,
+      "elapsedMs": 6.04
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0058",
+      "correlated": true,
+      "elapsedMs": 7.04
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0059",
+      "correlated": true,
+      "elapsedMs": 4.94
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0060",
+      "correlated": true,
+      "elapsedMs": 3.99
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0061",
+      "correlated": true,
+      "elapsedMs": 3.63
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0062",
+      "correlated": true,
+      "elapsedMs": 5.68
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0063",
+      "correlated": true,
+      "elapsedMs": 4.7
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0064",
+      "correlated": true,
+      "elapsedMs": 7.77
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0065",
+      "correlated": true,
+      "elapsedMs": 4.9
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0066",
+      "correlated": true,
+      "elapsedMs": 7.9
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0067",
+      "correlated": true,
+      "elapsedMs": 4.98
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0068",
+      "correlated": true,
+      "elapsedMs": 4.36
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0069",
+      "correlated": true,
+      "elapsedMs": 6.22
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0070",
+      "correlated": true,
+      "elapsedMs": 9.43
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0071",
+      "correlated": true,
+      "elapsedMs": 6.89
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0072",
+      "correlated": true,
+      "elapsedMs": 4.22
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0073",
+      "correlated": true,
+      "elapsedMs": 10.23
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0074",
+      "correlated": true,
+      "elapsedMs": 5.11
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0075",
+      "correlated": true,
+      "elapsedMs": 5.18
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0076",
+      "correlated": true,
+      "elapsedMs": 5.42
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0077",
+      "correlated": true,
+      "elapsedMs": 8.1
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0078",
+      "correlated": true,
+      "elapsedMs": 7.03
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0079",
+      "correlated": true,
+      "elapsedMs": 5.05
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0080",
+      "correlated": true,
+      "elapsedMs": 6.78
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0081",
+      "correlated": true,
+      "elapsedMs": 6.9
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0082",
+      "correlated": true,
+      "elapsedMs": 6.3
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0083",
+      "correlated": true,
+      "elapsedMs": 5.09
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0084",
+      "correlated": true,
+      "elapsedMs": 4.96
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0085",
+      "correlated": true,
+      "elapsedMs": 8.05
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0086",
+      "correlated": true,
+      "elapsedMs": 7.98
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0087",
+      "correlated": true,
+      "elapsedMs": 4.33
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0088",
+      "correlated": true,
+      "elapsedMs": 5.55
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0089",
+      "correlated": true,
+      "elapsedMs": 4.79
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0090",
+      "correlated": true,
+      "elapsedMs": 6.87
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0091",
+      "correlated": true,
+      "elapsedMs": 5.12
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0092",
+      "correlated": true,
+      "elapsedMs": 4.28
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0093",
+      "correlated": true,
+      "elapsedMs": 4.9
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0094",
+      "correlated": true,
+      "elapsedMs": 6.19
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0095",
+      "correlated": true,
+      "elapsedMs": 8.78
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0096",
+      "correlated": true,
+      "elapsedMs": 309.42
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0097",
+      "correlated": true,
+      "elapsedMs": 309.88
+    },
+    {
+      "method": "GET",
+      "route": "/v1/availability",
+      "status": 200,
+      "instance": "rentals",
+      "requestId": "res-ca07eded8eb2-0098",
+      "correlated": true,
+      "elapsedMs": 6.82
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0099",
+      "correlated": true,
+      "elapsedMs": 7.77
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0100",
+      "correlated": true,
+      "elapsedMs": 11.19
+    },
+    {
+      "method": "POST",
+      "route": "/v1/vehicles",
+      "status": 201,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0101",
+      "correlated": true,
+      "elapsedMs": 7.75
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit/quote",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0102",
+      "correlated": true,
+      "elapsedMs": 5.64
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0103",
+      "correlated": true,
+      "elapsedMs": 5.98
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0104",
+      "correlated": true,
+      "elapsedMs": 7.69
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0105",
+      "correlated": true,
+      "elapsedMs": 7.51
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0106",
+      "correlated": true,
+      "elapsedMs": 9.06
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0107",
+      "correlated": true,
+      "elapsedMs": 11.4
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0108",
+      "correlated": true,
+      "elapsedMs": 41.05
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0109",
+      "correlated": true,
+      "elapsedMs": 7.65
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0110",
+      "correlated": true,
+      "elapsedMs": 10.39
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0111",
+      "correlated": true,
+      "elapsedMs": 7.61
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0112",
+      "correlated": true,
+      "elapsedMs": 6.59
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0113",
+      "correlated": true,
+      "elapsedMs": 6.78
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0114",
+      "correlated": true,
+      "elapsedMs": 6.26
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0115",
+      "correlated": true,
+      "elapsedMs": 8.65
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0116",
+      "correlated": true,
+      "elapsedMs": 7.18
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0117",
+      "correlated": true,
+      "elapsedMs": 7.32
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0118",
+      "correlated": true,
+      "elapsedMs": 8.46
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0119",
+      "correlated": true,
+      "elapsedMs": 7.72
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0120",
+      "correlated": true,
+      "elapsedMs": 13.54
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0121",
+      "correlated": true,
+      "elapsedMs": 10.31
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0122",
+      "correlated": true,
+      "elapsedMs": 12.33
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0123",
+      "correlated": true,
+      "elapsedMs": 11.03
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0124",
+      "correlated": true,
+      "elapsedMs": 7.62
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0125",
+      "correlated": true,
+      "elapsedMs": 7.2
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0126",
+      "correlated": true,
+      "elapsedMs": 6.83
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0127",
+      "correlated": true,
+      "elapsedMs": 11.21
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0128",
+      "correlated": true,
+      "elapsedMs": 7.12
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0129",
+      "correlated": true,
+      "elapsedMs": 9.59
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0130",
+      "correlated": true,
+      "elapsedMs": 9.77
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0131",
+      "correlated": true,
+      "elapsedMs": 11.32
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0132",
+      "correlated": true,
+      "elapsedMs": 16.7
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit/quote",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0133",
+      "correlated": true,
+      "elapsedMs": 7.11
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0134",
+      "correlated": true,
+      "elapsedMs": 2008.13
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0135",
+      "correlated": true,
+      "elapsedMs": 10.6
+    },
+    {
+      "method": "GET",
+      "route": "/v1/availability",
+      "status": 200,
+      "instance": "rentals",
+      "requestId": "res-ca07eded8eb2-0136",
+      "correlated": true,
+      "elapsedMs": 14.79
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0137",
+      "correlated": true,
+      "elapsedMs": 6.19
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0138",
+      "correlated": true,
+      "elapsedMs": 6.69
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0139",
+      "correlated": true,
+      "elapsedMs": 7.92
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0140",
+      "correlated": true,
+      "elapsedMs": 5.83
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0141",
+      "correlated": true,
+      "elapsedMs": 5.94
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0142",
+      "correlated": true,
+      "elapsedMs": 2011.04
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0143",
+      "correlated": true,
+      "elapsedMs": 2008.55
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0144",
+      "correlated": true,
+      "elapsedMs": 2013.83
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0145",
+      "correlated": true,
+      "elapsedMs": 13.93
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0146",
+      "correlated": true,
+      "elapsedMs": 21.29
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 503,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0147",
+      "correlated": true,
+      "elapsedMs": 19.11
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/search",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0148",
+      "correlated": true,
+      "elapsedMs": 189.72
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0149",
+      "correlated": true,
+      "elapsedMs": 5.1
+    },
+    {
+      "method": "PUT",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0150",
+      "correlated": true,
+      "elapsedMs": 9.47
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-base",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0151",
+      "correlated": true,
+      "elapsedMs": 6.56
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0152",
+      "correlated": true,
+      "elapsedMs": 3.26
+    },
+    {
+      "method": "PUT",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit",
+      "status": 200,
+      "instance": "fleet-a",
+      "requestId": "res-ca07eded8eb2-0153",
+      "correlated": true,
+      "elapsedMs": 6.88
+    },
+    {
+      "method": "GET",
+      "route": "/v1/vehicles/res-ca07eded8eb2-rabbit",
+      "status": 200,
+      "instance": "fleet-b",
+      "requestId": "res-ca07eded8eb2-0154",
+      "correlated": true,
+      "elapsedMs": 6.19
+    }
+  ],
+  "restoration": [
+    {
+      "service": "fleet-b",
+      "status": "PASS",
+      "state": "healthy",
+      "elapsedMs": 2351.77
+    },
+    {
+      "service": "rabbitmq",
+      "status": "PASS",
+      "state": "healthy",
+      "elapsedMs": 2618.5
+    },
+    {
+      "service": "redis",
+      "status": "PASS",
+      "state": "healthy",
+      "elapsedMs": 2072.39
+    },
+    {
+      "service": "solr",
+      "status": "PASS",
+      "state": "healthy",
+      "elapsedMs": 1805.1
+    }
+  ],
+  "fixtureCleanup": [
+    {
+      "fixture": "res-ca07eded8eb2-base",
+      "status": "PASS",
+      "state": "inactive"
+    },
+    {
+      "fixture": "res-ca07eded8eb2-rabbit",
+      "status": "PASS",
+      "state": "inactive"
+    }
+  ],
+  "errorCode": null
+}

@@ -1,283 +1,212 @@
 # Documento de arquitectura — Car Cruds
 
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
-
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
-| Decisiones relacionadas | D1/D3/D5 revisadas; D2, D4, D6, D7, D9, D10, D12 y D13; primera versión de D11; D8 en documentación de contrato |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Backend propio implementado; diseño externo y frontend pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
+| Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
-## 1. Propósito y estado del sistema
+## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres de autos por período y con tarifa. La confirmación de reserva conserva el precio acordado y evita asignaciones superpuestas; retiro y devolución controlan la ocupación física. El nuevo servicio Empleados administra candidatos y personal, ofrece una lista al Gimnasio y utiliza la capacidad de Clínica para revisiones o turnos e informes administrativos.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos y adaptadores externos siguen pendientes.
 
-La versión 0.2 incorpora el feedback de la entrega 1: cuatro microservicios, integración externa ubicada en Empleados y balanceo interno de dos réplicas de Flota. Mantiene los límites de alquiler y el lenguaje de personal separados.
+Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
-| Componente | Estado verificable al preparar este documento |
-| --- | --- |
-| Mock y contrato inicial de Alquileres | Artefactos locales de la entrega 1; simulación en memoria y un proceso |
-| Cuatro microservicios, frontend y gateway | Responsabilidades y estructura documentadas; servicios reales pendientes |
-| Empleados, integración clínica y lista para Gimnasio | Diseño y acuerdos de contrato pendientes; sin integración operativa |
-| Persistencia, outbox, broker, índice y caché | Propuestas; sin implementación ni mediciones |
-| NGINX y dos réplicas de Flota | Distribución propuesta; sin configuración ni ensayo |
-| Logs, métricas, trazas, carga y despliegue | Plan documental; evidencia operativa pendiente |
-
-Esta preparación documental no cumple por sí sola los requisitos operativos del 23 de octubre. La entrega 2 requiere un servicio real, almacenamiento integrado, funcionalidad compartida operativa y evidencia de logs correlacionados y primera traza.
-
-## 2. Contexto del sistema — C4, nivel 1
+## 2. Contexto — C4, nivel 1
 
 ```mermaid
 flowchart TB
-    Client["Cliente<br/>[Persona]<br/>Busca autos y realiza reservas"]
-    Operator["Operador<br/>[Persona]<br/>Gestiona flota y alquileres"]
-    Personnel["Responsable de personal<br/>[Persona]<br/>Administra candidatos e informes"]
-    System["Car Cruds<br/>[Sistema de software]<br/>Alquiler de autos y administración de personal"]
-    Gym["Gimnasio<br/>[Sistema externo consumidor]<br/>Utiliza la lista de empleados"]
-    Clinic["Clínica<br/>[Sistema externo proveedor]<br/>Capacidad de revisiones y turnos"]
+    Client["Cliente<br/>Busca y reserva"]
+    Operator["Operador<br/>Gestiona alquileres"]
+    Personnel["Responsable de personal<br/>Gestiona empleados y candidatos"]
+    System["Car Cruds<br/>Alquiler de autos y personal"]
+    Gym["Gimnasio de Pablo<br/>Sistema consumidor"]
+    Clinic["Hospital de Octi<br/>Sistema proveedor"]
 
-    Client -->|"Busca y reserva mediante la web"| System
-    Operator -->|"Gestiona flota y alquileres"| System
-    Personnel -->|"Gestiona personal, revisiones e informes"| System
-    Gym -->|"Consulta lista e informa uso [contrato y mecanismo por acordar]"| System
-    System -->|"Utiliza revisiones o turnos [contrato y protocolo por acordar]"| Clinic
+    Client -->|"API; web prevista"| System
+    Operator -->|"Catálogo y alquileres"| System
+    Personnel -->|"Administración propia"| System
+    Gym -.->|"Lista; contrato y acceso pendientes"| System
+    System -.->|"Membresías/uso/costos pendientes"| Gym
+    System -.->|"Consultas/turnos pendientes"| Clinic
 
-    classDef person fill:#16324f,color:#ffffff,stroke:#16324f;
-    classDef system fill:#2f80ed,color:#ffffff,stroke:#2f80ed;
-    classDef external fill:#8a8a8a,color:#ffffff,stroke:#606060;
+    classDef person fill:#16324f,color:#fff,stroke:#16324f;
+    classDef system fill:#2f80ed,color:#fff,stroke:#2f80ed;
+    classDef external fill:#888,color:#fff,stroke:#606060;
     class Client,Operator,Personnel person;
     class System system;
     class Gym,Clinic external;
 ```
 
-**Figura 1. Contexto de Car Cruds — C4, nivel 1.** El Cliente utiliza el flujo de alquiler. El Operador administra flota y alquileres. El Responsable de personal administra candidatos, empleados e informes. Gimnasio y Clínica son los equipos externos identificados; sus contratos aún deben acordarse. Una persona registrada como empleado no adquiere por ello la habilitación de cliente conductor.
-
-**Leyenda:** azul oscuro = persona; azul = sistema propio; gris = sistema externo. Las flechas indican quién inicia una interacción y su propósito; no fijan protocolos externos todavía inexistentes.
+**Figura 1. Contexto del sistema.** Las líneas continuas representan acceso propio disponible por API; las discontinuas representan integración externa pendiente. Una persona registrada como empleado no adquiere por ello habilitación de conductor. Los informes no infieren diagnóstico, aptitud ni contratación.
 
 ## 3. Contenedores — C4, nivel 2
 
-Las figuras 2 y 3 presentan vistas complementarias del mismo sistema. La primera muestra acceso, servicios, réplicas y fuentes operativas; la segunda amplía mensajería y estructuras derivadas. Un contenedor técnico no se contabiliza como otro microservicio de negocio.
-
 ```mermaid
 flowchart TB
-    Users["Cliente / Operador<br/>[Personas]"]
-    Personnel["Responsable de personal<br/>[Persona]"]
-    Gym["Gimnasio<br/>[Sistema externo]"]
-    Clinic["Clínica<br/>[Sistema externo]"]
-    subgraph System["Car Cruds — límite del sistema"]
-        Web["Frontend web<br/>[Tecnología por definir]<br/>Interfaz de alquiler y personal"]
-        GW["API Gateway<br/>[Tecnología por definir]<br/>Autenticación y routing"]
-        Customers["Clientes<br/>[API HTTP/JSON propuesta]<br/>Perfiles y conductores"]
-        Rentals["Alquileres<br/>[API HTTP/JSON propuesta]<br/>Agenda, reservas y entrega"]
-        Employees["Empleados<br/>[API; contrato por acordar]<br/>Personal e informes"]
-        LB["LB interno<br/>[NGINX OSS propuesto]<br/>Distribuye tráfico de Flota"]
-        subgraph FleetReplicas["Servicio Flota — dos réplicas propuestas"]
-            FleetA["Flota A<br/>[API HTTP/JSON propuesta]<br/>Stateless"]
-            FleetB["Flota B<br/>[API HTTP/JSON propuesta]<br/>Stateless"]
+    User["Aplicaciones autorizadas<br/>Laboratorio local"]
+    Gym["Gimnasio<br/>Consumo externo pendiente"]
+    Clinic["Hospital<br/>Contrato pendiente"]
+    subgraph System["Car Cruds"]
+        Web["Frontend web<br/>Pendiente"]
+        GW["Gateway Go<br/>Autenticación y proxy"]
+        Customers["Clientes · Go<br/>Capas"]
+        Rentals["Alquileres · Go<br/>Hexagonal"]
+        Employees["Empleados · Go<br/>Hexagonal"]
+        LB["NGINX interno<br/>Round-robin"]
+        subgraph Replicas["Flota · Go · Capas"]
+            A["Flota A"]
+            B["Flota B"]
         end
-        CDB[("Clientes<br/>[PostgreSQL propuesto]")]
-        RDB[("Alquileres<br/>[PostgreSQL propuesto]")]
-        EDB[("Empleados<br/>[PostgreSQL propuesto]")]
-        FDB[("Flota<br/>[MongoDB propuesto]")]
-        Web -->|"HTTPS/JSON propuesto"| GW
-        GW -->|"Perfiles"| Customers
-        GW -->|"Alquileres"| Rentals
-        GW -->|"Personal e informes"| Employees
-        GW -->|"Catálogo [HTTP/JSON]"| LB
-        Rentals -->|"Habilitación [HTTP/JSON]"| Customers
-        Rentals -->|"Tarifa autoritativa [HTTP/JSON]"| LB
-        LB -->|"HTTP/JSON"| FleetA
-        LB -->|"HTTP/JSON"| FleetB
-        Customers -->|"SQL"| CDB
-        Rentals -->|"SQL"| RDB
-        Employees -->|"SQL"| EDB
-        FleetA -->|"Protocolo MongoDB"| FDB
-        FleetB -->|"Protocolo MongoDB"| FDB
-    end
-    Users -->|"HTTPS"| Web
-    Personnel -->|"HTTPS: gestión de personal"| Web
-    Gym -->|"Lista y uso [contrato / mecanismo por acordar]"| GW
-    Employees -->|"Revisiones / turnos [protocolo por acordar]"| Clinic
+        CDB[("PostgreSQL Clientes")]
+        RDB[("PostgreSQL Alquileres")]
+        EDB[("PostgreSQL Empleados")]
+        FDB[("MongoDB Flota")]
 
-    classDef person fill:#16324f,color:#ffffff,stroke:#16324f;
-    classDef external fill:#8a8a8a,color:#ffffff,stroke:#606060;
-    classDef app fill:#2f80ed,color:#ffffff,stroke:#2f80ed;
-    classDef data fill:#27ae60,color:#ffffff,stroke:#207c48;
-    classDef support fill:#c98b2b,color:#ffffff,stroke:#91631e;
-    class Users,Personnel person;
-    class Gym,Clinic external;
-    class Web,GW,Customers,Rentals,Employees,FleetA,FleetB app;
+        Web -.->|"Previsto"| GW
+        GW --> Customers
+        GW --> Rentals
+        GW --> Employees
+        GW --> LB
+        Rentals -->|"Conductor"| Customers
+        Rentals -->|"Tarifa autoritativa"| LB
+        LB --> A
+        LB --> B
+        Customers --> CDB
+        Rentals --> RDB
+        Employees --> EDB
+        A --> FDB
+        B --> FDB
+    end
+    User -->|"HTTP local con Bearer"| GW
+    Gym -.->|"Lista propia; acceso por acordar"| GW
+    Employees -.->|"Adaptador futuro"| Clinic
+    classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
+    classDef data fill:#27ae60,color:#fff,stroke:#207c48;
+    classDef support fill:#c98b2b,color:#fff,stroke:#91631e;
+    classDef pending fill:#eee,color:#333,stroke:#888,stroke-dasharray:5 5;
+    class GW,Customers,Rentals,Employees,A,B app;
     class CDB,RDB,EDB,FDB data;
     class LB support;
+    class Web,Gym,Clinic pending;
 ```
 
-**Figura 2. Contenedores principales — C4, nivel 2.** Hay cuatro servicios de negocio: Clientes, Flota, Alquileres y Empleados. Flota A/B son réplicas del mismo servicio. Gateway y Alquileres acceden a Flota por el mismo LB interno. Empleados consume Clínica directamente; la llamada saliente no atraviesa frontend ni gateway propio.
+**Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. El hospital se consumirá directamente desde Empleados; no a través de frontend ni gateway propio.
 
-La consulta de lista del Gimnasio entra por gateway y llega a Empleados. La flecha de uso representa una interacción todavía por acordar: si se adopta una recepción mediante nuestra API, tendrá el mismo borde controlado; si se elige otro mecanismo, se actualizarán contrato y vista. No presupone acceso externo a RabbitMQ.
-
-**Leyenda:** azul oscuro = persona; gris = sistema externo; azul = aplicación o servicio; verde = almacenamiento; ocre = infraestructura. Flecha continua = solicitud o acceso a datos. Las tecnologías indicadas son propuestas; framework, versiones y contrato externo permanecen pendientes.
+La entrada Docker está publicada únicamente en loopback. Las llamadas internas son HTTP/JSON autenticadas. HTTPS público se configurará antes de publicar la capacidad. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
 
 ```mermaid
 flowchart TB
-    subgraph System["Car Cruds — ampliación de contenedores de lectura"]
-        Rentals["Alquileres<br/>[API de negocio]<br/>Finaliza alquiler"]
-        Customers["Clientes<br/>[API de negocio]<br/>Historial proyectado"]
-        Fleet["Flota A/B<br/>[Réplicas del mismo servicio]<br/>Catálogo y tarifas"]
-        Broker["RabbitMQ<br/>[Broker propuesto]<br/>Eventos internos"]
-        Indexer["Indexador de Flota<br/>[Worker propuesto]<br/>Actualiza por versión"]
-        Search[("Solr<br/>[Motor propuesto]<br/>Índice derivado")]
-        Cache[("Redis<br/>[Caché propuesta]<br/>Fichas compartidas")]
-        Rentals -.->|"RentalCompleted.v1 [AMQP propuesto]"| Broker
-        Fleet -.->|"VehicleChanged.v1 [AMQP propuesto]"| Broker
-        Broker -.->|"Actualiza historial [AMQP propuesto]"| Customers
-        Broker -.->|"Cambios de ficha [AMQP propuesto]"| Indexer
-        Indexer -->|"Upsert por versión [HTTP/JSON]"| Search
-        Fleet -->|"Búsqueda [HTTP/JSON]"| Search
-        Fleet -->|"Cache-aside [RESP propuesto]"| Cache
+    subgraph System["Car Cruds · estructuras derivadas"]
+        Fleet["Flota A/B<br/>MongoDB como fuente"]
+        Rentals["Alquileres<br/>Finaliza alquiler"]
+        Customers["Clientes<br/>Historial"]
+        Broker["RabbitMQ<br/>Entrega al menos una vez"]
+        Indexer["Indexador Go<br/>Versión y CAS"]
+        Search[("Solr · índice")]
+        Cache[("Redis · fichas")]
+        Rentals -.->|"RentalCompleted.v1 / outbox"| Broker
+        Fleet -.->|"VehicleChanged.v1 / outbox"| Broker
+        Broker -.->|"ACK tras efecto durable"| Customers
+        Broker -.-> Indexer
+        Indexer -->|"Fuente vigente + actualización condicional"| Search
+        Fleet -->|"Búsqueda"| Search
+        Fleet -->|"Cache-aside versionado"| Cache
     end
-    classDef app fill:#2f80ed,color:#ffffff,stroke:#2f80ed;
-    classDef data fill:#27ae60,color:#ffffff,stroke:#207c48;
-    classDef support fill:#c98b2b,color:#ffffff,stroke:#91631e;
-    class Rentals,Customers,Fleet,Indexer app;
+    classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
+    classDef data fill:#27ae60,color:#fff,stroke:#207c48;
+    classDef support fill:#c98b2b,color:#fff,stroke:#91631e;
+    class Fleet,Rentals,Customers,Indexer app;
     class Search,Cache data;
     class Broker support;
 ```
 
-**Figura 3. Contenedores de soporte — complemento del C4 nivel 2.** Repite servicios para explicar sus lecturas derivadas. El indexador pertenece a Flota y no es un quinto servicio de negocio. Gimnasio y Clínica no se incluyen en el broker porque su mecanismo externo no se ha acordado.
+**Figura 3. Mensajería y lecturas derivadas.** La línea discontinua indica evento interno; no significa componente pendiente en esta figura. El indexador es un componente de Flota. Gimnasio y hospital no participan de RabbitMQ porque su mecanismo no fue acordado.
 
-**Leyenda:** azul = servicio o worker; verde = índice/caché; ocre = mensajería. Flecha continua = acceso síncrono; discontinua = evento interno. Publicadores de outbox e instrumentación no se representan como servicios adicionales.
+### Propiedad de datos
 
-### Propiedad de los datos
-
-| Servicio | Responsabilidad | Datos propios |
+| Servicio | Datos propios | Garantía principal |
 | --- | --- | --- |
-| Clientes | Perfil y habilitación del conductor; historial derivado | Cliente, licencia/estado, historial y mensajes procesados |
-| Flota | Vehículo, características y tarifa vigente; catálogo y búsqueda | Ficha, tarifa, versión y cambios pendientes |
-| Alquileres | Reserva exclusiva, precio acordado, agenda, retiro y devolución | Reservas, alquileres, bloqueos, idempotencia y outbox |
-| Empleados | Candidatos y empleados; integración administrativa e informes | Personal, referencias externas, evidencia por período y origen, estado de integración |
+| Clientes | Perfil, licencia/estado, inbox e historial | Habilitación e historial deduplicado |
+| Flota | Ficha, tarifa, versión y eventos pendientes | Documento/outbox atómicos |
+| Alquileres | Agenda, reserva, precio, idempotencia y outbox | Exclusión de períodos y un alquiler activo por auto |
+| Empleados | Empleados y candidatos | Separación, bajas y lista mínima; referencias/informes externos futuros |
 
-Cada servicio usa su almacenamiento mediante sus propios permisos. Las bases PostgreSQL pueden compartir servidor de desarrollo, con bases y credenciales distintas. No hay consultas, JOIN ni claves foráneas sobre bases ajenas.
+**Alquileres es la única autoridad sobre disponibilidad temporal.** Flota no duplica esa verdad con un booleano. Solr y Redis no autorizan el precio de confirmación. Un cambio de tarifa no modifica una reserva ya confirmada.
 
-**Alquileres conserva la única autoridad sobre disponibilidad temporal.** Flota no duplica esa verdad con un booleano de disponibilidad. Una modificación administrativa de ficha no elimina reservas; las acciones que impidan una entrega requieren coordinación explícita con Alquileres.
+## 4. Arquitectura interna y tecnologías
 
-Empleados conserva información administrativa mínima y referencias de turnos, sin diagnósticos ni inferencias de aptitud. Identidad externa de personal, campos concretos, permisos y retención se acordarán con los equipos. La evidencia debe permitir interpretar período, origen y vigencia; esto describe una necesidad interna, no un esquema externo aprobado.
-
-## 4. Arquitectura interna y patrones
-
-| Servicio | Estilo propuesto | Organización |
+| Servicio | Estilo implementado | Separación |
 | --- | --- | --- |
-| Alquileres | Hexagonal | Reglas y casos de uso; puertos para repositorio, Clientes, Flota y publicación; adaptadores externos |
-| Empleados | Hexagonal | Casos de uso de personal e informes; puertos para repositorio y proveedor clínico; traducción del contrato en adaptadores |
-| Clientes | Capas | Controlador HTTP → aplicación → repositorio |
-| Flota | Capas | Controlador → aplicación → repositorios de ficha/búsqueda; adaptadores de índice y caché |
+| Clientes | Capas | Presentación HTTP → negocio → datos PostgreSQL |
+| Flota | Capas | HTTP → servicio → repositorios MongoDB/Solr y caché |
+| Alquileres | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP, PostgreSQL y mensajería |
+| Empleados | Hexagonal | Dominio/aplicación → puertos → HTTP/PostgreSQL; puertos externos sin adaptador |
 
-Hexagonal protege reglas y casos de uso de HTTP, drivers y tipos de Clínica. El adaptador implementa un puerto expresado en términos propios; las dependencias del código apuntan al núcleo. Capas mantiene responsabilidades simples de perfiles y catálogo. Ningún nombre de directorio demuestra por sí mismo estos estilos.
+El núcleo hexagonal no depende de HTTP, SQL ni SDK de infraestructura. Repository, Adapter e inyección por constructores aíslan cambios y permiten unitarios con falsos. Outbox y consumidor idempotente protegen efectos derivados; cache-aside optimiza exploración. Circuit Breaker sigue previsto y no se incluye entre los mecanismos implementados.
 
-Repository, Adapter e inyección explícita de dependencias delimitan variaciones y permiten falsos en unitarios. Transactional Outbox e Idempotent Consumer protegen publicación y efectos derivados. Cache-aside optimiza lecturas de ficha; Circuit Breaker limita el impacto de dependencias lentas. Son patrones concretos justificados en los ADR, sin afirmar que estén implementados. Capas y Hexagonal son los estilos diferentes del requisito D2.
+Los ejecutables están en `cmd/` y utilizan Go 1.26.1/`net/http`. La infraestructura real se define en `compose.yaml`; imágenes fijadas por digest y credenciales generadas fuera de Git. No se propone Event Sourcing, CQRS completo ni programación reactiva sin necesidad adicional.
 
-La Clínica pertenece al puerto de Empleados. Alquileres no conserva el puerto genérico de proveedor externo de la versión 0.1. No se propone Event Sourcing, un CQRS completo ni programación reactiva sin una necesidad demostrada.
+## 5. Reserva y consistencia
 
-## 5. Flujo de reserva y consistencia
+1. Gateway autentica; Alquileres autoriza el ámbito del cliente.
+2. Se resuelve la clave idempotente por aplicación/operación antes de volver a validar: misma intención recupera la respuesta original, una distinta produce conflicto.
+3. Se consulta conductor a Clientes y tarifa vigente a Flota por el LB, omitiendo Redis/Solr.
+4. Se validan fechas, duración, licencia e importe esperado.
+5. Una transacción PostgreSQL registra agenda exclusiva, reserva, precio congelado y respuesta idempotente.
+6. Al devolver, otra transacción registra `COMPLETED` y `RentalCompleted` en outbox. El publicador confirma entrega antes de marcarlo publicado; Clientes registra inbox/historial antes del ACK.
 
-1. Gateway autentica la entrada y dirige a Alquileres; el servicio autoriza el recurso.
-2. Alquileres resuelve la idempotencia por aplicación, operación y clave antes de revalidar precio/agenda. Una carga distinta con la misma clave se rechaza.
-3. Consulta habilitación a Clientes y ficha/tarifa autoritativas a Flota a través del LB. La lectura de confirmación omite la caché.
-4. Compara el importe esperado con el cálculo autorizado.
-5. En una transacción local registra exclusión del período, reserva, precio, respuesta idempotente y outbox.
-6. Un publicador entrega el evento pendiente al broker. La caída temporal del broker conserva la reserva y la intención de publicación.
+La reserva no emite un evento sin consumidor definido. Los precios y la habilitación se leen antes de la transacción; esa ventana se acepta congelando la tarifa leída y revalidando conductor al retirar. No existe una transacción global entre servicios.
 
-[D4](adr/ADR-004-consistencia-concurrencia.md) registra la propuesta de restricción de exclusión sobre rangos de agenda y un índice único parcial para admitir como máximo un alquiler activo por vehículo. También documenta idempotencia durable, transiciones condicionales y outbox. La propuesta permanece sin implementación ni validación contra una base real; usar PostgreSQL no basta para afirmar que no existen carreras. No hay transacción global con Clientes o Flota. El precio aceptado se congela; cambios posteriores no modifican el acuerdo.
+[D4](adr/ADR-004-consistencia-concurrencia.md) utiliza exclusión de rangos, índice único parcial de alquiler activo y transiciones condicionales. La suite y el recorrido sobre PostgreSQL verificaron una sola ganadora concurrente, repetición y persistencia. El alquiler activo impide otro retiro aunque haya vencido su fin previsto.
 
-Retiro vuelve a validar conductor y ocupación física. Un alquiler activo impide otro retiro del mismo auto aunque haya vencido su fin previsto. Los cambios administrativos y las bajas con reservas futuras requieren coordinación por definir.
+## 6. Personal e integración pendiente
 
-## 6. Flujo administrativo e integración externa
+La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. Gimnasio tiene lectura y no acceso a candidatos, escrituras o datos médicos.
 
-Empleados publica una lista de personal para Gimnasio y registra evidencia de uso/no uso por período y origen. El mecanismo de recepción, vinculación de personas, alcance de lista y criterios del informe deben acordarse. No se inventan tarifas, descuentos ni reglas económicas. Falta de evidencia no equivale a no uso confirmado.
+Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).
 
-La capacidad de Clínica interviene en el flujo de revisiones/turnos y en un informe con/sin turno confirmado. La información del proveedor se traduce al modelo administrativo; no se interpreta como diagnóstico, aptitud ni contratación automática.
+Para una futura solicitud externa con efecto, el diseño exige intención local durable antes del envío y recuperación acordada ante resultado desconocido. Los puertos actuales no acreditan ese flujo ni el almacenamiento de turnos; la ruta administrativa informa `503 NOT_CONFIGURED`. [D9](adr/ADR-009-consumo-clinica.md) conserva el diseño.
 
-```mermaid
-sequenceDiagram
-    actor Personnel as Responsable de personal
-    participant Entry as Gateway
-    participant HR as Empleados
-    participant Clinic as Clínica
-    participant HRDB as Base de Empleados
-    Personnel->>Entry: Gestionar revisión/turno
-    Entry->>HR: Caso de uso autorizado
-    opt Solicitud con efecto
-        HR->>HRDB: Guardar intención de revisión
-        HRDB-->>HR: Intención registrada
-    end
-    HR->>Clinic: Capacidad por acordar
-    alt Evidencia suficiente
-        Clinic-->>HR: Evidencia según contrato
-        HR->>HRDB: Guardar evidencia administrativa
-        HR-->>Entry: Informe según evidencia
-    else Error o evidencia insuficiente
-        HR->>HRDB: Registrar pendiente/indeterminado
-        HR-->>Entry: Resultado pendiente/indeterminado
-    end
-    Entry-->>Personnel: Mostrar estado y período
-```
+## 7. Mensajería, índice y caché
 
-**Figura 4. Secuencia administrativa propuesta.** No especifica endpoints, nombres de campos ni protocolo externo. Una solicitud con efecto se envía solo después de guardar su intención local de forma durable; una consulta no requiere ese paso. La respuesta válida habilita un informe sobre turnos; un timeout puede dejar resultado desconocido. Una operación con efecto no se reenvía automáticamente sin idempotencia o mecanismo de consulta acordado.
+Flota utiliza outbox embebido en el documento MongoDB, con máximo 128 pendientes: si está lleno se rechaza el cambio antes de confirmar. El indexador consulta la versión vigente y actualiza Solr condicionalmente; duplicados y mensajes atrasados no deben retroceder la proyección. Se configuraron colas y entrega durable; reproceso operativo y alertas requieren cierre.
 
-## 7. Mensajería, búsqueda y caché
+Solr se actualiza ante cambios sin esperar búsquedas. El objetivo de frescura de 5 s desde commit sigue pendiente de medición completa. La reconstrucción inicial reencola la fuente en el mismo core y se verificó su resultado; el índice nuevo con intercambio controlado permanece previsto.
 
-Outbox guarda intención y cambio de negocio juntos; un relay puede duplicar. Historial de Clientes y registro de mensaje procesado se actualizan en la misma transacción antes del ACK. El indexador utiliza identificador estable y versión para evitar repetir o revertir efectos. Hay reintentos acotados, DLQ con responsable y reproceso controlado. La atomicidad de ficha/outbox en MongoDB debe resolverse antes de implementar.
-
-Solr ofrecerá paginación, filtros y orden por tarifa. Los cambios actualizan el índice sin esperar una búsqueda del usuario. El retraso máximo de **5 segundos en operación normal** sigue siendo un objetivo propuesto, no medido. Reconstrucción y eliminación de fichas deben comprobarse.
-
-Redis compartido utiliza **cache-aside**, TTL inicial propuesto de **60 segundos** e invalidación después de confirmar cambios en la fuente. Deben resolverse carreras de carga/invalidación. La confirmación de reserva siempre consulta la fuente de Flota sin caché. El impacto se medirá con la misma carga sin caché, fría y caliente.
+Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un llenado anterior tras invalidación exitosa y mientras Redis conserva la marca. `volatile-lru` protege las marcas de expulsión; una prueba real con 69 expulsiones preservó V2 y rechazó V1. Las marcas crecen en memoria: falta una política de limpieza. Pérdida/vaciado de Redis elimina esa garantía; OOM o indisponibilidad habilitan fallback acotado. La tarifa autoritativa sigue en MongoDB. La comparación caliente/fallback registró cero lecturas de ficha MongoDB durante 8461 hits y 7395 lecturas fuente con Redis detenido. Todas las respuestas fueron 200; la latencia no mejoró uniformemente. [D7](adr/ADR-007-cache.md) conserva método, números y pendientes de fase fría/línea base deshabilitada.
 
 ## 8. Balanceo, resiliencia y observabilidad
 
-NGINX interno distribuirá solicitudes de gateway y Alquileres entre dos réplicas stateless de Flota. Se propone round-robin inicialmente. La identidad y el permiso de la operación no dependen de qué réplica se elija. Las fuentes son compartidas; no se usan sesiones locales.
+NGINX distribuye a dos réplicas con detección pasiva. Los tiempos e intentos están en [D12](adr/ADR-012-balanceo-carga.md); el límite de lectura del proxy mide inactividad, no un deadline total. Alquileres limita las validaciones internas de confirmación a 1 s por llamada y conserva el presupuesto propio. Dos réplicas no eliminan los puntos únicos de gateway, LB y fuentes.
 
-Se propone detección pasiva de fallas de réplica. Los chequeos activos periódicos de NGINX Plus no se atribuyen a OSS; la detección pasiva necesita tráfico y no demuestra readiness antes de recibir solicitudes. Los detalles verificados y la evidencia pendiente están en [D12](adr/ADR-012-balanceo-carga.md). Esta topología conserva un LB único y dependencias únicas; no demuestra alta disponibilidad completa.
+Se implementaron deadlines, bulkheads, pools, fallback y outbox. Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). Los proveedores externos no se ensayaron.
 
-Deadline, timeout, reintento limitado, Circuit Breaker y límites de concurrencia se definen por operación. La incertidumbre no se convierte en éxito ni en resultado negativo. Clínica caída afecta su flujo administrativo; no condiciona la reserva de autos. Redis caído puede derivar lectura a la fuente con capacidad acotada; Solr caído afecta búsqueda; broker caído retrasa proyecciones conservando outbox. [D10](adr/ADR-010-resiliencia.md) detalla las respuestas.
+Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. Jaeger exportó una traza de reserva con siete spans en cuatro servicios. Las métricas tienen rutas estables y exposición interna; colector, tableros, alertas y contexto de traza por AMQP siguen pendientes. [D11](adr/ADR-011-observabilidad.md) diferencia instrumentación de operación.
 
-Los logs JSON, métricas y trazas incluirán correlación e instancia, sin tokens, diagnósticos ni documentos personales. El tablero permitirá observar distribución por réplica, errores/latencias, reintentos, circuitos, hit rate, retraso del índice, outbox/DLQ e integración administrativa pendiente. [D11](adr/ADR-011-observabilidad.md) define la primera propuesta de objetivos y alertas; todavía no hay evidencia operativa.
+[D13](adr/ADR-013-capacidad-costos.md) registra la primera carga de disponibilidad, el límite de admisión de gateway, una alternativa y estimación de laboratorio cloud. No extrapola el entorno local de 12 CPU a las VM propuestas.
 
-La demostración posterior comparará carga, caché y réplicas; provocará fallas y documentará recuperación en POSTMORTEM. [D13](adr/ADR-013-capacidad-costos.md) define medición y estimación de costos, sin resultados o importes inventados.
+## 9. Aspectos por resolver
 
-## 9. Distribución y decisiones pendientes
-
-El frontend y gateway constituyen el acceso público. LB, servicios y almacenes permanecen internos. Cada servicio tendrá configuración por entorno y credenciales propias. Docker Compose sigue propuesto para el arranque local único; no se incorpora una configuración ejecutable en esta etapa documental.
-
-| Aspecto | Trabajo pendiente |
+| Aspecto | Pendiente |
 | --- | --- |
-| Contratos externos | Obtener/acordar listas, identidad, protocolo, estados, permisos, errores, idempotencia y entorno |
-| Servicio operativo de entrega 2 | Implementar flujo y almacenamiento, sin confundir documentación con ejecución |
-| Consistencia | Implementar y validar las garantías propuestas en [D4](adr/ADR-004-consistencia-concurrencia.md): exclusión, idempotencia, retiro, transiciones y recuperación de fallas; resolver atomicidad de ficha/outbox en Flota |
-| Tecnologías | Framework/driver, versiones compatibles y operación de motores |
-| Flota replicada | Configuración NGINX, direcciones, detección pasiva, tiempos y ensayo con evidencia |
-| Evidencia técnica | Logs correlacionados, primera traza, medición de búsqueda/caché/carga y fallas |
-| Publicación | URL accesible, credenciales de consumidores, configuración y permanencia del servicio |
-| Capacidad y costos | Entorno, carga representativa, límite principal y precios oficiales fechados |
+| Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
+| Integraciones | Adaptadores reales, informes de gastos/uso/turnos y pruebas contra los proveedores |
+| Presentación | Frontend y acceso público HTTPS |
+| Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
+| Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |
+| Revisión | Aceptación del equipo y de cátedra; aprobación antes de integrar a main |
 
-## 10. Referencias y continuidad de decisiones
+## 10. Referencias e historial
 
-Material de cátedra en `clases.zip`: teóricos 1 a 8; prácticas de Repository (2), caché (3), RabbitMQ (4), Solr (5) y NGINX (7). Los estilos y la diferencia gateway/LB se fundamentan respectivamente en los teóricos 8 y 6.
+[Enunciado](../Enunciado%20TP%20Final.md), [SPEC](../SPEC.md), [BACKLOG](BACKLOG.md), [REQUERIMIENTOS](REQUERIMIENTOS.md) e [índice ADR](adr/README.md). Material en `clases.zip`: teoría 02, 03, 04, 05, 06, 07 y 08; prácticas Repository, caché, RabbitMQ, Solr y NGINX.
 
-[D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D2](adr/ADR-002-arquitectura-interna.md), [D3 vigente](adr/ADR-015-persistencia-v2.md), [D4](adr/ADR-004-consistencia-concurrencia.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md). Los ADR-001, ADR-003 y ADR-005 permanecen como registros reemplazados, conservando su cuerpo histórico. La capacidad compartida propuesta y su D8 se consultan en [contratos](contracts/README.md).
+Los ADR-001/003/005/008 conservan su cuerpo histórico y están reemplazados por ADR-014/015/016/017. Las nuevas API propias no renombran el contrato del mock.
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
-| 0.1 | 7 de octubre de 2026 | Diseño inicial de tres servicios y capacidad de alquiler |
-| 0.2 | 10 de octubre de 2026 | Añade Empleados, integración Gimnasio/Clínica y LB interno de Flota |
-
-
-## Aclaración de alcance — 11 de octubre de 2026
-
-El gimnasio de Pablo consume nuestra lista de empleados y administra membresías y costos. Empleados deberá recibir o consultar afiliación, costo por membresía, gastos por empleado y costos totales por período/moneda; el informe de uso es complementario y no reemplaza el económico. Se conservarán origen, referencias y correcciones, sin duplicar gastos ni asumir cero ante datos faltantes. El borrador de lista no define todavía el intercambio económico.
-
-Car Cruds consume el hospital de Octi para empleados registrados: identificar quién necesita consulta mediante información recibida/consultada al hospital, solicitar el turno desde Empleados, conservar referencias y resultado, y reflejar cambios de estado, cancelaciones y reprogramaciones administrados por el hospital. La gestión de candidatos existente se mantiene como flujo adicional y separado. No se infieren diagnósticos ni asistencia a partir del turno.
-
-Contratos, operaciones externas, mecanismos de actualización, identificadores y configuración operativa siguen pendientes. No se inventan endpoints externos ni valores de tarifas/timeouts. El gateway encamina el acceso entrante a Empleados; el adaptador saliente llama al hospital directamente. PostgreSQL propio, Docker Compose, configuración y pruebas de estos componentes aún no existen. El balanceador y las dos réplicas de Flota siguen como diseño pendiente de implementación y demostración.
-
-La trazabilidad detallada está en SPEC (RN-16, RN-21 y RN-22), REQUERIMIENTOS (RF-13 a RF-17 y RF-19), BACKLOG (HU-13 a HU-17 y HU-23) e INTEGRACIONES (EXT-02, EXT-04 a EXT-10 y EXT-15). Esta aclaración registra el alcance solicitado por el grupo; no acredita aprobación externa ni implementación.
+| 0.1 | 7 de octubre de 2026 | Diseño inicial de tres servicios |
+| 0.2 | 10 de octubre de 2026 | Empleados, integración administrativa y balanceador |
+| 0.3 | 14 de octubre de 2026 | Arquitectura del backend implementado y límites de evidencia/operación |

@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D1: límites de los servicios |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Límites implementados; acuerdos externos pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 | Sustituye | [ADR-001](ADR-001-limites-de-servicios.md) |
 
 ## 1. Contexto
@@ -47,6 +47,10 @@ Se modifica la frontera de integración externa propuesta en D1 inicial. Las lla
 
 Revisar diagramas y casos de uso; comprobar aislamiento de datos y permisos; probar reservas concurrentes e informes con evidencia ausente o contradictoria. Acordar identificación externa de personal, datos mínimos, períodos, paginación, autenticación, protocolos y forma de informar uso. Ningún contrato externo se considera aprobado.
 
+## Avance de implementación — 14 de octubre de 2026
+
+Los cuatro servicios operan con propietarios y credenciales de datos separados. Alquileres consulta Clientes y Flota; no incorpora dependencias de gimnasio ni hospital. Empleados distingue candidato y empleado y publica una proyección mínima propia. El recorrido comprueba que gimnasio no accede a candidatos ni a escrituras. Las integraciones e informes externos descritos en la decisión permanecen pendientes de contrato y no se presentan como operativos.
+
 ## 6. Referencias e historial
 
 Material en `clases.zip`: `teoria/01-monolito-microservicios.md`, `teoria/02-datos-en-microservicios.md` y `teoria/08-estilos-arquitectura-backend.md`. [Arquitectura](../ARCHITECTURE.md).
@@ -54,6 +58,7 @@ Material en `clases.zip`: `teoria/01-monolito-microservicios.md`, `teoria/02-dat
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Añade Empleados y ubica las integraciones administrativas |
+| 0.3 | 14 de octubre de 2026 | Registra implementación propia, evidencia local y pendientes externos |
 
 
 ## Revisión de alcance — 11 de octubre de 2026
@@ -62,4 +67,4 @@ Se amplía la propuesta sin cambiar las fronteras ni las tecnologías: Gimnasio 
 
 El flujo del hospital comprende empleados registrados, además del flujo previo de candidatos: información de quién necesita consulta, solicitud de turno desde Empleados y seguimiento de modificaciones/cancelaciones/reprogramaciones administradas por el proveedor. Persistirá la relación entre empleado, necesidad, intención local, turno externo y evidencia de estado, sin interpretar un timeout como ausencia ni repetir comandos sin recuperación acordada.
 
-La propuesta continúa no implementada y no acordada con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.
+El alcance de membresías/costos y turnos continúa sin implementar ni acordar con los equipos externos. No se modifica el borrador de lista para inventar contratos económicos o médicos. Consultar INTEGRACIONES, RF-19/HU-23 y RN-21/RN-22 para los acuerdos y verificaciones pendientes. La revisión anterior del registro se conserva en Git.

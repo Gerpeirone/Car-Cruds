@@ -4,9 +4,9 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.2 |
-| Fecha | 12 de octubre de 2026 |
-| Estado | Diseño y preparación documental de la Entrega 2 |
+| Versión | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Requerimientos vigentes con cobertura parcial verificada |
 | Hito objetivo | 23 de octubre de 2026 |
 | Relación con el alcance | Alquileres como negocio principal; Clientes, Flota, Alquileres y Empleados |
 
@@ -14,11 +14,27 @@
 
 Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-22 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
 
-La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados y posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La preparación documental no agrega componentes ejecutables: solo está disponible el mock de reservas de la primera entrega.
+La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados y posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La versión 0.3 registra la implementación del backend propio y su evidencia local. El mock de entrega 1 se conserva separado; los contratos y adaptadores externos continúan pendientes.
 
 Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni mecanismos de devolución. El comportamiento esperado se especifica sin imponer esas decisiones externas. Los informes permiten seguimiento y decisiones humanas; no determinan aptitud médica, contratación automática ni gastos monetarios a partir de tarifas inexistentes en los acuerdos.
 
-## 2. Requerimientos funcionales
+## 2. Cobertura de los requerimientos
+
+| Identificadores | Estado al 14 de octubre | Evidencia o limitación |
+| --- | --- | --- |
+| RF-01 a RF-09 | Backend propio implementado | Pruebas reales y recorrido local; alcance de Clientes limitado a registro/consulta |
+| RF-10 y RF-11 | Gestión propia de candidatos/empleados implementada | Registros separados, bajas y paginación; seguimiento clínico pendiente |
+| RF-12 | Lista propia activa implementada provisionalmente | Formato mínimo y permisos verificados; acuerdo/publicación/consumo externo pendientes |
+| RF-13 a RF-17 y RF-19 | Pendientes de contrato externo | Sin membresías, tarifas, turnos ni resultados inventados |
+| RF-18 | Acceso por aplicaciones y roles implementado parcialmente | 401/403 y ámbito de recurso verificados; no gestión de cuentas personales |
+| RF-20 | Mensajería propia implementada | Finalización y efecto único en Clientes verificados; recuperación/reproceso ampliados pendientes |
+| RF-21 | Búsqueda derivada implementada | Actualización y reconstrucción inicial verificadas; frescura desde commit e índice sombra pendientes |
+| RF-22 | Caché implementada y comparación inicial ejecutada | Versión/expulsión y reducción de lecturas de ficha verificadas; latencia no mejora uniformemente; fría/baseline pendientes |
+| RNF-01 a RNF-12 | Cobertura parcial transversal | Persistencia/concurrencia, autorización, Compose, logs y traza HTTP cuentan con evidencia; carga y fallas iniciales tienen informes reales; sostenimiento, operación pública, integración externa, tablero y alertas requieren cierre |
+
+Los requerimientos y sus criterios mantienen su alcance completo. La matriz no equivale a aceptación: deben revisarse las HU asociadas y sus resultados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) enlaza los informes y distingue código, medición y pendientes; [ENTREGA-2](ENTREGA-2.md) identifica las obligaciones del hito.
+
+## 3. Requerimientos funcionales
 
 ### RF-01 — Administrar catálogo
 
@@ -26,7 +42,7 @@ El sistema deberá permitir al operador autorizado registrar y modificar caracte
 
 **Verificación:** Consulta posterior del cambio; modificación de tarifa sin recalcular reservas existentes.
 
-**Trazabilidad:** HU-01; RN-06. **Estado:** Diseñado.
+**Trazabilidad:** HU-01; RN-06. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-02 — Buscar vehículos
 
@@ -34,7 +50,7 @@ El sistema deberá ofrecer búsqueda paginada por marca, categoría, transmisió
 
 **Verificación:** Resultados que respeten filtros y orden; confirmación contra fuentes autoritativas.
 
-**Trazabilidad:** HU-02; RN-03, RN-06. **Estado:** Diseñado.
+**Trazabilidad:** HU-02; RN-03, RN-06. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-03 — Registrar clientes
 
@@ -42,7 +58,7 @@ El sistema deberá mantener perfiles identificables y habilitación del conducto
 
 **Verificación:** Cliente habilitado consultable; conductor bloqueado o sin condiciones válidas rechazado.
 
-**Trazabilidad:** HU-03; RN-02, RN-12. **Estado:** Diseñado.
+**Trazabilidad:** HU-03; RN-02, RN-12. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-04 — Consultar disponibilidad y cotización
 
@@ -50,7 +66,7 @@ El sistema deberá calcular disponibilidad y total para un vehículo y período 
 
 **Verificación:** Cotización reproducible; rechazo de fechas o duración inválidas; ausencia de ocupación por consulta.
 
-**Trazabilidad:** HU-04; RN-01, RN-03, RN-06. **Estado:** Diseñado.
+**Trazabilidad:** HU-04; RN-01, RN-03, RN-06. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-05 — Confirmar reservas
 
@@ -58,7 +74,7 @@ El sistema deberá confirmar una reserva solo si cliente, período, precio y age
 
 **Verificación:** Prueba concurrente con una sola ganadora; precio cambiado rechazado; repetición estable y colisión de clave rechazada.
 
-**Trazabilidad:** HU-05; RN-01 a RN-06. **Estado:** Diseñado.
+**Trazabilidad:** HU-05; RN-01 a RN-06. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-06 — Consultar y cancelar reservas
 
@@ -66,7 +82,7 @@ El sistema deberá permitir consultar reservas dentro del ámbito autorizado y c
 
 **Verificación:** Estado actual consultable; cancelación libera una vez; rechazo de acceso y estados no permitidos.
 
-**Trazabilidad:** HU-06; RN-05, RN-07, RN-12. **Estado:** Diseñado.
+**Trazabilidad:** HU-06; RN-05, RN-07, RN-12. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-07 — Registrar retiro
 
@@ -74,7 +90,7 @@ El sistema deberá iniciar el alquiler desde una reserva vigente, revalidando al
 
 **Verificación:** Transición RESERVED → ACTIVE; intento incompatible rechazado sin entrega ni segunda transición.
 
-**Trazabilidad:** HU-07; RN-02, RN-08, RN-10. **Estado:** Diseñado.
+**Trazabilidad:** HU-07; RN-02, RN-08, RN-10. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-08 — Registrar devolución
 
@@ -82,7 +98,7 @@ El sistema deberá finalizar un alquiler activo mediante devolución explícita.
 
 **Verificación:** Transición ACTIVE → COMPLETED una sola vez; vencimiento sin devolución conserva ACTIVE.
 
-**Trazabilidad:** HU-08; RN-09, RN-10. **Estado:** Diseñado.
+**Trazabilidad:** HU-08; RN-09, RN-10. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-09 — Gestionar mantenimiento en agenda
 
@@ -90,7 +106,7 @@ El sistema deberá registrar bloqueos de mantenimiento en Alquileres, comproband
 
 **Verificación:** Bloqueo válido impide reservas; conflicto no cancela registros existentes.
 
-**Trazabilidad:** HU-09; RN-03, RN-11. **Estado:** Diseñado.
+**Trazabilidad:** HU-09; RN-03, RN-11. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-10 — Registrar posibles incorporaciones
 
@@ -98,7 +114,7 @@ El sistema deberá mantener candidatos y su seguimiento en Empleados, diferenci�
 
 **Verificación:** Candidato conservado por separado y excluido de la lista de empleados por esa sola condición.
 
-**Trazabilidad:** HU-10; RN-13, RN-17, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-10; RN-13, RN-17, RN-20. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-11 — Gestionar empleados
 
@@ -106,7 +122,7 @@ El sistema deberá mantener el registro y los cambios de empleados a partir de d
 
 **Verificación:** Alta autorizada consultable; candidato sin alta no tratado como empleado; cambios preservados.
 
-**Trazabilidad:** HU-11; RN-13, RN-14, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-11; RN-13, RN-14, RN-20. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-12 — Ofrecer lista al gimnasio
 
@@ -114,7 +130,7 @@ El sistema deberá permitir al gimnasio autorizado obtener la lista acordada de 
 
 **Verificación:** Test del contrato pactado y de permisos; proyección sin datos ajenos al propósito acordado.
 
-**Trazabilidad:** HU-12; RN-13, RN-14, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-12; RN-13, RN-14, RN-20. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-13 — Incorporar membresías, uso y costos
 
@@ -122,7 +138,7 @@ El sistema deberá recibir o consultar al gimnasio membresías, uso informado, c
 
 **Verificación:** Recepción conforme al mecanismo pendiente de acuerdo; pruebas de duplicado, orden y ausencia de respuesta.
 
-**Trazabilidad:** HU-13; RN-14, RN-15, RN-16, RN-19, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-13; RN-14, RN-15, RN-16, RN-19, RN-20. **Estado:** Diseñado; contrato externo pendiente.
 
 ### RF-14 — Informar membresías y gastos
 
@@ -130,7 +146,7 @@ El sistema deberá generar un informe por período con empleados con membresía,
 
 **Verificación:** Conteos, gastos individuales y totales coinciden con registros únicos del gimnasio; duplicados no incrementan gastos, correcciones no se suman como nuevos cargos y datos faltantes no se convierten en cero. Las monedas se presentan por separado.
 
-**Trazabilidad:** HU-14; RN-15, RN-16. **Estado:** Diseñado.
+**Trazabilidad:** HU-14; RN-15, RN-16. **Estado:** Diseñado; contrato externo pendiente.
 
 ### RF-15 — Solicitar revisión o turno
 
@@ -138,7 +154,7 @@ El sistema deberá solicitar por la API del hospital de Octi un turno para un em
 
 **Verificación:** Solicitud trazable; confirmación solo con evidencia del proveedor; timeout sin afirmación de ausencia ni repetición insegura.
 
-**Trazabilidad:** HU-15; RN-17, RN-18, RN-19, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-15; RN-17, RN-18, RN-19, RN-20. **Estado:** Diseñado; contrato externo pendiente.
 
 ### RF-16 — Conciliar estado de solicitudes
 
@@ -146,7 +162,7 @@ El sistema deberá actualizar el seguimiento mediante el mecanismo pactado con l
 
 **Verificación:** Respuesta tardía válida puede resolver un desconocido; caída, invalidez o silencio no producen sin turno.
 
-**Trazabilidad:** HU-16; RN-17, RN-18, RN-19, RN-20. **Estado:** Diseñado.
+**Trazabilidad:** HU-16; RN-17, RN-18, RN-19, RN-20. **Estado:** Diseñado; contrato externo pendiente.
 
 ### RF-17 — Informar existencia de turno
 
@@ -154,7 +170,7 @@ El sistema deberá presentar empleados y, en un ámbito separado, candidatos con
 
 **Verificación:** Clasificación consistente con la conciliación y ausencia de conclusiones médicas o de contratación automáticas.
 
-**Trazabilidad:** HU-17; RN-13, RN-17, RN-18. **Estado:** Diseñado.
+**Trazabilidad:** HU-17; RN-13, RN-17, RN-18. **Estado:** Diseñado; contrato externo pendiente.
 
 ### RF-18 — Autorizar operaciones
 
@@ -162,7 +178,7 @@ El sistema deberá comprobar identidad y permiso sobre operación, recurso y ám
 
 **Verificación:** Accesos permitidos y rechazados comprobados por rol y consumidor; identidad manipulada no aceptada.
 
-**Trazabilidad:** HU-18; transversal a HU-01 a HU-17 y HU-23; RN-12, RN-14. **Estado:** Diseñado.
+**Trazabilidad:** HU-18; transversal a HU-01 a HU-17 y HU-23; RN-12, RN-14. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-19 — Identificar empleados que necesitan consulta
 
@@ -184,7 +200,7 @@ El sistema deberá publicar `VehicleChanged.v1` desde Flota y `RentalCompleted.v
 
 **Verificación:** Un evento publicado se consume una vez aunque se entregue repetido; una versión anterior no revierte una posterior; con el broker caído el cambio de negocio se conserva y el evento se entrega al recuperarse; un mensaje inválido llega a la cola de fallidos.
 
-**Trazabilidad:** HU-24; RNF-02, RNF-03. **Fuente:** 2.5; D4 y D5. **Estado:** Diseñado.
+**Trazabilidad:** HU-24; RNF-02, RNF-03. **Fuente:** 2.5; D4 y D5. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-21 — Sincronizar y reconstruir el índice de búsqueda
 
@@ -192,7 +208,7 @@ El sistema deberá mantener el índice de vehículos actualizado a partir de los
 
 **Verificación:** Una modificación aparece en los resultados dentro del objetivo; la reconstrucción recupera todos los documentos sin retrocesos de versión; el retraso del índice es observable.
 
-**Trazabilidad:** HU-25; RNF-08. **Fuente:** 2.6; D6. **Estado:** Diseñado.
+**Trazabilidad:** HU-25; RNF-08. **Fuente:** 2.6; D6. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-22 — Consultar fichas con caché
 
@@ -200,9 +216,9 @@ El sistema deberá servir las consultas frecuentes de fichas de vehículos desde
 
 **Verificación:** Métricas de latencia, aciertos y accesos a almacenamiento antes y después de la caché; invalidación tras un cambio y expiración según D7, comprobando el desfase permitido y las carreras de actualización. Con la caché caída se intenta la fuente con concurrencia acotada; si esta no admite la carga, se informa degradación o indisponibilidad controlada.
 
-**Trazabilidad:** HU-26; RNF-09. **Fuente:** 2.7; D7. **Estado:** Diseñado.
+**Trazabilidad:** HU-26; RNF-09. **Fuente:** 2.7; D7. **Estado:** Cobertura parcial del backend; ver matriz.
 
-## 3. Requerimientos no funcionales
+## 4. Requerimientos no funcionales
 
 Los valores identificados como propuestas son objetivos de diseño que deben validarse; no son mediciones del sistema ni acuerdos de servicio externos. La verificación debe registrar configuración, carga y resultado utilizados.
 
@@ -302,7 +318,7 @@ Toda capacidad entre grupos contará con contrato formal, estándar, versionado 
 
 **Trazabilidad:** HU-12, HU-13, HU-15, HU-16, HU-18, HU-21; RN-14 a RN-19. **Fuente:** 4.1; D5, D8 y D9. **Estado:** Diseñado.
 
-## 4. Correspondencia de reglas de negocio
+## 5. Correspondencia de reglas de negocio
 
 Las reglas RN-01 a RN-12 de SPEC mantienen su definición. Las nuevas reglas se referencian con los siguientes identificadores, sin convertir los conceptos internos en campos de un contrato externo:
 
@@ -321,7 +337,7 @@ Las reglas RN-01 a RN-12 de SPEC mantienen su definición. Las nuevas reglas se 
 
 La política de desconocimiento aplica a todo fallo de integración: la ausencia válida comunicada por el proveedor es un hecho de negocio; un timeout, respuesta inválida, falta de evidencia o interrupción del canal es una condición técnica. El sistema conserva la última evidencia y su vigencia, indicando los límites conocidos sin fabricar una conclusión nueva.
 
-## 5. Pendientes de elicitación y acuerdo
+## 6. Pendientes de elicitación y acuerdo
 
 | Identificador | Información pendiente | Requisitos afectados |
 | --- | --- | --- |
@@ -335,19 +351,19 @@ La política de desconocimiento aplica a todo fallo de integración: la ausencia
 
 Estos pendientes bloquean la implementación contractual afectada. Los actores pueden revisar capacidades y criterios de aceptación antes de que exista el esquema externo. El modo de devolución de uso del gimnasio permanece **pendiente de acuerdo**, sin asumir notificación, consulta periódica, API o mensajería.
 
-## 6. Criterio de cumplimiento de la Entrega 2
+## 7. Criterio de cumplimiento de la Entrega 2
 
 | Resultado exigido por sección 6.3 del enunciado | Situación de esta preparación |
 | --- | --- |
-| Al menos un servicio operativo | Pendiente de implementación |
-| Funcionalidad compartida funcionando | Lista de empleados definida como capacidad; contrato y operación pendientes |
-| Al menos un tipo de almacenamiento integrado al flujo | Diseño previsto; falta integración real |
-| Logs estructurados y correlacionados y primera traza distribuida | Requeridos por RNF-07; falta evidencia operativa |
-| D2, D6, D7, D9, D10, D12 y D13; validación de D1/D3/D5; primera D11; revisión de D8 | Documentación en preparación; validación vinculada a implementación y acuerdos |
+| Al menos un servicio operativo | Cuatro servicios propios operativos; recorrido local verificado |
+| Funcionalidad compartida funcionando | Lista propia operativa local; acuerdo, publicación y consumo externo pendientes |
+| Al menos un tipo de almacenamiento integrado al flujo | PostgreSQL/MongoDB integrados y persistencia verificada |
+| Logs estructurados y correlacionados y primera traza distribuida | Registros correlacionados y exportación Jaeger reales |
+| D2, D6, D7, D9, D10, D12 y D13; validación de D1/D3/D5; primera D11; revisión de D8 | Implementación/evidencia parcial; D9 y aceptación externa pendientes; detalle en ENTREGA-2 |
 
 Ni estas tablas ni las pruebas existentes del mock acreditan el cumplimiento completo de E2. Los hitos y prioridades de las historias se registran en [BACKLOG.md](BACKLOG.md).
 
-## 7. Referencias y fundamento de patrones
+## 8. Referencias y fundamento de patrones
 
 - [Enunciado académico](../Enunciado%20TP%20Final.md): requisitos de arquitectura, integración y Entrega 2.
 - [SPEC.md](../SPEC.md): reglas RN-01 a RN-22 y estados del dominio.

@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D10: resiliencia |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Protecciones y fallas locales verificadas; Circuit Breaker y ampliaciones pendientes |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto
 
@@ -41,7 +41,11 @@ Reintentos ilimitados amplifican saturación. Un circuito único para todas las 
 
 ## 4. Consecuencias y validación
 
-Se agregan estados observables y configuración que requiere calibración. No se declara implementado ningún mecanismo. Ensayar caída/lentitud de Clínica, una réplica de Flota, Redis y broker con hipótesis y condición de detención. Registrar impacto, detección, recuperación y acciones en `docs/POSTMORTEM.md`; comprobar ausencia de duplicación, límites de espera y preservación de operaciones independientes.
+Se agregan estados observables y configuración que requiere calibración. La sección de avance distingue las protecciones implementadas de las propuestas pendientes. Ensayar caída/lentitud de Clínica, una réplica de Flota, Redis y broker con hipótesis y condición de detención. Registrar impacto, detección, recuperación y acciones en `docs/POSTMORTEM.md`; comprobar ausencia de duplicación, límites de espera y preservación de operaciones independientes.
+
+## Avance de implementación — 14 de octubre de 2026
+
+Se implementaron deadlines HTTP/AMQP, límites de concurrencia y pools, fallback Redis hacia MongoDB, outbox y colas de fallidos. El gateway rechaza sobre su límite de 64 solicitudes; la lectura autoritativa no depende de caché ni índice. Circuit Breaker no está implementado. La suite verifica cancelación/validación del transporte y publicación bloqueada; el recorrido confirma idempotencia y efecto único. El [ensayo real](../evidence/resilience.json) verificó fallback Redis, retirada/recuperación de Flota B y recuperación de RabbitMQ/Solr; [POSTMORTEM](../POSTMORTEM.md) registra impacto y acciones. El [mensaje incompatible](../evidence/message-failure.json) llegó a DLQ con motivo rejected. Quedan reproceso de negocios, alerta, fallas de fuentes compartidas y escenarios externos. Clínica/gimnasio siguen sin contrato ni ensayos.
 
 ## 5. Referencias e historial
 
@@ -50,3 +54,4 @@ Material en `clases.zip`: `teoria/07-resiliencia.md`, `teoria/03-cache.md`, `teo
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera propuesta de protección y degradación por dependencia |
+| 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |

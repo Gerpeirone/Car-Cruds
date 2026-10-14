@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-10-14T03:34:32Z",
+  "revision": "8327268583782805270ff1a6156afa24a29db5c2",
+  "workingTreeDirty": true,
+  "goVersion": "go1.26.1",
+  "generatorOS": "windows",
+  "generatorLogicalCPUs": 12,
+  "route": "/v1/vehicles/auto-001",
+  "role": "client",
+  "model": "closed-loop GET, sin espera entre solicitudes; duración incluye finalización de solicitudes en vuelo; percentiles incluyen todos los resultados",
+  "requestedStageSeconds": 5,
+  "stages": [
+    {
+      "concurrency": 1,
+      "elapsedSeconds": 5.0010963,
+      "requests": 1412,
+      "requestsPerSecond": 282.3380945493891,
+      "p50Ms": 3.223,
+      "p95Ms": 5.982,
+      "p99Ms": 14.023,
+      "successfulRequestsPerSecond": 282.3380945493891,
+      "successfulP95Ms": 5.982,
+      "httpStatuses": {
+        "200": 1412
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    },
+    {
+      "concurrency": 8,
+      "elapsedSeconds": 5.0223087,
+      "requests": 7048,
+      "requestsPerSecond": 1403.3386677326307,
+      "p50Ms": 4.733,
+      "p95Ms": 11.736,
+      "p99Ms": 18.424,
+      "successfulRequestsPerSecond": 1403.3386677326307,
+      "successfulP95Ms": 11.736,
+      "httpStatuses": {
+        "200": 7048
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    }
+  ]
+}

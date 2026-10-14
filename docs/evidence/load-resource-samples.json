@@ -1,0 +1,751 @@
+{
+  "dockerCPUs": 12,
+  "dockerMemoryBytes": 8175841280,
+  "workload": "availability closed-loop 1,8,32,64,128",
+  "samples": [
+    {
+      "atUtc": "2026-10-14T03:06:46.5728291+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "26.10%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.12%",
+          "MemUsage": "9.176MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "421kB / 709kB",
+          "PIDs": "15"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "39.18%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.11%",
+          "MemUsage": "8.613MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "495kB / 755kB",
+          "PIDs": "13"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "26.39%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.11%",
+          "MemUsage": "8.52MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "252kB / 345kB",
+          "PIDs": "15"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "20.76%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.10%",
+          "MemUsage": "7.926MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "91.7kB / 102kB",
+          "PIDs": "13"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "4.30%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.53%",
+          "MemUsage": "41.35MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "2.34MB / 1.4MB",
+          "PIDs": "12"
+        },
+        {
+          "BlockIO": "10.6MB / 11.9MB",
+          "CPUPerc": "9.00%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.92%",
+          "MemUsage": "227.8MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "2.3MB / 1.32MB",
+          "PIDs": "69"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.43%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.5kB / 7.42kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "0.32%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "0.29%",
+          "MemUsage": "22.57MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "1.31MB / 184kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:06:49.6978558+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "32.71%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.11%",
+          "MemUsage": "8.918MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "844kB / 1.64MB",
+          "PIDs": "15"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "38.37%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.12%",
+          "MemUsage": "9.176MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "1.01MB / 1.73MB",
+          "PIDs": "13"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "13.28%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.12%",
+          "MemUsage": "9.242MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "446kB / 614kB",
+          "PIDs": "15"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "13.29%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.12%",
+          "MemUsage": "9.34MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "288kB / 448kB",
+          "PIDs": "13"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "4.68%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.53%",
+          "MemUsage": "41.36MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "2.45MB / 1.45MB",
+          "PIDs": "12"
+        },
+        {
+          "BlockIO": "10.6MB / 11.9MB",
+          "CPUPerc": "8.78%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.92%",
+          "MemUsage": "227.8MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "2.44MB / 1.52MB",
+          "PIDs": "69"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.30%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.5kB / 7.42kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "0.97%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "0.33%",
+          "MemUsage": "25.86MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "1.86MB / 186kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:06:52.8166037+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "148.04%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.13%",
+          "MemUsage": "10.12MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "2.37MB / 4.94MB",
+          "PIDs": "18"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "150.77%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.19%",
+          "MemUsage": "14.47MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "2MB / 3.65MB",
+          "PIDs": "17"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "63.42%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.17%",
+          "MemUsage": "13.11MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "825kB / 1.24MB",
+          "PIDs": "15"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "67.42%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.13%",
+          "MemUsage": "10.32MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "997kB / 1.36MB",
+          "PIDs": "16"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "25.41%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.62%",
+          "MemUsage": "48.5MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "2.65MB / 1.56MB",
+          "PIDs": "16"
+        },
+        {
+          "BlockIO": "10.6MB / 12MB",
+          "CPUPerc": "50.33%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.92%",
+          "MemUsage": "228MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "2.96MB / 2.23MB",
+          "PIDs": "75"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.63%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.5kB / 7.42kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "7.19%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "0.54%",
+          "MemUsage": "42.26MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "4.58MB / 197kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:06:55.9257457+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "152.51%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.15%",
+          "MemUsage": "11.71MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "3.93MB / 8.5MB",
+          "PIDs": "18"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "163.37%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.24%",
+          "MemUsage": "18.71MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "5.85MB / 11MB",
+          "PIDs": "19"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "74.12%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.16%",
+          "MemUsage": "12.73MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "2.29MB / 3.39MB",
+          "PIDs": "18"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "82.23%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.16%",
+          "MemUsage": "12.34MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "2.12MB / 3.22MB",
+          "PIDs": "18"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "38.76%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.90%",
+          "MemUsage": "69.84MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "3.44MB / 1.97MB",
+          "PIDs": "28"
+        },
+        {
+          "BlockIO": "10.6MB / 12MB",
+          "CPUPerc": "55.23%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.93%",
+          "MemUsage": "228.7MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "3.79MB / 3.37MB",
+          "PIDs": "89"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "6.26%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.5kB / 7.42kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "7.19%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "0.89%",
+          "MemUsage": "69.31MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "11MB / 214kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:06:58.9901021+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "135.86%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.19%",
+          "MemUsage": "14.68MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "7.18MB / 15.6MB",
+          "PIDs": "20"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "167.33%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.26%",
+          "MemUsage": "20.35MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "8.79MB / 16.5MB",
+          "PIDs": "22"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "75.23%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.16%",
+          "MemUsage": "12.62MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "3.4MB / 5.23MB",
+          "PIDs": "20"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "82.18%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.15%",
+          "MemUsage": "11.82MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "2.96MB / 4.53MB",
+          "PIDs": "19"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "50.80%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.90%",
+          "MemUsage": "70.37MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "4.03MB / 2.27MB",
+          "PIDs": "28"
+        },
+        {
+          "BlockIO": "10.6MB / 12MB",
+          "CPUPerc": "46.25%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.96%",
+          "MemUsage": "230.5MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "4.6MB / 4.47MB",
+          "PIDs": "91"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.56%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.5kB / 7.42kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "8.15%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "1.32%",
+          "MemUsage": "103MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "20MB / 237kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:07:02.3167635+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "139.02%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.25%",
+          "MemUsage": "19.55MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "9.11MB / 19.6MB",
+          "PIDs": "20"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "148.95%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.32%",
+          "MemUsage": "25.31MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "11.1MB / 20.7MB",
+          "PIDs": "23"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "76.60%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.18%",
+          "MemUsage": "14.24MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "4.27MB / 6.56MB",
+          "PIDs": "21"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "74.51%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.17%",
+          "MemUsage": "13.31MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "4.12MB / 6.41MB",
+          "PIDs": "22"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "31.84%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.92%",
+          "MemUsage": "72.07MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "4.51MB / 2.51MB",
+          "PIDs": "29"
+        },
+        {
+          "BlockIO": "10.6MB / 12.1MB",
+          "CPUPerc": "141.46%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "5.10%",
+          "MemUsage": "397.7MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "5.22MB / 5.31MB",
+          "PIDs": "100"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.70%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.7kB / 7.55kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.05MB / 0B",
+          "CPUPerc": "22.76%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "1.68%",
+          "MemUsage": "130.7MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "24.8MB / 247kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:07:05.4377514+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "179.78%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.24%",
+          "MemUsage": "18.85MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "14.5MB / 31.5MB",
+          "PIDs": "20"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "220.53%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.32%",
+          "MemUsage": "24.91MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "17.8MB / 33.4MB",
+          "PIDs": "23"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "110.93%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.20%",
+          "MemUsage": "15.95MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "6.81MB / 10.8MB",
+          "PIDs": "23"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "107.89%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.19%",
+          "MemUsage": "14.43MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "6.64MB / 10.3MB",
+          "PIDs": "22"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "41.84%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.95%",
+          "MemUsage": "73.88MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "5.82MB / 3.16MB",
+          "PIDs": "30"
+        },
+        {
+          "BlockIO": "10.6MB / 12.1MB",
+          "CPUPerc": "73.69%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "2.99%",
+          "MemUsage": "233.1MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "6.56MB / 7.14MB",
+          "PIDs": "100"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.48%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.7kB / 7.59kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.23MB / 0B",
+          "CPUPerc": "13.94%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "2.53%",
+          "MemUsage": "197.5MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "39.8MB / 279kB",
+          "PIDs": "17"
+        }
+      ]
+    },
+    {
+      "atUtc": "2026-10-14T03:07:08.5955314+00:00",
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "195.22%",
+          "Container": "car-cruds-gateway-1",
+          "ID": "d2107ee5e313",
+          "MemPerc": "0.34%",
+          "MemUsage": "26.87MiB / 7.614GiB",
+          "Name": "car-cruds-gateway-1",
+          "NetIO": "19.1MB / 42.7MB",
+          "PIDs": "22"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "133.58%",
+          "Container": "car-cruds-rentals-1",
+          "ID": "42d08bbe7f84",
+          "MemPerc": "0.34%",
+          "MemUsage": "26.78MiB / 7.614GiB",
+          "Name": "car-cruds-rentals-1",
+          "NetIO": "20.9MB / 39.3MB",
+          "PIDs": "23"
+        },
+        {
+          "BlockIO": "4.1kB / 0B",
+          "CPUPerc": "79.46%",
+          "Container": "car-cruds-fleet-a-1",
+          "ID": "c9a7766c9380",
+          "MemPerc": "0.19%",
+          "MemUsage": "14.52MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-a-1",
+          "NetIO": "7.98MB / 12.4MB",
+          "PIDs": "23"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "78.85%",
+          "Container": "car-cruds-fleet-b-1",
+          "ID": "3de7fac0daf5",
+          "MemPerc": "0.18%",
+          "MemUsage": "13.82MiB / 7.614GiB",
+          "Name": "car-cruds-fleet-b-1",
+          "NetIO": "7.84MB / 12.3MB",
+          "PIDs": "22"
+        },
+        {
+          "BlockIO": "4.83MB / 10.6MB",
+          "CPUPerc": "27.77%",
+          "Container": "car-cruds-postgres-1",
+          "ID": "1ae8ff2e89c3",
+          "MemPerc": "0.95%",
+          "MemUsage": "74.07MiB / 7.614GiB",
+          "Name": "car-cruds-postgres-1",
+          "NetIO": "6.43MB / 3.47MB",
+          "PIDs": "30"
+        },
+        {
+          "BlockIO": "10.6MB / 12.1MB",
+          "CPUPerc": "123.24%",
+          "Container": "car-cruds-mongo-1",
+          "ID": "6948047761a7",
+          "MemPerc": "4.87%",
+          "MemUsage": "380MiB / 7.614GiB",
+          "Name": "car-cruds-mongo-1",
+          "NetIO": "7.6MB / 8.54MB",
+          "PIDs": "111"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.90%",
+          "Container": "car-cruds-redis-1",
+          "ID": "f4fc5dbceac1",
+          "MemPerc": "0.05%",
+          "MemUsage": "3.617MiB / 7.614GiB",
+          "Name": "car-cruds-redis-1",
+          "NetIO": "15.8kB / 7.63kB",
+          "PIDs": "6"
+        },
+        {
+          "BlockIO": "5.3MB / 0B",
+          "CPUPerc": "11.70%",
+          "Container": "car-cruds-jaeger-1",
+          "ID": "7112123afea8",
+          "MemPerc": "2.91%",
+          "MemUsage": "226.8MiB / 7.614GiB",
+          "Name": "car-cruds-jaeger-1",
+          "NetIO": "49.4MB / 300kB",
+          "PIDs": "17"
+        }
+      ]
+    }
+  ]
+}
