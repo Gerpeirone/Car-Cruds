@@ -83,13 +83,40 @@ func TestQuoteAlwaysUsesAuthoritativeRepository(t *testing.T) {
 	}
 }
 func TestCacheFailureDoesNotFailAvailableSource(t *testing.T) {
-	repo := stubRepository{get: func(context.Context, string) (Vehicle, error) { return Vehicle{VehicleID: "auto-001", Version: 2}, nil }}
+	sourceCalls, cacheReads, cacheWrites := 0, 0, 0
+	repo := stubRepository{get: func(context.Context, string) (Vehicle, error) {
+		sourceCalls++
+		return Vehicle{VehicleID: "auto-001", Version: 2}, nil
+	}}
 	cache := stubCache{get: func(context.Context, string) (Vehicle, bool, error) {
+		cacheReads++
 		return Vehicle{}, false, errors.New("unavailable")
-	}, put: func(context.Context, Vehicle) error { return errors.New("unavailable") }}
+	}, put: func(context.Context, Vehicle) error {
+		cacheWrites++
+		return errors.New("unavailable")
+	}}
 	v, err := NewService(repo, cache, nil).Get(context.Background(), "auto-001")
-	if err != nil || v.Version != 2 {
-		t.Fatalf("source fallback failed: %v", err)
+	if err != nil || v.Version != 2 || sourceCalls != 1 || cacheReads != 1 || cacheWrites != 0 {
+		t.Fatalf("source fallback: err=%v source=%d cacheReads=%d cacheWrites=%d", err, sourceCalls, cacheReads, cacheWrites)
+	}
+}
+func TestNormalCacheMissStillFillsFromSource(t *testing.T) {
+	sourceCalls, cacheWrites := 0, 0
+	expected := Vehicle{VehicleID: "auto-001", Version: 2}
+	repo := stubRepository{get: func(context.Context, string) (Vehicle, error) {
+		sourceCalls++
+		return expected, nil
+	}}
+	cache := stubCache{put: func(_ context.Context, value Vehicle) error {
+		cacheWrites++
+		if value != expected {
+			t.Fatal("cache fill did not use the authoritative source result")
+		}
+		return nil
+	}}
+	v, err := NewService(repo, cache, nil).Get(context.Background(), "auto-001")
+	if err != nil || v != expected || sourceCalls != 1 || cacheWrites != 1 {
+		t.Fatalf("normal miss: err=%v source=%d cacheWrites=%d", err, sourceCalls, cacheWrites)
 	}
 }
 func TestSourceFallbackHasBoundedConcurrency(t *testing.T) {

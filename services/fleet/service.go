@@ -46,6 +46,7 @@ func (s *Service) Get(ctx context.Context, id string) (Vehicle, error) {
 	if err := ValidateID(id); err != nil {
 		return Vehicle{}, err
 	}
+	populateCache := false
 	if s.Cache != nil {
 		cacheCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
 		v, hit, err := s.Cache.Get(cacheCtx, id)
@@ -58,13 +59,14 @@ func (s *Service) Get(ctx context.Context, id string) (Vehicle, error) {
 			return v, nil
 		default:
 			cacheRequests.WithLabelValues("miss").Inc()
+			populateCache = true
 		}
 	}
 	v, err := s.sourceGet(ctx, id, "detail")
 	if err != nil {
 		return Vehicle{}, err
 	}
-	if s.Cache != nil {
+	if populateCache {
 		cacheCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
 		err = s.Cache.Put(cacheCtx, v)
 		cancel()

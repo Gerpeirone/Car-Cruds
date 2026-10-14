@@ -16,7 +16,7 @@ type RedisCache struct {
 }
 
 func NewRedisCache(addr, password, prefix string) *RedisCache {
-	return &RedisCache{Client: redis.NewClient(&redis.Options{Addr: addr, Password: password, DialTimeout: 150 * time.Millisecond, ReadTimeout: 150 * time.Millisecond, WriteTimeout: 150 * time.Millisecond, MaxRetries: -1, PoolSize: 16}), prefix: prefix, TTL: 60 * time.Second}
+	return &RedisCache{Client: redis.NewClient(&redis.Options{Addr: addr, Password: password, DialTimeout: 150 * time.Millisecond, ReadTimeout: 150 * time.Millisecond, WriteTimeout: 150 * time.Millisecond, ContextTimeoutEnabled: true, MaxRetries: -1, PoolSize: 16}), prefix: prefix, TTL: 60 * time.Second}
 }
 func (c *RedisCache) keys(id string) []string {
 	return []string{c.prefix + ":vehicle:{" + id + "}:data", c.prefix + ":vehicle:{" + id + "}:generation"}
@@ -49,11 +49,14 @@ return 1
 
 func (c *RedisCache) Get(ctx context.Context, id string) (Vehicle, bool, error) {
 	value, err := c.Client.Eval(ctx, cacheReadLua, c.keys(id)).Result()
-	if err == redis.Nil || value == nil {
+	if err == redis.Nil {
 		return Vehicle{}, false, nil
 	}
 	if err != nil {
 		return Vehicle{}, false, fmt.Errorf("cache read failed")
+	}
+	if value == nil {
+		return Vehicle{}, false, nil
 	}
 	raw, ok := value.(string)
 	if !ok {
