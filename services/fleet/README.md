@@ -39,6 +39,8 @@ El consumidor tiene tres intentos acotados con espera creciente y variación; lo
 
 Redis compartido aplica TTL de 60 segundos. Scripts Lua conservan un watermark de versión, invalidan después de escribir y rechazan el fill de un lector anterior a una invalidación ya registrada. Una invalidación fallida se mide; una ficha exploratoria puede conservarse hasta su expiración. **Quote siempre omite la caché.** Las fallas de Redis permiten consultar la fuente con un máximo de 32 lecturas concurrentes por réplica; superar esa capacidad produce 503, evitando fallback ilimitado.
 
+La política `volatile-lru` puede expulsar fichas con TTL y preserva los watermarks sin expiración. `allkeys-lru` permitiría perder esa defensa de versión bajo presión de memoria. La capacidad sigue limitada: si los marcadores no permiten liberar espacio suficiente, Redis rechaza nuevas escrituras y el servicio utiliza el fallback acotado. Esta elección se apoya en teoría 3/práctico 3 de caché y en la [documentación oficial de evicción de Redis](https://redis.io/docs/latest/develop/reference/eviction/).
+
 Si Solr falla, búsqueda devuelve indisponibilidad en lugar de una lista vacía exitosa. Ficha, quote y escritura permanecen independientes del índice. Broker caído conserva outbox y puede causar backpressure; MongoDB caído impide operaciones autoritativas. Readiness de Flota depende de Mongo, mientras readiness del indexador también comprueba broker y Solr.
 
 ## Verificación y observabilidad
@@ -50,8 +52,11 @@ Los tests unitarios comprueban validaciones, quote sin caché, fallback acotado,
 | `TEST_MONGODB_URI` | Mongo: versiones concurrentes, outbox atómico/acotado y reapertura |
 | `TEST_REDIS_ADDR`, `TEST_REDIS_PASSWORD` | Redis: fill atrasado e invalidación fuera de orden |
 | `TEST_SOLR_URL` | Solr: no retroceso, filtros, orden, paginación y visibilidad |
+| `TEST_REDIS_EVICTION_ADDR`, `TEST_REDIS_EVICTION_PASSWORD` | Redis dedicado y descartable: presión real, expulsión de datos TTL, preservación de watermark V2 y rechazo de fill V1 |
 
 Sin esas variables, el test correspondiente se identifica como omitido; eso no acredita integración. Cada test usa datos aislados y limpia exclusivamente los que creó.
+
+La prueba de evicción requiere otra instancia de loopback, distinta de `TEST_REDIS_ADDR`, con `volatile-lru` y memoria máxima de hasta 8 MiB ya configurados (en la verificación local se utiliza 2 MiB). Lee `CONFIG GET` e `INFO`, sin alterar la configuración ni ejecutar un vaciado global. Crea claves con TTL hasta confirmar al menos 64 evicciones, comprueba la defensa de versión sin depender de otra ficha cacheada y elimina sólo sus claves. No ejecutar esta prueba de presión contra el Redis compartido del sistema.
 
 ```powershell
 go test -race ./services/fleet ./cmd/fleet ./cmd/indexer

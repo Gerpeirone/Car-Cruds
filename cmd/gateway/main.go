@@ -26,14 +26,21 @@ func proxy(target string) (http.Handler, error) {
 	p := httputil.NewSingleHostReverseProxy(base)
 	p.Transport = platform.NewHTTPClient(5 * time.Second).Transport
 	p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
+		w.Header().Set("X-Service-Instance", platform.Env("INSTANCE_ID", "gateway"))
 		platform.Error(w, 503, "SERVICE_UNAVAILABLE", "El servicio requerido no está disponible")
 	}
 	p.ModifyResponse = func(resp *http.Response) error {
+		if resp.Request != nil {
+			resp.Header.Set("X-Request-ID", resp.Request.Header.Get("X-Request-ID"))
+		}
 		if resp.StatusCode == 502 || resp.StatusCode == 504 {
 			_ = resp.Body.Close()
 			body := `{"code":"SERVICE_UNAVAILABLE","message":"Dependencia temporalmente no disponible"}`
 			resp.StatusCode = 503
 			resp.Header.Set("Content-Type", "application/json")
+			resp.Header.Set("Cache-Control", "no-store")
+			resp.Header.Set("X-Service-Instance", platform.Env("INSTANCE_ID", "gateway"))
 			resp.Body = io.NopCloser(strings.NewReader(body))
 			resp.ContentLength = int64(len(body))
 			resp.Header.Set("Content-Length", "")
@@ -41,7 +48,13 @@ func proxy(target string) (http.Handler, error) {
 		}
 		return nil
 	}
-	return p, nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ReverseProxy agrega encabezados del backend. Se retiran los valores
+		// locales para que la respuesta identifique una sola instancia atendida.
+		w.Header().Del("X-Service-Instance")
+		w.Header().Del("X-Request-ID")
+		p.ServeHTTP(w, r)
+	}), nil
 }
 
 func handler() (http.Handler, func(context.Context) error, error) {

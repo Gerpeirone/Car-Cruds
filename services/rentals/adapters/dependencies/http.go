@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -36,8 +37,22 @@ func (h *HTTP) read(ctx context.Context, base, path string, out any) error {
 	if response.StatusCode != 200 {
 		return domain.Fail("DEPENDENCY_UNAVAILABLE", "La dependencia no completó la validación.")
 	}
-	decoder := json.NewDecoder(io.LimitReader(response.Body, 1024*1024))
-	if err = decoder.Decode(out); err != nil {
+	const maxBody = 1 << 20
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
+	if err != nil || len(body) > maxBody {
+		return domain.Fail("DEPENDENCY_UNAVAILABLE", "Respuesta de dependencia inválida o demasiado grande.")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	var object map[string]json.RawMessage
+	if err = decoder.Decode(&object); err != nil || object == nil {
+		return domain.Fail("DEPENDENCY_UNAVAILABLE", "La dependencia debe devolver un objeto JSON.")
+	}
+	if err = decoder.Decode(new(any)); err != io.EOF {
+		return domain.Fail("DEPENDENCY_UNAVAILABLE", "La dependencia debe devolver un único objeto JSON.")
+	}
+	// Provider responses may add compatible fields. Required fields and types
+	// are checked by the target DTO and each caller after the complete body.
+	if err = json.Unmarshal(body, out); err != nil {
 		return domain.Fail("DEPENDENCY_UNAVAILABLE", "Respuesta de dependencia inválida.")
 	}
 	return nil
