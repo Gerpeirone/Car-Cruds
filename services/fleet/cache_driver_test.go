@@ -3,6 +3,8 @@ package fleet
 import (
 	"context"
 	"net"
+	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -48,12 +50,43 @@ func TestDriverCacheReadFailuresAreErrors(t *testing.T) {
 
 type readDeadlineProbe struct {
 	net.Conn
-	deadlines chan time.Time
+	mu       sync.Mutex
+	deadline time.Time
+	reads    chan socketRead
+}
+
+type socketRead struct {
+	deadline, started, finished time.Time
 }
 
 func (c *readDeadlineProbe) SetReadDeadline(deadline time.Time) error {
-	c.deadlines <- deadline
+	c.mu.Lock()
+	c.deadline = deadline
+	c.mu.Unlock()
 	return c.Conn.SetReadDeadline(deadline)
+}
+
+func (c *readDeadlineProbe) SetDeadline(deadline time.Time) error {
+	c.mu.Lock()
+	c.deadline = deadline
+	c.mu.Unlock()
+	return c.Conn.SetDeadline(deadline)
+}
+
+func (c *readDeadlineProbe) Read(buffer []byte) (int, error) {
+	c.mu.Lock()
+	read := socketRead{deadline: c.deadline, started: time.Now()}
+	c.mu.Unlock()
+	n, err := c.Conn.Read(buffer)
+	read.finished = time.Now()
+	c.reads <- read
+	return n, err
+}
+
+// Retain the TCP transport capability. An opaque net.Conn wrapper changes the
+// SDK's Unix health checks into extra read probes; observing must not add I/O.
+func (c *readDeadlineProbe) SyscallConn() (syscall.RawConn, error) {
+	return c.Conn.(syscall.Conn).SyscallConn()
 }
 
 func TestDriverSilentRedisHonorsActualContextDeadline(t *testing.T) {
@@ -80,13 +113,13 @@ func TestDriverSilentRedisHonorsActualContextDeadline(t *testing.T) {
 	// NewClient attaches mutable push handlers to Options. Give the observed
 	// client its own registry rather than copying handlers from the closed one.
 	options.PushNotificationProcessor = nil
-	deadlines := make(chan time.Time, 8)
+	reads := make(chan socketRead, 16)
 	options.Dialer = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		conn, err := (&net.Dialer{Timeout: options.DialTimeout}).DialContext(ctx, network, addr)
 		if err != nil {
 			return nil, err
 		}
-		return &readDeadlineProbe{Conn: conn, deadlines: deadlines}, nil
+		return &readDeadlineProbe{Conn: conn, reads: reads}, nil
 	}
 	// Preserve the constructor options; only observe its real TCP deadline.
 	cache.Client = redis.NewClient(&options)
@@ -103,18 +136,26 @@ func TestDriverSilentRedisHonorsActualContextDeadline(t *testing.T) {
 		t.Fatalf("silent peer exceeded the bounded context with tolerance: %s", elapsed)
 	}
 	observed := 0
+	blocked := 0
 	for {
 		select {
-		case deadline := <-deadlines:
-			if deadline.IsZero() || deadline.After(expectedDeadline) {
-				t.Fatal("Redis SDK installed a socket deadline later than the caller budget")
+		case read := <-reads:
+			// Deadline clearing for a Unix health check is not an unbounded
+			// command read. Assert the deadline actually active at Read entry.
+			if read.started.Before(expectedDeadline) {
+				if read.deadline.IsZero() || read.deadline.After(expectedDeadline) {
+					t.Fatalf("Redis read began without the caller budget: startOffset=%s deadlineOffset=%s duration=%s", read.started.Sub(started), read.deadline.Sub(expectedDeadline), read.finished.Sub(read.started))
+				}
+				observed++
+				if read.finished.Sub(read.started) >= 35*time.Millisecond {
+					blocked++
+				}
 			}
-			observed++
 		default:
-			if observed == 0 {
-				t.Fatal("test did not observe a real socket read deadline")
+			if observed == 0 || blocked == 0 {
+				t.Fatal("test did not observe a real blocked socket read within the caller budget")
 			}
-			t.Logf("silent TCP returned in %s; %d socket read deadline(s) respected the 75ms caller context", elapsed, observed)
+			t.Logf("silent TCP returned in %s; %d actual read(s), including %d blocked read(s), respected the 75ms caller context", elapsed, observed, blocked)
 			return
 		}
 	}
