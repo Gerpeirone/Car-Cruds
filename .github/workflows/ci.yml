@@ -68,7 +68,15 @@ jobs:
             esac
           done < .env
       - name: Construir y esperar componentes saludables
+        # La superposición cloud se valida sin publicar puertos en el runner.
         run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Validar preparación del despliegue
+        env:
+          PUBLIC_HOST: ci.example.invalid
+        run: |
+          bash -n scripts/deploy-vm.sh
+          docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py
+          docker compose -f compose.yaml -f compose.deploy.yaml run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
       - name: Probar persistencia real por servicio
         shell: bash
         run: |
@@ -109,7 +117,9 @@ jobs:
             exit 1
           fi
       - name: Verificar API y publicación de historial
-        run: go run ./cmd/smoke -history
+        run: |
+          go run ./cmd/smoke -history
+          go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
       - name: Detener entorno de laboratorio
         if: always()
         shell: bash

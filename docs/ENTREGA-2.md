@@ -59,6 +59,8 @@ Los [ensayos de fallas](POSTMORTEM.md) verificaron detección pasiva, fallback y
 
 ## 5. Prioridades de cierre
 
+La [revisión del 15 de octubre](REVISION-E2-2026-10-15.md) incorpora correcciones de recuperación del despliegue, verificación automática de la lista propia y transacciones cortas en reservas. El acceso público y los acuerdos externos se mantienen expresamente pendientes; estos cambios no declaran el hito completo.
+
 1. Publicar y validar la lista propia con el gimnasio (configuración de despliegue en [DESPLIEGUE](DESPLIEGUE.md); VM pendiente); cerrar los acuerdos que bloquean uso, costos e intercambio administrativo.
 2. Obtener el contrato del hospital para información de necesidad, solicitud y seguimiento de turnos, conservando incertidumbre y referencias.
 3. Revisar y ampliar los informes iniciales de D10/D12/D13; ampliar comparación de caché y validar límites/alternativa sin extrapolar cifras locales a cloud.

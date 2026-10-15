@@ -2,6 +2,20 @@
 #   docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait
 # Ver docs/DESPLIEGUE.md.
 services:
+  postgres:
+    restart: unless-stopped
+  mongo:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+  rabbitmq:
+    restart: unless-stopped
+  solr:
+    restart: unless-stopped
+  jaeger:
+    restart: unless-stopped
+  fleet-lb:
+    restart: unless-stopped
   caddy:
     image: caddy:2.10.2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
     restart: unless-stopped

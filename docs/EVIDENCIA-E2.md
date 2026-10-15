@@ -11,6 +11,7 @@
 
 | Artefacto | Operación o ensayo | Resultado acreditado |
 | --- | --- | --- |
+| [Revisión del 15 de octubre](REVISION-E2-2026-10-15.md) y [resumen](evidence/revision-e2-2026-10-15.json) | Correcciones de reservas, despliegue y verificación de capacidad compartida | Unitarios con detector de carreras y controles estáticos locales; dependencias reales sujetas a CI de PR #3 |
 | [tests-summary.json](evidence/tests-summary.json) | Suite real de componentes con `TEST_*` y detector de carreras; vet | 60 pruebas aprobadas, ninguna omitida; salidas 0; presión Redis aislada aprobada |
 | [integration-summary.json](evidence/integration-summary.json) | `go run ./cmd/smoke -history`, 13 de octubre | 75 solicitudes; roles, ambas réplicas, lista mínima, reservas y evento único |
 | Recorrido final, 14 de octubre | `go run ./cmd/smoke -history`, revisión `8327268` | 78 solicitudes, salida 0 y limpieza; `RentalCompleted` único observado desde sondeo |

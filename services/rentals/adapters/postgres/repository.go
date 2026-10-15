@@ -41,6 +41,34 @@ func unavailable() *domain.Problem {
 	return domain.Fail("DEPENDENCY_UNAVAILABLE", "El almacenamiento no está disponible.")
 }
 
+// LookupResult performs one short read and releases the connection before any
+// remote validation. ExecuteOnce remains the authority for concurrent commits.
+func (r *Repository) LookupResult(ctx context.Context, app, key, fingerprint string) (application.Result, bool, error) {
+	return lookupResult(ctx, r.Pool, app, key, fingerprint)
+}
+
+type resultReader interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func lookupResult(ctx context.Context, reader resultReader, app, key, fingerprint string) (application.Result, bool, error) {
+	var savedHash string
+	var status int
+	var body []byte
+	err := reader.QueryRow(ctx, "SELECT fingerprint,response_status,response_json FROM rental_idempotency WHERE app=$1 AND operation='create-reservation' AND key=$2", app, key).Scan(&savedHash, &status, &body)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.Result{}, false, nil
+	}
+	if err != nil {
+		return application.Result{}, false, unavailable()
+	}
+	if savedHash != fingerprint {
+		return application.Result{Problem: domain.Fail("IDEMPOTENCY_KEY_REUSED", "La clave se utilizó con otra carga.")}, true, nil
+	}
+	result, err := wire.Decode(status, body, app)
+	return result, true, err
+}
+
 func (r *Repository) ExecuteOnce(ctx context.Context, app, key, fingerprint string, fn func(context.Context, application.UnitOfWork) (application.Result, error)) (application.Result, error) {
 	tx, err := r.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -50,24 +78,14 @@ func (r *Repository) ExecuteOnce(ctx context.Context, app, key, fingerprint stri
 	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1,0))", app+"\nPOST /v1/reservations\n"+key); err != nil {
 		return application.Result{}, unavailable()
 	}
-	var savedHash string
-	var status int
-	var body []byte
-	err = tx.QueryRow(ctx, "SELECT fingerprint,response_status,response_json FROM rental_idempotency WHERE app=$1 AND operation='create-reservation' AND key=$2", app, key).Scan(&savedHash, &status, &body)
-	if err == nil {
-		if savedHash != fingerprint {
-			return application.Result{Problem: domain.Fail("IDEMPOTENCY_KEY_REUSED", "La clave se utilizó con otra carga.")}, nil
-		}
-		return wire.Decode(status, body, app)
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return application.Result{}, unavailable()
+	if saved, found, err := lookupResult(ctx, tx, app, key, fingerprint); err != nil || found {
+		return saved, err
 	}
 	result, err := fn(ctx, &unit{tx: tx, newID: r.NewID})
 	if err != nil {
 		return application.Result{}, err
 	}
-	status, body, err = wire.Encode(result)
+	status, body, err := wire.Encode(result)
 	if err != nil {
 		return application.Result{}, unavailable()
 	}

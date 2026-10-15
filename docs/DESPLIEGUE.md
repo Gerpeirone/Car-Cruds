@@ -32,11 +32,13 @@ Internet ──HTTPS 443──> Caddy ──HTTP──> gateway ──> Clientes
 ```bash
 git clone https://github.com/Gerpeirone/Car-Cruds.git
 cd Car-Cruds
-git checkout main   # o la rama a evaluar
+git checkout entrega-2/cierre
 bash scripts/deploy-vm.sh
 ```
 
 [deploy-vm.sh](../scripts/deploy-vm.sh) instala Docker si falta, genera `.env` con credenciales aleatorias (mediante `cmd/devsetup` dentro de un contenedor Go), define `PUBLIC_HOST` y levanta todo con `--wait`. Es repetible: conserva `.env` y los volúmenes de datos. Para actualizar, `git pull` y volver a ejecutarlo.
+
+La rama indicada contiene la preparación de E2. Cambiarla a `main` únicamente cuando el equipo haya aprobado e integrado la propuesta. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
 Comprobación desde fuera de la VM:
 
@@ -45,6 +47,14 @@ curl -i https://<PUBLIC_HOST>/v1/employees                                  # 40
 curl -s -H "Authorization: Bearer <AUTH_GYM_TOKEN>" \
   "https://<PUBLIC_HOST>/v1/employees?page=1&pageSize=20"                   # 200: lista paginada
 ```
+
+Verificación automática, sin modificar datos, desde una máquina con Go y el token del gimnasio en `AUTH_GYM_TOKEN`:
+
+```bash
+go run ./cmd/checkshared -url https://<PUBLIC_HOST>
+```
+
+La herramienta exige HTTPS fuera de loopback, rechaza redirecciones y comprueba autenticación, contrato mínimo, paginación y denegación de lecturas administrativas. No imprime nombres ni tokens. Para una comprobación local en la VM puede usarse `-env .env`; al consumidor se entrega únicamente su token, nunca ese archivo. Una comprobación satisfactoria no equivale a aceptación del contrato por el gimnasio.
 
 `SEED_DEMO=true` (valor que genera `devsetup`) carga empleados ficticios para la prueba conjunta. Los empleados reales se dan de alta con el token de administración por la API de Empleados.
 

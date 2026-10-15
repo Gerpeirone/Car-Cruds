@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-15",
+  "branch": "entrega-2/cierre",
+  "baseRevision": "1275260c4847e884b7339c7da5cae438cef55ae7",
+  "workingTreeModified": true,
+  "environment": "Windows amd64, Go 1.26.1, GCC UCRT64",
+  "command": "go test -race -count=1 -json -timeout 120s ./...",
+  "exitCode": 0,
+  "passedTestsAndSubtests": 78,
+  "skippedIntegrationTests": [
+    "TestMongoAtomicVersionOutboxAndRestart",
+    "TestMongoBoundedOutboxRejectsWithoutLosingChange",
+    "TestRedisEvictionPreservesVersionFenceForDelayedFill",
+    "TestRedisRejectsDelayedFillAndOldInvalidation",
+    "TestSolrRealVersionFiltersAndVisibility",
+    "TestRealPostgresCustomerPersistenceAndInbox",
+    "TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves",
+    "TestPostgresPageAndCountUseSameSnapshotDuringConcurrentWrite",
+    "TestRealPostgresValidationReleasesSingleConnectionPool",
+    "TestRealPostgresConcurrentSameKeyReturnsOneDurableResponse",
+    "TestRealPostgresConcurrentExclusionAndDurableReplay",
+    "TestRealPostgresTransientFailureOwnershipAndMaintenance",
+    "TestRealPostgresOverduePickupAndCompletedOutbox"
+  ],
+  "goVetExitCode": 0,
+  "historicalMockTestsAndVetExitCode": 0,
+  "bashSyntax": "PASS",
+  "renderedDeploymentConfiguration": "PASS",
+  "dockerEngine": "UNAVAILABLE: Docker Desktop inference socket startup failure",
+  "realDependencyValidation": "Pending CI on PR #3",
+  "publicDeployment": "Pending, deferred by user",
+  "externalAcceptance": "Pending agreements with gym and hospital"
+}
