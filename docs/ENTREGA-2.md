@@ -59,10 +59,10 @@ Los [ensayos de fallas](POSTMORTEM.md) verificaron detección pasiva, fallback y
 
 ## 5. Prioridades de cierre
 
-1. Publicar y validar la lista propia con el gimnasio; cerrar los acuerdos que bloquean uso, costos e intercambio administrativo.
+1. Publicar y validar la lista propia con el gimnasio (configuración de despliegue en [DESPLIEGUE](DESPLIEGUE.md); VM pendiente); cerrar los acuerdos que bloquean uso, costos e intercambio administrativo.
 2. Obtener el contrato del hospital para información de necesidad, solicitud y seguimiento de turnos, conservando incertidumbre y referencias.
 3. Revisar y ampliar los informes iniciales de D10/D12/D13; ampliar comparación de caché y validar límites/alternativa sin extrapolar cifras locales a cloud.
-4. Revisar historias, contratos y evidencia con el grupo; ejecutar la automatización de CI y registrar su resultado.
+4. Revisar historias, contratos y evidencia con el grupo. La CI aprobó ambos trabajos sobre `11d475c` el 14 de octubre ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244)).
 5. Mantener los datos locales y completar las condiciones de acceso durante la evaluación. La integración a `main` requiere aprobación del equipo.
 
 ## 6. Criterios de aceptación y referencia histórica

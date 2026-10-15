@@ -24,7 +24,7 @@
 
 La suite final de 60 pruebas, sin omisiones y con vet satisfactorio, se ejecutó después de la corrección Redis y la reconstrucción del entorno sobre `8327268`. El recorrido final aprobó 78 solicitudes; ejecución `10ead0c0c22142bc968ec9e8ef55cb60`, con `RentalCompleted` único observado en 1712 ms desde el primer sondeo. El recorrido de 75 solicitudes y la traza de siete spans del 13 de octubre se conservan separados como antecedentes.
 
-Los resultados son operaciones ejecutadas sobre dependencias reales propias. No se atribuyen al gimnasio ni al hospital, cuyos contratos y accesos están pendientes. Tampoco acreditan frontend, publicación cloud, aceptación del equipo o una ejecución de GitHub Actions.
+Los resultados son operaciones ejecutadas sobre dependencias reales propias. No se atribuyen al gimnasio ni al hospital, cuyos contratos y accesos están pendientes. Tampoco acreditan frontend, publicación cloud ni aceptación del equipo. La ejecución de GitHub Actions sobre `11d475c` (14 de octubre) aprobó pruebas, análisis y el trabajo Compose: [ejecución 38509003244](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244).
 
 ## 2. Comandos reproducibles
 

@@ -67,7 +67,9 @@ go run ./cmd/smoke -history
 
 La configuración local se mantiene en `.env`, fuera de Git. Las pruebas contra almacenes requieren variables `TEST_*` explícitas; omitirlas produce omisiones que no deben contabilizarse como integración. Consultar las guías de [Clientes](../services/customers/README.md), [Flota](../services/fleet/README.md), [Alquileres](../services/rentals/README.md), [Empleados](../services/employees/README.md) y [smoke](../cmd/smoke/README.md).
 
-El [workflow](../.github/workflows/ci.yml) separa pruebas unitarias/análisis y un trabajo Compose con suite real sin omisiones, Redis de presión dedicado y smoke del historial. La evidencia local anterior no acredita una ejecución de GitHub Actions: su resultado se registrará después de publicar y ejecutar la propuesta.
+El [workflow](../.github/workflows/ci.yml) separa pruebas unitarias/análisis y un trabajo Compose con suite real sin omisiones, Redis de presión dedicado y smoke del historial. Ambos trabajos aprobaron en GitHub Actions sobre la revisión `11d475c` el 14 de octubre de 2026 ([ejecución 38509003244](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244), PR #2). La ejecución previa sobre `a7a9f97` falló y motivó la corrección de deadlines Redis en Linux.
+
+La publicación de la lista para el gimnasio se prepara en [DESPLIEGUE](DESPLIEGUE.md): VM única con Caddy y HTTPS delante del gateway. La VM y la URL pública siguen pendientes.
 
 ## 5. Pendientes de cierre
 
