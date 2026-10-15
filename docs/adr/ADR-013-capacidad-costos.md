@@ -3,8 +3,8 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D13: capacidad y costos |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 15 de octubre de 2026 |
 | Estado | Medición local inicial y estimación; validación de capacidad sostenida pendiente |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 
@@ -38,7 +38,13 @@ Las muestras de CPU incluyen picos aproximados de gateway 195 %, Alquileres 220 
 
 ### Alternativa de escalado
 
-Evaluar una segunda réplica de gateway detrás de un balanceador o ajustar su admisión junto con los pools y límites de sus dependencias. Se debe comparar una sola modificación por ensayo y observar latencias, éxito útil, CPU y conexiones. Aumentar el límite sin comprobar capacidad downstream puede trasladar la saturación y empeorar la respuesta. Esta alternativa está justificada por el límite encontrado; su mejora todavía no se midió.
+Evaluar una segunda réplica de gateway detrás de un balanceador o ajustar su admisión junto con los pools y límites de sus dependencias. La admisión se configura con `GATEWAY_MAX_IN_FLIGHT` (por defecto 64, el valor medido), de modo que la variación puede ensayarse sin recompilar. Se debe comparar una sola modificación por ensayo y observar latencias, éxito útil, CPU y conexiones. Aumentar el límite sin comprobar capacidad downstream puede trasladar la saturación y empeorar la respuesta. Esta alternativa está justificada por el límite encontrado; su mejora todavía no se midió.
+
+### Límite conocido en la creación de reservas
+
+La carga medida no incluye `POST /v1/reservations`. Por diseño, la creación de una reserva abre una transacción PostgreSQL y toma el bloqueo de su clave de idempotencia antes de consultar Clientes y Flota por HTTP; la conexión queda retenida durante esas llamadas, con un plazo de hasta 1 s por cada una de las dos llamadas. El pool de Alquileres admite 20 conexiones, de modo que dependencias lentas pueden agotar el pool y limitar las reservas simultáneas por debajo de la admisión del gateway, aun sin contención sobre el mismo auto.
+
+La garantía de no solapamiento no depende de esa retención: la exclusión `rental_no_overlap` la impone igualmente. La mejora prevista separa el flujo en tres pasos: consulta breve de idempotencia; validación de Clientes y Flota sin transacción abierta; transacción corta que toma el bloqueo, vuelve a verificar la clave e inserta. Se medirá con un escenario de carga de reservas antes y después del cambio.
 
 ## 3. Estimación de laboratorio cloud
 
@@ -80,3 +86,4 @@ Un simulador local, si se utiliza, se identificará como tal y no acreditará in
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Plan inicial de medición y costos |
 | 0.3 | 14 de octubre de 2026 | Resultados locales, límite de admisión, alternativa y estimación AWS con supuestos |
+| 0.4 | 15 de octubre de 2026 | Admisión configurable y límite conocido de conexiones en la creación de reservas |
