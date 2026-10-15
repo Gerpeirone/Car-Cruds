@@ -135,6 +135,7 @@ services:
       FLEET_URL: http://fleet-lb:8080
       RENTALS_URL: http://rentals:8080
       EMPLOYEES_URL: http://employees:8080
+      GATEWAY_MAX_IN_FLIGHT: ${GATEWAY_MAX_IN_FLIGHT:-64}
     ports: ["127.0.0.1:${APP_PORT:-8080}:8080"]
     depends_on: {customers: {condition: service_healthy}, rentals: {condition: service_healthy}, employees: {condition: service_healthy}, fleet-lb: {condition: service_started}}
 
