@@ -16,3 +16,4 @@ Dockerfile text eol=lf
 .gitignore text eol=lf
 .gitattributes text eol=lf
 *.pdf binary
+Caddyfile text eol=lf
