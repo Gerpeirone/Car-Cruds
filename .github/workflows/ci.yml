@@ -33,6 +33,8 @@ jobs:
           cache-dependency-path: go.sum
       - name: Verificar dependencias
         run: go mod verify
+      - name: Probar preparación de VM sin instalaciones ni acceso externo
+        run: bash scripts/test-deploy-vm.sh
       - name: Probar código propio con detector de carreras
         run: go test -race -count=1 -v ./...
       - name: Analizar código propio

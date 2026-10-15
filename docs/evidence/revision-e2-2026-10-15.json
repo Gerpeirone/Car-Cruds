@@ -27,7 +27,20 @@
   "bashSyntax": "PASS",
   "renderedDeploymentConfiguration": "PASS",
   "dockerEngine": "UNAVAILABLE: Docker Desktop inference socket startup failure",
-  "realDependencyValidation": "Pending CI on PR #3",
+  "realDependencyValidation": {
+    "revision": "a94fb3644839e623ecf2262dabfe4d63b0f4f54d",
+    "run": "https://github.com/Gerpeirone/Car-Cruds/actions/runs/38777541873",
+    "result": "PASS",
+    "passedTestsAndSubtests": 91,
+    "skipped": 0,
+    "smokeRequests": 77,
+    "smokeRun": "57a2d7f8113440918de5dc2a24fc7cc1",
+    "checkshared": "PASS",
+    "caddyConfiguration": "PASS",
+    "newPostgresRegressions": "PASS: single connection available during HTTP validation; twelve concurrent same-key requests",
+    "limitations": "No public TLS certificate, VM recovery, improved capacity or external acceptance verified"
+  },
   "publicDeployment": "Pending, deferred by user",
-  "externalAcceptance": "Pending agreements with gym and hospital"
+  "externalAcceptance": "Pending agreements with gym and hospital",
+  "deploymentScriptScenarios": "PASS: six mocked scenarios; no installation, real Docker, external connection or VM recovery"
 }

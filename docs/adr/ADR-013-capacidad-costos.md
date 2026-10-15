@@ -46,7 +46,7 @@ La carga histórica medida no incluye `POST /v1/reservations`. En la revisión `
 
 La corrección implementa tres pasos: consulta breve de idempotencia; validación de Clientes y Flota sin transacción abierta; transacción corta que toma el bloqueo, vuelve a verificar la clave e inserta agenda, reserva y respuesta. La exclusión `rental_no_overlap` y la respuesta durable se conservan. Si otra solicitud confirma durante una validación que falla, una segunda lectura permite recuperar su respuesta. Una falla técnica sin respuesta durable no consume la clave.
 
-El costo es una lectura adicional para intenciones nuevas y posibles validaciones remotas duplicadas entre solicitudes simultáneas de la misma clave; solo una confirma. Se agregaron unitarios y pruebas PostgreSQL con pool de una conexión y doce solicitudes de la misma clave. La CI debe ejecutar esas pruebas reales sin omisiones. No se atribuye una mejora de solicitudes/s ni de p95 sin repetir una carga de reservas antes y después del cambio.
+El costo es una lectura adicional para intenciones nuevas y posibles validaciones remotas duplicadas entre solicitudes simultáneas de la misma clave; solo una confirma. Se agregaron unitarios y pruebas PostgreSQL con pool de una conexión y doce solicitudes de la misma clave. Ambas regresiones aprobaron con dependencias reales en la [CI sobre a94fb36](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38777541873), sin omisiones. No se atribuye una mejora de solicitudes/s ni de p95 sin repetir una carga de reservas antes y después del cambio.
 
 ## 3. Estimación de laboratorio cloud
 
