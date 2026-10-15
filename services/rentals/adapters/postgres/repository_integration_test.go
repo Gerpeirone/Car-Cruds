@@ -86,6 +86,89 @@ func input() application.Create {
 
 var adminActor = domain.Actor{App: "integration-admin", Role: "admin"}
 
+type checkingCustomers struct {
+	pool    *pgxpool.Pool
+	checked bool
+}
+
+func (d *checkingCustomers) Get(ctx context.Context, id string) (domain.Customer, error) {
+	// Hold the only pool connection during the provider call. A transaction
+	// opened before validation would deadlock here until the context expires.
+	probe, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	connection, err := d.pool.Acquire(probe)
+	if err != nil {
+		return domain.Customer{}, err
+	}
+	defer connection.Release()
+	d.checked = true
+	return (&fixtureDeps{}).Get(ctx, id)
+}
+
+func TestRealPostgresValidationReleasesSingleConnectionPool(t *testing.T) {
+	pool := testPool(t)
+	config := pool.Config()
+	config.MaxConns = 1
+	single, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer single.Close()
+	deps := &checkingCustomers{pool: single}
+	s := service(single, &fixtureDeps{})
+	s.Customers = deps
+	result, err := s.Create(context.Background(), adminActor, "no-held-connection", input())
+	if err != nil || result.Reservation == nil || !deps.checked {
+		t.Fatal("validation must leave the only connection available", result, err)
+	}
+}
+
+func TestRealPostgresConcurrentSameKeyReturnsOneDurableResponse(t *testing.T) {
+	pool := testPool(t)
+	s := service(pool, &fixtureDeps{})
+	ctx := context.Background()
+	const count = 12
+	start := make(chan struct{})
+	ids := make(chan string, count)
+	var group sync.WaitGroup
+	for i := 0; i < count; i++ {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			<-start
+			result, err := s.Create(ctx, adminActor, "same-key", input())
+			if err != nil || result.Reservation == nil {
+				t.Error("same key did not replay", result, err)
+				return
+			}
+			ids <- result.Reservation.ID
+		}()
+	}
+	close(start)
+	group.Wait()
+	close(ids)
+	first, seen := "", 0
+	for id := range ids {
+		if first == "" {
+			first = id
+		}
+		if first != id {
+			t.Error("duplicate response identity")
+		}
+		seen++
+	}
+	var reservations, keys int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM rental_reservations").Scan(&reservations); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM rental_idempotency").Scan(&keys); err != nil {
+		t.Fatal(err)
+	}
+	if seen != count || reservations != 1 || keys != 1 {
+		t.Fatalf("responses=%d reservations=%d keys=%d", seen, reservations, keys)
+	}
+}
+
 func TestRealPostgresConcurrentExclusionAndDurableReplay(t *testing.T) {
 	pool := testPool(t)
 	deps := &fixtureDeps{}

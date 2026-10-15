@@ -4,7 +4,7 @@
 | --- | --- |
 | Versión documental | 0.3 |
 | Fecha de corte | 14 de octubre de 2026 |
-| Rama de trabajo | `features` |
+| Rama de trabajo | `features`; correcciones de cierre en `entrega-2/cierre` (PR #3) |
 | Estado | Backend propio verificado en entorno local; aceptación e integración externas pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 
@@ -67,9 +67,13 @@ go run ./cmd/smoke -history
 
 La configuración local se mantiene en `.env`, fuera de Git. Las pruebas contra almacenes requieren variables `TEST_*` explícitas; omitirlas produce omisiones que no deben contabilizarse como integración. Consultar las guías de [Clientes](../services/customers/README.md), [Flota](../services/fleet/README.md), [Alquileres](../services/rentals/README.md), [Empleados](../services/employees/README.md) y [smoke](../cmd/smoke/README.md).
 
-El [workflow](../.github/workflows/ci.yml) separa pruebas unitarias/análisis y un trabajo Compose con suite real sin omisiones, Redis de presión dedicado y smoke del historial. La evidencia local anterior no acredita una ejecución de GitHub Actions: su resultado se registrará después de publicar y ejecutar la propuesta.
+El [workflow](../.github/workflows/ci.yml) separa pruebas unitarias/análisis y un trabajo Compose con suite real sin omisiones, Redis de presión dedicado y smoke del historial. Ambos trabajos aprobaron en GitHub Actions sobre la revisión `11d475c` el 14 de octubre de 2026 ([ejecución 38509003244](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244), PR #2). La ejecución previa sobre `a7a9f97` falló y motivó la corrección de deadlines Redis en Linux.
+
+La publicación de la lista para el gimnasio se prepara en [DESPLIEGUE](DESPLIEGUE.md): VM única con Caddy y HTTPS delante del gateway. La VM y la URL pública siguen pendientes.
 
 ## 5. Pendientes de cierre
+
+La [revisión de cierre del 15 de octubre](REVISION-E2-2026-10-15.md) registra los cambios posteriores a este corte: validación remota de reservas fuera de transacción, verificador de la lista propia y correcciones del despliegue. Sus pruebas y limitaciones se presentan por separado de la evidencia del 13/14 de octubre.
 
 1. Acordar población, identificadores, contrato, credenciales y acceso de la lista con el gimnasio; comprobar su consumo real y mantener la capacidad accesible durante la evaluación.
 2. Obtener los contratos y accesos de gimnasio/hospital para implementar gastos, uso, necesidad de consulta, turnos y conciliación. Registrar información desconocida sin inferir resultados negativos.

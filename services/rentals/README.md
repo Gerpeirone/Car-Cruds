@@ -30,6 +30,8 @@ Clientes responde `GET /v1/customers/{id}`; la tarifa se obtiene por `GET /v1/ve
 
 La creación serializa una misma aplicación/operación/clave en PostgreSQL, recupera su respuesta antes de revalidar fechas o dependencias y compara la huella de la solicitud. Reserva, agenda y respuesta se confirman en una transacción. Un rechazo de negocio queda asociado a esa clave; para corregirlo se utiliza otra. Un fallo técnico revierte la transacción y permite repetir.
 
+Desde la revisión del 15 de octubre se consulta primero la respuesta guardada mediante una lectura breve. Si no existe, Clientes y Flota se validan sin conexión ni transacción retenidas. Al escribir, se toma el bloqueo de la clave y se comprueba nuevamente la respuesta antes de insertar: una solicitud competidora nunca sobrescribe la primera respuesta confirmada. El precio leído se congela como antes. Las pruebas de regresión incluyen un pool de una conexión disponible durante la validación y doce confirmaciones simultáneas con la misma clave. No se declara una mejora de capacidad sin una medición de carga nueva.
+
 La cancelación conserva el registro y libera la agenda una sola vez. Una creación repetida devuelve su respuesta original, aunque luego se haya cancelado; GET muestra el estado actual. El retiro exclusivo se protege por índice único parcial incluso si otro alquiler ACTIVE venció su fecha prevista.
 
 La devolución registra `RentalCompleted.v1` y su outbox en la misma transacción. El relay usa confirmaciones del publicador y una cola durable del intercambio `carcruds.events`; Clientes aplica el historial con inbox idempotente. Se publican únicamente eventos con consumidor definido. Las integraciones de gimnasio y clínica corresponden a Empleados.

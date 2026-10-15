@@ -68,6 +68,10 @@ La agenda utiliza exclusión de rangos, el retiro un índice único parcial y la
 
 ## 5. Referencias e historial
 
+### Revisión del 15 de octubre de 2026
+
+La validación HTTP se ejecuta ahora después de una consulta breve de idempotencia y antes de abrir la transacción. La escritura vuelve a consultar la clave bajo bloqueo; se conservan respuesta original, huella, exclusión y atomicidad de agenda/reserva/respuesta. Se añaden regresiones de misma clave concurrente y de validación con el único recurso del pool disponible. La evidencia de ejecución se distingue de los antecedentes en [REVISION-E2-2026-10-15](../REVISION-E2-2026-10-15.md). No se introduce una transacción distribuida ni se modifica el contrato HTTP.
+
 Material en `clases.zip`: `teoria/02-datos-en-microservicios.md`, `teoria/04-comunicacion-asincrona.md` y `practica/clase-6-concurrencia-go.md`. [D3](ADR-015-persistencia-v2.md), [D5](ADR-016-comunicacion-v2.md), [D10](ADR-010-resiliencia.md).
 
 | Versión | Fecha | Cambio |

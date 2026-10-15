@@ -44,6 +44,51 @@ func TestReadinessUsesSharedBudgetWithoutSequentialFalseFailures(t *testing.T) {
 	}
 }
 
+func TestMaxInFlightDefaultsAndValidates(t *testing.T) {
+	t.Setenv("GATEWAY_MAX_IN_FLIGHT", "")
+	if limit, err := maxInFlight(); err != nil || limit != 64 {
+		t.Fatalf("límite por defecto: %d %v", limit, err)
+	}
+	t.Setenv("GATEWAY_MAX_IN_FLIGHT", "128")
+	if limit, err := maxInFlight(); err != nil || limit != 128 {
+		t.Fatalf("límite configurado: %d %v", limit, err)
+	}
+	for _, invalid := range []string{"0", "-1", "abc", "5000"} {
+		t.Setenv("GATEWAY_MAX_IN_FLIGHT", invalid)
+		if _, err := maxInFlight(); err == nil {
+			t.Fatalf("límite inválido aceptado: %q", invalid)
+		}
+		if _, _, err := handler(); err == nil {
+			t.Fatalf("gateway iniciado con límite inválido: %q", invalid)
+		}
+	}
+}
+
+func TestAdmissionRejectsBeyondConfiguredLimit(t *testing.T) {
+	release := make(chan struct{})
+	entered := make(chan struct{})
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		entered <- struct{}{}
+		<-release
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+	defer close(release)
+	t.Setenv("FLEET_URL", backend.URL)
+	t.Setenv("GATEWAY_MAX_IN_FLIGHT", "1")
+	h, _, err := handler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	go h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/v1/vehicles", nil))
+	<-entered
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/vehicles", nil))
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("solicitud excedente admitida: %d", w.Code)
+	}
+}
+
 func TestReadinessCancelsUnresponsiveDependencies(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
 	defer server.Close()

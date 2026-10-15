@@ -1,0 +1,16 @@
+# Entrada pública de la VM. Caddy obtiene y renueva el certificado HTTPS
+# para PUBLIC_HOST y reenvía todo el tráfico al gateway, que autentica.
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	# Las rutas internas (ready, metrics) no se publican.
+	@internal path /internal/*
+	respond @internal 404
+
+	reverse_proxy gateway:8080
+
+	log {
+		output stdout
+		format json
+	}
+}

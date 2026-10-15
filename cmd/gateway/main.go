@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -57,6 +58,17 @@ func proxy(target string) (http.Handler, error) {
 	}), nil
 }
 
+// maxInFlight lee el límite de admisión del gateway (D13). Se mantiene 64 por
+// defecto para conservar la línea base medida.
+func maxInFlight() (int, error) {
+	raw := platform.Env("GATEWAY_MAX_IN_FLIGHT", "64")
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit < 1 || limit > 4096 {
+		return 0, errors.New("GATEWAY_MAX_IN_FLIGHT debe ser un entero entre 1 y 4096")
+	}
+	return limit, nil
+}
+
 func handler() (http.Handler, func(context.Context) error, error) {
 	mux := http.NewServeMux()
 	services := map[string]string{"customers": platform.Env("CUSTOMERS_URL", "http://customers:8080"), "fleet": platform.Env("FLEET_URL", "http://fleet-lb:8080"), "rentals": platform.Env("RENTALS_URL", "http://rentals:8080"), "employees": platform.Env("EMPLOYEES_URL", "http://employees:8080")}
@@ -72,7 +84,11 @@ func handler() (http.Handler, func(context.Context) error, error) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		platform.Error(w, 404, "NOT_FOUND", "Ruta no disponible")
 	})
-	slots := make(chan struct{}, 64)
+	limit, err := maxInFlight()
+	if err != nil {
+		return nil, nil, err
+	}
+	slots := make(chan struct{}, limit)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case slots <- struct{}{}:

@@ -8,6 +8,7 @@
 *.sh text eol=lf
 *.sql text eol=lf
 *.js text eol=lf
+*.py text eol=lf
 *.sum text eol=lf
 *.conf text eol=lf
 Dockerfile text eol=lf
@@ -16,3 +17,4 @@ Dockerfile text eol=lf
 .gitignore text eol=lf
 .gitattributes text eol=lf
 *.pdf binary
+Caddyfile text eol=lf

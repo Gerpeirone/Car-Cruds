@@ -61,7 +61,11 @@ go -C mocks/rentals test -race -count=1 ./...
 
 Las pruebas de integración requieren variables `TEST_*` explícitas y dependencias reales, descritas en los README de cada servicio. Sin ellas, los casos correspondientes se omiten; una omisión no demuestra persistencia ni integración. El 14 de octubre la suite final de componentes sobre el backend corregido aprobó 60 pruebas con todas las dependencias configuradas, sin omisiones; vet y el nuevo recorrido de 78 solicitudes también finalizaron satisfactoriamente.
 
-El [workflow de CI](.github/workflows/ci.yml) ejecuta pruebas y análisis estático; otro trabajo construye el entorno, ejecuta las pruebas con dependencias reales sin omisiones y realiza `cmd/smoke -history`. Su configuración se incluye en la propuesta; la ejecución de GitHub Actions se acreditará mediante el resultado de la revisión publicada.
+El [workflow de CI](.github/workflows/ci.yml) ejecuta pruebas y análisis estático; otro trabajo construye el entorno, ejecuta las pruebas con dependencias reales sin omisiones y realiza `cmd/smoke -history`. Ambos trabajos aprobaron en GitHub Actions sobre la revisión `11d475c` el 14 de octubre de 2026 ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244)).
+
+El despliegue público con HTTPS para la capacidad compartida se describe en [DESPLIEGUE](docs/DESPLIEGUE.md).
+
+La [revisión de cierre de E2 del 15 de octubre](docs/REVISION-E2-2026-10-15.md) registra las correcciones de despliegue y de retención de conexiones en reservas. `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env` verifica por lecturas la autenticación, proyección mínima, paginación y permisos de la capacidad compartida. Para una URL externa exige HTTPS y un destino explícito; no sigue redirecciones ni acredita aceptación del gimnasio.
 
 Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/verify-resilience.ps1` verifican cola de fallidos y recuperación de componentes propios. `go run ./cmd/load` realiza carga GET local; `pwsh -File ./scripts/measure-cache.ps1 -DurationSeconds 5` compara caché caliente y fallback, restaurando Redis. Sus resultados y condiciones están en [EVIDENCIA-E2](docs/EVIDENCIA-E2.md).
 
