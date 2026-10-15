@@ -42,5 +42,17 @@
   },
   "publicDeployment": "Pending, deferred by user",
   "externalAcceptance": "Pending agreements with gym and hospital",
-  "deploymentScriptScenarios": "PASS: six mocked scenarios; no installation, real Docker, external connection or VM recovery"
+  "deploymentScriptScenarios": "PASS: six mocked scenarios; no installation, real Docker, external connection or VM recovery",
+  "finalCI": {
+    "revision": "3056b8a4b9bf9fa4d3b28da8832149f595f660c5",
+    "run": "https://github.com/Gerpeirone/Car-Cruds/actions/runs/38778459396",
+    "result": "PASS",
+    "passedTestsAndSubtests": 91,
+    "skipped": 0,
+    "smokeRequests": 77,
+    "smokeRun": "e8b2766a5c0b42bca7ebdfdbfb66a537",
+    "mockDeploymentScenarios": 6,
+    "caddyConfiguration": "PASS",
+    "checkshared": "PASS"
+  }
 }
