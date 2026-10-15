@@ -29,4 +29,4 @@ Las operaciones administrativas y candidatos requieren `admin`; el gimnasio no p
 
 Las pruebas locales de contrato y autorización verifican el servicio propio. La prueba conjunta con el gimnasio, su servidor consumidor y el intercambio económico continúan pendientes. También falta probar el contrato real del hospital; los puertos existentes no representan un adaptador operativo.
 
-La capacidad compartida deberá permanecer accesible hasta finalizar la evaluación una vez publicada. La URL pública y fecha de publicación se registrarán al disponer de ellas. La API de reservas del mock conserva su historial y no se utiliza como integración actual del gimnasio.
+La capacidad compartida deberá permanecer accesible hasta finalizar la evaluación una vez publicada. La URL pública y fecha de publicación se registrarán al disponer de ellas; la forma de publicación (HTTPS mediante Caddy delante del gateway) está en [DESPLIEGUE](../DESPLIEGUE.md). La API de reservas del mock conserva su historial y no se utiliza como integración actual del gimnasio.
