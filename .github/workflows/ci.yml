@@ -122,12 +122,12 @@ jobs:
         run: |
           go run ./cmd/smoke -history
           go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
-      - name: Probar contrato contra Turnos original del hospital
+      - name: Probar contrato público contra gateway y Turnos originales del hospital
         shell: bash
         run: |
           export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
           git init "$CLINIC_PROVIDER_CHECKOUT"
-          git -C "$CLINIC_PROVIDER_CHECKOUT" fetch --depth=1 https://github.com/OctiDelFabro/portal-paciente-clinica.git 5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d
+          git -C "$CLINIC_PROVIDER_CHECKOUT" fetch --depth=1 https://github.com/OctiDelFabro/portal-paciente-clinica.git c0b65f45867f884e0bdc8f7c23eb0f344f646bb2
           git -C "$CLINIC_PROVIDER_CHECKOUT" checkout --detach FETCH_HEAD
           while IFS='=' read -r key value; do
             case "$key" in
@@ -135,10 +135,18 @@ jobs:
             esac
           done < .env
           export CLINIC_TEST_DB_PASSWORD="$EMPLOYEES_DB_PASSWORD"
+          export CLINIC_TEST_API_KEY="$(openssl rand -hex 24)"
+          export CLINIC_TEST_OTHER_API_KEY="$(openssl rand -hex 24)"
+          printf '::add-mask::%s\n' "$CLINIC_TEST_API_KEY" "$CLINIC_TEST_OTHER_API_KEY"
           export TEST_DATABASE_URL="postgres://employees:$EMPLOYEES_DB_PASSWORD@127.0.0.1:55432/employees?sslmode=disable"
-          export CLINIC_TEST_BASE_URL=http://127.0.0.1:58081
+          export CLINIC_TEST_BASE_URL=http://127.0.0.1:58088/v1
           docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml up -d --build --wait --wait-timeout 240
-          go test -race -count=1 -timeout 120s -v ./integration/cliniccontract
+          go test -race -count=1 -timeout 120s -v ./integration/cliniccontract | tee "$RUNNER_TEMP/clinic-contract-go.txt"
+          if grep -q '^--- SKIP:' "$RUNNER_TEMP/clinic-contract-go.txt"; then
+            echo "La prueba del contrato público omitió su ejecución real."
+            exit 1
+          fi
+          grep -q '^--- PASS: TestCarCrudsConsumesUnmodifiedHospitalAppointments ' "$RUNNER_TEMP/clinic-contract-go.txt"
           test -z "$(git -C "$CLINIC_PROVIDER_CHECKOUT" status --porcelain)"
       - name: Detener entorno de laboratorio
         if: always()
@@ -146,6 +154,8 @@ jobs:
         run: |
           export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
           export CLINIC_TEST_DB_PASSWORD=unused-cleanup-placeholder
+          export CLINIC_TEST_API_KEY=unused-cleanup-key
+          export CLINIC_TEST_OTHER_API_KEY=unused-cleanup-other-key
           docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml down -v --remove-orphans
           if docker container inspect car-cruds-ci-redis-pressure >/dev/null 2>&1; then
             docker rm -f car-cruds-ci-redis-pressure

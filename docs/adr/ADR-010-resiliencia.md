@@ -1,5 +1,7 @@
 # ADR-010 — Resiliencia y resultados desconocidos
 
+> **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) concreta timeout 100 ms–5 s (inicial 2 s), ocho llamadas simultáneas, un intento por acción explícita y espera durable ante incertidumbre/429. Conserva resultado desconocido sin reintentos automáticos. No modifica las evidencias históricas de este documento.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D10: resiliencia |

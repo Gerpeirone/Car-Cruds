@@ -18,7 +18,7 @@ type ClinicStore interface {
 	GetClinicRequest(context.Context, string) (domain.ClinicRequest, error)
 	ClaimClinicRequest(context.Context, string) (domain.ClinicRequest, bool, error)
 	ObserveClinicAppointment(context.Context, string, domain.ClinicAppointment) (domain.ClinicRequest, error)
-	FailClinicRequest(context.Context, string, int64, string, bool) (domain.ClinicRequest, error)
+	FailClinicRequest(context.Context, string, int64, string, bool, *time.Time) (domain.ClinicRequest, error)
 	ClinicReport(context.Context, string, domain.Page) ([]domain.ClinicPersonReview, int64, error)
 }
 
@@ -77,22 +77,32 @@ func (s *Service) SubmitClinicRequest(ctx context.Context, id string) (domain.Cl
 	if err != nil || !claimed {
 		return r, err
 	}
-	// The durable claim is committed before the network call. A restart or
-	// response loss cannot trigger a second POST to a non-idempotent provider.
+	// One explicit action makes one call. The durable claim, contract and key
+	// precede HTTP, so a later action can recover the same intention safely.
 	a, callErr := s.clinic.Book(ctx, r)
 	saveCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
 	if callErr != nil {
 		var rejection *domain.ClinicRejection
 		known := errors.As(callErr, &rejection)
-		code := "UNCONFIRMED"
+		code := "CLINIC_UNAVAILABLE"
+		var nextAttemptAt *time.Time
 		if known {
 			code = rejection.Code
+		} else {
+			var failure *domain.ClinicFailure
+			if errors.As(callErr, &failure) {
+				code = failure.Code
+				if failure.RetryAfter > 0 {
+					next := time.Now().UTC().Add(failure.RetryAfter)
+					nextAttemptAt = &next
+				}
+			}
 		}
-		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, code, known)
+		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, code, known, nextAttemptAt)
 	}
 	if err = a.Validate(); err != nil || a.PatientID != r.PatientID || a.DoctorID != r.DoctorID || !a.StartAt.Equal(r.StartAt) {
-		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, "INVALID_RESPONSE", false)
+		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, "INVALID_RESPONSE", false, nil)
 	}
 	return s.clinicStore.ObserveClinicAppointment(saveCtx, id, a)
 }
@@ -116,6 +126,9 @@ func (s *Service) RefreshClinicRequest(ctx context.Context, id, recoveryID strin
 	if !domain.ValidEvidenceKey(recoveryID) {
 		return r, domain.ErrInvalidInput
 	}
+	if r.NextAttemptAt != nil && time.Now().UTC().Before(*r.NextAttemptAt) {
+		return r, nil
+	}
 	select {
 	case s.clinicSlots <- struct{}{}:
 		defer func() { <-s.clinicSlots }()
@@ -126,10 +139,20 @@ func (s *Service) RefreshClinicRequest(ctx context.Context, id, recoveryID strin
 	saveCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
 	if callErr != nil {
-		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, "LOOKUP_UNCONFIRMED", false)
+		code := "LOOKUP_UNCONFIRMED"
+		var failure *domain.ClinicFailure
+		var nextAttemptAt *time.Time
+		if errors.As(callErr, &failure) {
+			code = failure.Code
+			if failure.RetryAfter > 0 {
+				next := time.Now().UTC().Add(failure.RetryAfter)
+				nextAttemptAt = &next
+			}
+		}
+		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, code, false, nextAttemptAt)
 	}
 	if err = a.Validate(); err != nil || a.ID != recoveryID || a.PatientID != r.PatientID {
-		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, "INVALID_RESPONSE", false)
+		return s.clinicStore.FailClinicRequest(saveCtx, id, r.Revision, "INVALID_RESPONSE", false, nil)
 	}
 	return s.clinicStore.ObserveClinicAppointment(saveCtx, id, a)
 }

@@ -1,5 +1,9 @@
 # Estado de implementación de la entrega 2
 
+> **Adaptación clínica — 23/10/2026:** [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente al contrato Turnos para socios 1.0.0 fijado a `c0b65f4`: autenticación, idempotencia/procedencia persistidas, recuperación explícita, espera durable y códigos operativos desconocidos. Nuevas acciones y reintentos que puedan crear exigen empleado activo; evidencia anterior de inactivos y registros históricos se conservan. API administrativa clínica 0.3.0, personal/gimnasio 0.3.0 sin cambio. El corte local Windows ejecutó `go test -count=1 -json -timeout 120s ./...`: **127 pruebas/subpruebas aprobadas, 29 omitidas y ninguna fallida**; `go vet ./...` y pruebas/análisis del mock histórico satisfactorios. Las omisiones corresponden a dependencias reales no configuradas; con `CGO_ENABLED=0`, sin GCC ni Docker, no se verificaron detector de carreras, persistencia/concurrencia SQL ni gateway original. La suite de contrato compiló; su ejecución y las pruebas reales quedan para CI y no se presentan como aprobadas. Ninguna cifra histórica acredita socios 1.0.0. URL compartida, clave, pacientes reales, condiciones económicas y aceptación conjunta permanecen pendientes.
+
+> **Corte anterior de alcance — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retiró candidatos y exigió empleado activo para nuevo vínculo, intención y primer envío; preservó historia y seguimiento de inactivos. Ese corte local obtuvo 107 pruebas/subpruebas aprobadas, 20 omitidas y ninguna fallida, Go 1.26.4 Windows sin detector de carreras, con análisis estático satisfactorio. Esos resultados no verifican ADR-019; la nota anterior presenta el corte de adaptación actual. El cuerpo siguiente conserva los resultados originales del 13/14/22 de octubre con sus límites.
+
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.3 |

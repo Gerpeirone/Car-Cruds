@@ -1,5 +1,7 @@
 # ADR-011 — Observabilidad, primera versión
 
+> **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) conserva la instrumentación HTTP y correlación en el adaptador autenticado, sin publicar claves. Su validación nueva y cualquier traza se registran separadamente; este complemento no agrega un tablero ni una evidencia de traza.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D11: observabilidad |

@@ -1,5 +1,7 @@
 # ADR-014 — Límites de los servicios, revisión 2
 
+> **Vigencia — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) sustituye el alcance de personal de este registro: se retira candidatos de la API y se conserva su almacenamiento histórico. Las demás fronteras y tecnologías permanecen. El cuerpo siguiente conserva decisiones y evidencia de sus fechas; las menciones a candidatos no definen el dominio activo.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D1: límites de los servicios |
