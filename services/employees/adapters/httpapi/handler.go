@@ -25,6 +25,11 @@ func New(service *application.Service) http.Handler {
 	mux.HandleFunc("/v1/employees/integrations", h.integrations)
 	mux.HandleFunc("/v1/employees/membership-evidence", h.membershipEvidence)
 	mux.HandleFunc("/v1/employees/reports/memberships", h.membershipReport)
+	mux.HandleFunc("/v1/employees/clinic/patient-links", h.clinicLinks)
+	mux.HandleFunc("/v1/employees/clinic/requests", h.clinicRequests)
+	mux.HandleFunc("/v1/employees/clinic/requests/{requestId}", h.clinicRequest)
+	mux.HandleFunc("/v1/employees/clinic/requests/{requestId}/{action}", h.clinicAction)
+	mux.HandleFunc("/v1/employees/reports/clinic", h.clinicReport)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { platform.Error(w, 404, "NOT_FOUND", "Ruta inexistente") })
 	return mux
 }
@@ -296,6 +301,10 @@ func methodNotAllowed(w http.ResponseWriter, allowed string) {
 
 func writeError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, domain.ErrPatientLinkRequired):
+		platform.Error(w, 409, "PATIENT_LINK_REQUIRED", "Registrar primero el vínculo con el paciente del hospital")
+	case errors.Is(err, domain.ErrClinicUnavailable):
+		platform.Error(w, 503, "CLINIC_UNAVAILABLE", "Hospital no disponible o respuesta incompatible; consultar la intención persistida")
 	case errors.Is(err, domain.ErrEvidenceConflict):
 		platform.Error(w, 409, "EVIDENCE_CONFLICT", "La referencia o versión contradice evidencia registrada")
 	case errors.Is(err, domain.ErrInvalidInput):

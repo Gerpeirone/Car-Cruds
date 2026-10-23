@@ -9,6 +9,7 @@ import (
 	"github.com/Gerpeirone/Car-Cruds/services/employees/application"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/domain"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -187,6 +188,10 @@ func (r *Repository) UpdateCandidate(ctx context.Context, item domain.Candidate)
 func (r *Repository) DeleteCandidate(ctx context.Context, id string) error {
 	command, err := r.pool.Exec(ctx, `DELETE FROM candidates WHERE candidate_id=$1`, id)
 	if err != nil {
+		var constraint *pgconn.PgError
+		if errors.As(err, &constraint) && constraint.Code == "23503" {
+			return domain.ErrEvidenceConflict
+		}
 		return err
 	}
 	if command.RowsAffected() == 0 {

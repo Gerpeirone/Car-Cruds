@@ -1,5 +1,7 @@
 # Especificación de alcance y requisitos
 
+**Actualización de implementación — 22/10/2026:** la recepción e informe del gimnasio se describen en [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md). La solicitud y consulta de turnos del hospital, con vínculo de pacientes, intención persistente e informe, se implementan según [COMUNICACION-HOSPITAL](docs/COMUNICACION-HOSPITAL.md). Se conserva el alcance de las reglas originales; aceptación externa, autenticación del hospital, pacientes reales e indicaciones provenientes del hospital siguen pendientes. Los estados históricos de cobertura de las secciones siguientes deben leerse con esta actualización.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |

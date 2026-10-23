@@ -1,5 +1,7 @@
 # Contratos propios e integración
 
+Actualización del 22 de octubre: [API administrativa de hospital](clinic-integration-openapi.json), versión 0.1.0, y [contrato observado de Turnos de Octi](providers/octi-turnos-observed.openapi.json). El segundo documenta código publicado, no un acuerdo bilateral ni el OpenAPI oficial del proveedor. Guía de configuración, uso y recuperación: [COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md). Se conserva la lista e intercambio propio del gimnasio.
+
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.3 |

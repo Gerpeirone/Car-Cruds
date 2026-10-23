@@ -1,5 +1,7 @@
 # Backlog del producto — Car Cruds
 
+**Avance del 22/10/2026:** HU-15 dispone de vínculo de paciente, intención durable y envío de turno; HU-16 de conciliación por ID externo e historia; HU-17 de informe de la última intención por persona. Implementación y límites: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se consideran aceptadas por el proveedor: faltan contrato formal de Turnos, acceso autenticado y pacientes reales. HU-23 continúa pendiente de una operación del hospital; la indicación administrativa local sí permite iniciar una consulta. Los criterios originales se conservan.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |

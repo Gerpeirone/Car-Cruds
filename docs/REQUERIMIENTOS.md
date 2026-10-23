@@ -1,5 +1,7 @@
 # Requerimientos del sistema — Car Cruds
 
+**Cobertura ampliada del 22/10/2026:** RF-15/RF-16/RF-17 cuentan con solicitud, conciliación por referencia externa e informe de la última intención, con persistencia, incertidumbre explícita y permisos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) distingue código implementado, API observada y acuerdos pendientes. RF-19 sigue pendiente de una capacidad real de indicaciones del hospital; no se inventa información clínica. Aceptación externa y operación pública no se deducen de estas pruebas. Se preservan los requisitos originales.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |

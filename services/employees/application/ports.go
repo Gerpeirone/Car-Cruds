@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"time"
 
 	"github.com/Gerpeirone/Car-Cruds/services/employees/domain"
 )
@@ -20,25 +19,4 @@ type Repository interface {
 	CreateCandidate(context.Context, domain.Candidate) error
 	UpdateCandidate(context.Context, domain.Candidate) (domain.Candidate, error)
 	DeleteCandidate(context.Context, string) error
-}
-
-// Clinic is a local business port, not the hospital's API contract. Its adapter
-// remains absent until the provider publishes the actual operations and rules.
-// An implementation must persist an intention before a request with effects.
-type Clinic interface {
-	RequestReview(context.Context, ReviewIntention) (ReviewEvidence, error)
-	LookupReview(context.Context, string) (ReviewEvidence, error)
-}
-
-type ReviewIntention struct {
-	LocalReference string
-	PersonID       string
-	PersonKind     string
-}
-
-type ReviewEvidence struct {
-	ExternalReference string
-	Confirmed         bool
-	Known             bool
-	ObservedAt        time.Time
 }

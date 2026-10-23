@@ -11,6 +11,9 @@ type Service struct {
 	repository  Repository
 	newID       func() string
 	memberships MembershipInbox
+	clinicStore ClinicStore
+	clinic      Clinic
+	clinicSlots chan struct{}
 }
 
 func New(repository Repository, newID func() string) *Service {

@@ -1,0 +1,271 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Turnos de Octi: contrato observado por el consumidor Car Cruds",
+    "version": "0.1.0",
+    "description": "Basado en código de feature/entrega-2; no es contrato oficial ni acuerdo bilateral. Sin autenticación del portal ni idempotencia de creación implementadas. Notificaciones es una capacidad distinta."
+  },
+  "x-provider-commit": "5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d",
+  "x-provider-source": "https://github.com/OctiDelFabro/portal-paciente-clinica/blob/5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d/services/turnos/internal/adapters/httpapi/handler.go",
+  "paths": {
+    "/appointments": {
+      "post": {
+        "description": "La base configurada incluye /api/turnos para el gateway. No reintentar POST incierto. Anticipación mínima 24 h.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      ],
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Appointment": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "patientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "doctorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "cancelled"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "patientId",
+          "doctorId",
+          "startAt",
+          "endAt",
+          "status",
+          "version"
+        ]
+      },
+      "CreateAppointment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "doctorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "patientId",
+          "doctorId",
+          "startAt"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    }
+  }
+}

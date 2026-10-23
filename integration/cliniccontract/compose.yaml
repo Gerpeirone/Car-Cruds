@@ -1,0 +1,44 @@
+# Entorno de prueba propio. El código del proveedor se lee desde un checkout
+# fijado por commit; no se modifica ni se utiliza su despliegue real.
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CLINIC_TEST_DB_PASSWORD:?Solo laboratorio}
+      MYSQL_DATABASE: turnos
+      MYSQL_USER: turnos
+      MYSQL_PASSWORD: ${CLINIC_TEST_DB_PASSWORD}
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  rabbitmq:
+    image: rabbitmq:4-management@sha256:8dd6e3570ddaa2ef82a6c3a8950e79c1f73893adfbdddbc374fc1f1ac8a0f5dd
+    environment:
+      RABBITMQ_DEFAULT_USER: clinic-test
+      RABBITMQ_DEFAULT_PASS: ${CLINIC_TEST_DB_PASSWORD}
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+  turnos:
+    build:
+      context: ${CLINIC_PROVIDER_CHECKOUT:?Checkout del commit documentado}
+      dockerfile: infra/Dockerfile.backend
+      args: {SERVICE_PATH: ./services/turnos/cmd}
+    environment:
+      HTTP_ADDR: 0.0.0.0:8081
+      TURNOS_DB_DSN: turnos:${CLINIC_TEST_DB_PASSWORD}@tcp(mysql:3306)/turnos
+      RABBITMQ_URL: amqp://clinic-test:${CLINIC_TEST_DB_PASSWORD}@rabbitmq:5672/
+      OTEL_SDK_DISABLED: "true"
+    depends_on:
+      mysql: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+    ports: ["127.0.0.1:58081:8081"]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8081/healthz]
+      interval: 3s
+      timeout: 3s
+      retries: 40

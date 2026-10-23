@@ -122,10 +122,31 @@ jobs:
         run: |
           go run ./cmd/smoke -history
           go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
+      - name: Probar contrato contra Turnos original del hospital
+        shell: bash
+        run: |
+          export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
+          git init "$CLINIC_PROVIDER_CHECKOUT"
+          git -C "$CLINIC_PROVIDER_CHECKOUT" fetch --depth=1 https://github.com/OctiDelFabro/portal-paciente-clinica.git 5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d
+          git -C "$CLINIC_PROVIDER_CHECKOUT" checkout --detach FETCH_HEAD
+          while IFS='=' read -r key value; do
+            case "$key" in
+              EMPLOYEES_DB_PASSWORD) export "$key=$value" ;;
+            esac
+          done < .env
+          export CLINIC_TEST_DB_PASSWORD="$EMPLOYEES_DB_PASSWORD"
+          export TEST_DATABASE_URL="postgres://employees:$EMPLOYEES_DB_PASSWORD@127.0.0.1:55432/employees?sslmode=disable"
+          export CLINIC_TEST_BASE_URL=http://127.0.0.1:58081
+          docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml up -d --build --wait --wait-timeout 240
+          go test -race -count=1 -timeout 120s -v ./integration/cliniccontract
+          test -z "$(git -C "$CLINIC_PROVIDER_CHECKOUT" status --porcelain)"
       - name: Detener entorno de laboratorio
         if: always()
         shell: bash
         run: |
+          export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
+          export CLINIC_TEST_DB_PASSWORD=unused-cleanup-placeholder
+          docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml down -v --remove-orphans
           if docker container inspect car-cruds-ci-redis-pressure >/dev/null 2>&1; then
             docker rm -f car-cruds-ci-redis-pressure
           fi

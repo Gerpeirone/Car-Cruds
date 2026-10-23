@@ -1,5 +1,13 @@
 # ADR-009 — Consumo de la capacidad de Clínica
 
+## Implementación del 22 de octubre de 2026
+
+Se implementa el consumo de Turnos observado en `feature/entrega-2` del hospital de Octi, commit `5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d`. Su `main` conserva una revisión anterior. Se mantiene la decisión original: Empleados solicita turnos directamente al proveedor y presenta evidencia administrativa; no se sustituye por Notificaciones ni se modifica el otro repositorio.
+
+El adaptador consume POST/GET de `appointments`, con timeout, límite de concurrencia, trazas y redirecciones deshabilitadas. La identidad paciente/persona se vincula mediante una acción administrativa explícita. PostgreSQL conserva intención y marca de envío antes de la llamada HTTP, sin mantener transacciones durante la red. Dado que el proveedor no ofrece idempotencia de creación, una intención se envía como máximo una vez y una respuesta perdida se concilia por ID externo verificado. Estado desconocido no equivale a ausencia de turno. Se preservan historia, versiones, cancelaciones y evidencia previa ante fallos; los informes permanecen privados y separados de candidatos/empleados.
+
+[COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md) documenta rutas, operación, pruebas y límites. La especificación observada es del consumidor y no reemplaza un contrato formal aprobado por Octi. URL, autenticación externa, pacientes reales, indicaciones del hospital y reprogramación siguen pendientes de capacidades/acuerdos del proveedor. Las secciones siguientes conservan el contexto histórico.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D9: consumo del proveedor |

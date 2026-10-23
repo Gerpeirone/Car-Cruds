@@ -1,6 +1,6 @@
 # Integraciones de personal — Car Cruds
 
-**Actualización — 22/10/2026:** se conserva este diseño como referencia del alcance original. Car Cruds implementa la recepción propuesta de membresías, uso y gastos, su historia y el informe administrativo, además de la lista activa. Se ofrece HTTP entrante en nuestra API; su aceptación por Pablo continúa pendiente. Contrato y límites actuales: [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md). El alta por POST al gimnasio fue retirada. El hospital queda para una etapa posterior.
+**Actualización — 22/10/2026:** se conserva el alcance original. Gimnasio: lista, recepción propuesta, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md); aceptación de Pablo pendiente. Hospital: vínculo de paciente, intención persistente, solicitud y consulta de turnos mediante operaciones reales observadas en `feature/entrega-2`, con informe y recuperación en [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se modifica ninguno de los proyectos externos ni se reemplazan turnos por correos. Acuerdos y acceso externo siguen pendientes.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
@@ -11,7 +11,7 @@
 | Estado | Alcance comunicado por el grupo; diseño propuesto y acuerdos pendientes |
 | Responsable funcional | Servicio Empleados |
 
-Este documento distingue lo comunicado por el grupo de las propuestas de Car Cruds. No sustituye un contrato del gimnasio o de la clínica. No se recibieron contratos externos, URLs, credenciales, tarifas ni resultados de pruebas de integración.
+Este documento distingue lo comunicado por el grupo de las propuestas de Car Cruds. No sustituye un contrato del gimnasio o de la clínica. Para el hospital se revisó Turnos de `feature/entrega-2`, commit `5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d`; su contrato público actual describe Notificaciones. No se recibieron URLs operativas, credenciales, tarifas ni aceptación bilateral de Turnos.
 
 ## 1. Capacidades y consecuencia de negocio
 
@@ -112,6 +112,6 @@ Todos estos acuerdos están **pendientes**, sin fechas ni aprobaciones inventada
 - Ensayo de caída externa que preserve el flujo de alquiler y mantenga estados desconocidos honestos.
 - Revisión de informes con evidencias positivas, negativas y faltantes; sin tarifas ni resultados médicos sintéticos presentados como reales.
 
-La recepción y el informe del gimnasio cuentan con pruebas propias; no equivalen a una prueba conjunta con su sistema. El hospital permanece sin implementar. Ver [comunicación del gimnasio](COMUNICACION-GIMNASIO.md), [entrega 2](ENTREGA-2.md) y [ADR-017](adr/ADR-017-contrato-empleados.md).
+Ambas integraciones cuentan con componentes propios y pruebas; no equivalen a aceptación ni despliegue conjunto. La guía del [hospital](COMUNICACION-HOSPITAL.md) explica las operaciones consumidas y las limitaciones verificadas. Ver también [gimnasio](COMUNICACION-GIMNASIO.md), [entrega 2](ENTREGA-2.md) y [ADR-017](adr/ADR-017-contrato-empleados.md).
 
 Material de referencia en `clases.zip`: teoría 02 (datos y consistencia), 04 (idempotencia y mensajería), 06 (identidad y límites), 07 (resultado desconocido y recuperación) y 08 (puertos/adaptadores); práctica 01 (interfaces/mocks) y 02 (Repository).

@@ -30,7 +30,7 @@ La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El 
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
 | Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
-| Integraciones externas | Lista para gimnasio y recepción propia de evidencia con informe; acuerdo bilateral, despliegue y hospital pendientes |
+| Integraciones externas | Gimnasio: lista y recepción de evidencia. Hospital: solicitud y seguimiento de turnos desde Empleados, con intención durable e informe; acuerdos y despliegue pendientes |
 | Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
 El conjunto propio fue construido y ejecutado con Docker. Las pruebas reales, el recorrido HTTP, la persistencia tras reinicio y una traza distribuida están registrados en [el estado de implementación](docs/ESTADO-IMPLEMENTACION.md). El funcionamiento local de la lista no acredita su publicación ni la aceptación del gimnasio. [ENTREGA-2.md](docs/ENTREGA-2.md) distingue cobertura obtenida y pendientes académicos.
@@ -117,6 +117,8 @@ Los cambios se presentan en ramas de trabajo y mediante pull request. Su integra
 
 ## Alcance externo pendiente
 
-El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero. El hospital deberá informar quién necesita consulta, permitir solicitar el turno y comunicar sus cambios; esa implementación queda para después. Un timeout no prueba ausencia de turno.
+El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero.
+
+La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) implementa vínculo con paciente, intención durable, solicitud de turno y conciliación por la API observada en su rama `feature/entrega-2`. `GET /v1/employees/reports/clinic` muestra la última intención administrativa por persona. Configurar `CLINIC_BASE_URL` según la guía; sin URL, el envío permanece deshabilitado. Un timeout no prueba ausencia de turno y no genera otro POST. La API externa de Turnos todavía necesita contrato formal, autenticación y aceptación de Octi; su capacidad pública de Notificaciones es distinta.
 
 Estas funciones corresponden a RN-15 a RN-22, RF-13 a RF-17/RF-19 y HU-13 a HU-17/HU-23. No se han implementado endpoints de otros grupos ni se han asignado tarifas o resultados médicos. La lista propia y los puertos permiten avanzar sin presentar acuerdos inexistentes.

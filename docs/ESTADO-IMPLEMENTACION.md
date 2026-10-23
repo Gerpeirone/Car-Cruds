@@ -18,7 +18,9 @@ Empleados implementa administración de personal y candidatos independientes. La
 
 Actualización del 22 de octubre: Car Cruds dispone de recepción HTTP propia de membresías, uso y gastos del gimnasio, persistencia con historia y deduplicación e informe administrativo por período y moneda. [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md) describe el contrato provisional 0.2.0 y sus límites. Se retiró el alta saliente al gimnasio por no corresponder al diseño original. La aceptación bilateral, el consumo real y el despliegue público permanecen pendientes; no se modificó el proyecto del gimnasio.
 
-La interfaz web y el adaptador del hospital permanecen pendientes. El endpoint general de estado de integraciones conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; los informes del gimnasio muestran únicamente evidencia recibida y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
+Hospital, ampliación del 22 de octubre: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el adaptador HTTP sobre las operaciones de Turnos observadas en `feature/entrega-2`, con vínculo de pacientes, intenciones durables, envío único, conciliación, historia e informe. Se agrega un escenario de contrato contra su código original fijado por commit, en un entorno aislado; la evidencia de ejecución se identifica separadamente en el PR. Identificación real de pacientes, contrato público de Turnos, autenticación y aceptación externas siguen pendientes.
+
+La interfaz web permanece pendiente. El endpoint general de estado conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; cada flujo utiliza sus rutas específicas y muestra solo evidencia verificada y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
 
 ## 2. Evidencia local registrada
 

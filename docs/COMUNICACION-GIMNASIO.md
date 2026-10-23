@@ -8,7 +8,7 @@ Estado al 22 de octubre de 2026: implementado del lado de Car Cruds en `entrega-
 2. **Gimnasio → Car Cruds:** entrega una instantánea por empleado y período mediante `POST /v1/employees/membership-evidence`, con el mismo token y `Content-Type: application/json`. Car Cruds almacena afiliación, uso, costo y gasto informados por el gimnasio.
 3. **Administración de Car Cruds:** consulta `GET /v1/employees/reports/memberships?period=2026-10&page=1&pageSize=20` con token administrativo o de servicio. Ve hechos individuales, faltantes, origen y totales por moneda. El gimnasio no puede leer este informe ni administrar empleados.
 
-Se retiró el envío desde Car Cruds a `POST /api/v1/integraciones/empleados` del gimnasio: ese alta no pertenece al diseño original solicitado. No se necesitan `GYM_BASE_URL` ni credenciales para llamar al gimnasio. No se modificó su repositorio. El hospital se mantiene pendiente y no forma parte de esta implementación.
+Se retiró el envío desde Car Cruds a `POST /api/v1/integraciones/empleados` del gimnasio: ese alta no pertenece al diseño original solicitado. No se necesitan `GYM_BASE_URL` ni credenciales para llamar al gimnasio. No se modificó su repositorio. El flujo del hospital se documenta por separado en [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md).
 
 ## Contrato propio de devolución — pendiente de aceptación
 
