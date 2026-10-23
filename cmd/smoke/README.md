@@ -12,7 +12,7 @@ Todos los escenarios HTTP utilizan exclusivamente el gateway de loopback. La URL
 
 ## Comprobaciones reales
 
-- Sin autenticación: 401. Cliente sin acceso a la lista de personal: 403. Gimnasio con lista activa que contiene exclusivamente `employeeId` y `displayName` por elemento; sin acceso a fichas, CRUD administrativo ni candidatos.
+- Sin autenticación: 401. Cliente sin acceso a la lista de personal: 403. Gimnasio con lista activa que contiene exclusivamente `employeeId` y `displayName` por elemento; sin acceso a fichas ni CRUD administrativo. GET y POST de candidatos devuelven 404 con autenticación válida, también para Administración; no se crean candidatos.
 - Dos instancias distintas de Flota observadas por `X-Service-Instance` en doce respuestas a través del balanceador. Escritura de una ficha propia, rechazo de versión anterior, actualización de caché y búsqueda de la versión actual en Solr mediante consultas durante un máximo de cinco segundos.
 - Cotización y agenda para un intervalo vigente `[hoy, mañana)` calculado en `America/Buenos_Aires`. Reserva idempotente, rechazo de otra carga con la misma clave, cancelación repetible y respuesta original preservada después de cancelar.
 - Dos solicitudes simultáneas con claves distintas: exactamente una reserva ganadora y un conflicto. Retiro y devolución repetibles, con comprobación de estado, identidad y dinero entero ARS.
@@ -24,8 +24,8 @@ Cada solicitud incluye un UUID de correlación y exige un único encabezado de r
 
 ## Datos y limpieza
 
-Cada ejecución utiliza identificadores o nombres `smoke-<UUID>` nuevos. Un contexto independiente y acotado permite intentar la limpieza también al fallar o recibir Ctrl+C: cancela reservas `RESERVED`, devuelve las `ACTIVE`, desactiva empleado y vehículo y elimina el candidato creado. Verifica que el empleado ya no aparezca al gimnasio y que el vehículo desaparezca del índice público.
+Cada ejecución utiliza identificadores o nombres `smoke-<UUID>` nuevos. Un contexto independiente y acotado permite intentar la limpieza también al fallar o recibir Ctrl+C: cancela reservas `RESERVED`, devuelve las `ACTIVE`, desactiva empleado y vehículo. Verifica que el empleado ya no aparezca al gimnasio y que el vehículo desaparezca del índice público.
 
 Las reservas canceladas/completadas y los vehículos/empleados inactivos permanecen como evidencia. Clientes no tiene modificación ni baja en la API actual: el conductor ficticio se conserva con identificador y nombre `smoke` trazables. Una entrega HTTP incierta de reserva se recupera con su clave original antes de limpiarla. Si la limpieza falla, el comando termina con `FAIL` y muestra el identificador de ejecución para recuperar sus fixtures; no elimina datos ajenos. No usa contratos de gimnasio u hospital pendientes ni modifica el mock histórico.
 
-Los tiempos impresos corresponden a lo observado por el harness después de comenzar sus consultas. No acreditan por sí solos capacidad máxima, failover, latencia desde el commit original ni recuperación del broker; esos ensayos se realizan por separado.
+Los recorridos históricos del 13/14 de octubre conservan sus solicitudes y resultados originales; no acreditan esta revisión de alcance ni los nuevos chequeos de rutas retiradas. Cada ejecución nueva debe registrar su revisión y resultado por separado. Los tiempos impresos corresponden a lo observado por el harness después de comenzar sus consultas. No acreditan por sí solos capacidad máxima, failover, latencia desde el commit original ni recuperación del broker; esos ensayos se realizan por separado.

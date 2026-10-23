@@ -63,7 +63,7 @@ func isolatedDatabase(t *testing.T) (*pgxpool.Pool, *pgxpool.Config) {
 	return pool, config
 }
 
-func TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves(t *testing.T) {
+func TestPostgresPersistsEmployeesAndSeedPreservesHistory(t *testing.T) {
 	pool, config := isolatedDatabase(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -83,7 +83,8 @@ func TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves(t *tes
 	if err := repository.CreateEmployee(ctx, domain.Employee{ID: "employee-003", DisplayName: "Persona inactiva", Active: false}); err != nil {
 		t.Fatal(err)
 	}
-	if err := repository.CreateCandidate(ctx, domain.Candidate{ID: "candidate-002", DisplayName: "Otra posible incorporación"}); err != nil {
+	// Simulate an existing database from before candidate functionality was retired.
+	if _, err := pool.Exec(ctx, `INSERT INTO candidates(candidate_id,display_name) VALUES('legacy-candidate','Registro historico')`); err != nil {
 		t.Fatal(err)
 	}
 	if err := repository.SeedDemo(ctx); err != nil {
@@ -97,9 +98,13 @@ func TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves(t *tes
 	if err != nil || all != 3 {
 		t.Fatalf("administrative population=%d, err=%v", all, err)
 	}
-	_, candidates, err := repository.ListCandidates(ctx, domain.Page{Number: 1, Size: 20})
-	if err != nil || candidates != 2 {
-		t.Fatalf("candidate population=%d, err=%v", candidates, err)
+	var legacyName string
+	if err := pool.QueryRow(ctx, `SELECT display_name FROM candidates WHERE candidate_id='legacy-candidate'`).Scan(&legacyName); err != nil || legacyName != "Registro historico" {
+		t.Fatalf("seed modified legacy data: %q %v", legacyName, err)
+	}
+	var candidates int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM candidates`).Scan(&candidates); err != nil || candidates != 1 {
+		t.Fatalf("seed created candidates: %d %v", candidates, err)
 	}
 	pool.Close()
 	reconnected, err := pgxpool.NewWithConfig(ctx, config.Copy())
@@ -112,18 +117,10 @@ func TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves(t *tes
 	if err != nil || employee.Active {
 		t.Fatalf("leave not persisted after reconnect: %+v %v", employee, err)
 	}
-	if _, err = repository.UpdateCandidate(ctx, domain.Candidate{ID: "candidate-002", DisplayName: "Nombre administrativo revisado"}); err != nil {
-		t.Fatal(err)
+	if _, err = repository.GetEmployee(ctx, "legacy-candidate"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("legacy candidate became employee err=%v", err)
 	}
-	if err = repository.DeleteCandidate(ctx, "candidate-002"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = repository.GetCandidate(ctx, "candidate-002"); !errors.Is(err, domain.ErrNotFound) {
-		t.Fatalf("deleted candidate err=%v", err)
-	}
-	if _, err = repository.GetEmployee(ctx, "candidate-001"); !errors.Is(err, domain.ErrNotFound) {
-		t.Fatalf("candidate became employee err=%v", err)
-	}
+
 }
 
 type queryKey struct{}

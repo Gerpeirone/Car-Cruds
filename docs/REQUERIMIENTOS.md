@@ -1,13 +1,15 @@
 # Requerimientos del sistema — Car Cruds
 
-**Cobertura ampliada del 22/10/2026:** RF-15/RF-16/RF-17 cuentan con solicitud, conciliación por referencia externa e informe de la última intención, con persistencia, incertidumbre explícita y permisos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) distingue código implementado, API observada y acuerdos pendientes. RF-19 sigue pendiente de una capacidad real de indicaciones del hospital; no se inventa información clínica. Aceptación externa y operación pública no se deducen de estas pruebas. Se preservan los requisitos originales.
+**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. RF-10 queda retirado sin reutilizar su identificador. RN-13 y RF-11/RF-15/RF-17 se acotan a empleados: nuevos vínculos, intenciones y primer envío de turno requieren empleado activo; consulta y actualización de evidencia previa admiten inactivos. Se preservan datos históricos sin acceso por la API activa. Las matrices fechadas no acreditan esta revisión ni la migración futura al contrato de Turnos para socios publicado por el hospital.
+
+**Cobertura ampliada del 22/10/2026:** RF-15/RF-16/RF-17 cuentan con solicitud, conciliación por referencia externa e informe de la última intención, con persistencia, incertidumbre explícita y permisos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) distingue código implementado, API observada y acuerdos pendientes. RF-19 sigue pendiente de una capacidad real de indicaciones del hospital; no se inventa información clínica. Aceptación externa y operación pública no se deducen de estas pruebas. Se preservan los requisitos salvo la reducción de alcance registrada el 23 de octubre.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Requerimientos vigentes con cobertura parcial verificada |
 | Hito objetivo | 23 de octubre de 2026 |
 | Relación con el alcance | Alquileres como negocio principal; Clientes, Flota, Alquileres y Empleados |
@@ -16,7 +18,7 @@
 
 Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-22 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
 
-La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados y posibles incorporaciones. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La versión 0.3 registra la implementación del backend propio y su evidencia local. El mock de entrega 1 se conserva separado; los contratos y adaptadores externos continúan pendientes.
+La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados; el alcance anterior de candidatos quedó retirado por ADR-018. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La versión 0.3 registra la implementación del backend propio y su evidencia local. El mock de entrega 1 se conserva separado; los contratos y adaptadores externos continúan pendientes.
 
 Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni mecanismos de devolución. El comportamiento esperado se especifica sin imponer esas decisiones externas. Los informes permiten seguimiento y decisiones humanas; no determinan aptitud médica, contratación automática ni gastos monetarios a partir de tarifas inexistentes en los acuerdos.
 
@@ -25,7 +27,7 @@ Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni
 | Identificadores | Estado al 14 de octubre | Evidencia o limitación |
 | --- | --- | --- |
 | RF-01 a RF-09 | Backend propio implementado | Pruebas reales y recorrido local; alcance de Clientes limitado a registro/consulta |
-| RF-10 y RF-11 | Gestión propia de candidatos/empleados implementada | Registros separados, bajas y paginación; seguimiento clínico pendiente |
+| RF-11 | Gestión propia de empleados; RF-10 retirado por ADR-018 | Bajas y paginación; la matriz histórica no verifica la revisión del 23 de octubre |
 | RF-12 | Lista propia activa implementada provisionalmente | Formato mínimo y permisos verificados; acuerdo/publicación/consumo externo pendientes |
 | RF-13 a RF-17 y RF-19 | Pendientes de contrato externo | Sin membresías, tarifas, turnos ni resultados inventados |
 | RF-18 | Acceso por aplicaciones y roles implementado parcialmente | 401/403 y ámbito de recurso verificados; no gestión de cuentas personales |
@@ -110,25 +112,21 @@ El sistema deberá registrar bloqueos de mantenimiento en Alquileres, comproband
 
 **Trazabilidad:** HU-09; RN-03, RN-11. **Estado:** Cobertura parcial del backend; ver matriz.
 
-### RF-10 — Registrar posibles incorporaciones
+### RF-10 — Registrar posibles incorporaciones — retirado
 
-El sistema deberá mantener candidatos y su seguimiento en Empleados, diferenciándolos de los empleados. Un registro o turno clínico no implicará contratación ni aptitud médica.
-
-**Verificación:** Candidato conservado por separado y excluido de la lista de empleados por esa sola condición.
-
-**Trazabilidad:** HU-10; RN-13, RN-17, RN-20. **Estado:** Cobertura parcial del backend; ver matriz.
+**Estado:** Retirado del alcance el 23 de octubre de 2026 por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Se conserva la trazabilidad con HU-10 y el identificador histórico. La API activa no ofrece CRUD ni turnos de candidatos; las migraciones y referencias previas permanecen sin borrado ni promoción automática.
 
 ### RF-11 — Gestionar empleados
 
 El sistema deberá mantener el registro y los cambios de empleados a partir de decisiones de personal autorizadas, con persistencia propia en Empleados.
 
-**Verificación:** Alta autorizada consultable; candidato sin alta no tratado como empleado; cambios preservados.
+**Verificación:** Alta autorizada consultable; condición activa explícita y cambios preservados; baja lógica sin pérdida de historia.
 
 **Trazabilidad:** HU-11; RN-13, RN-14, RN-20. **Estado:** Cobertura parcial del backend; ver matriz.
 
 ### RF-12 — Ofrecer lista al gimnasio
 
-El sistema deberá permitir al gimnasio autorizado obtener la lista acordada de empleados, con el ámbito y los datos mínimos pactados. La capacidad excluirá candidatos e información clínica.
+El sistema deberá permitir al gimnasio autorizado obtener la lista acordada de empleados, con el ámbito y los datos mínimos pactados. La capacidad incluirá únicamente empleados activos y excluirá información clínica.
 
 **Verificación:** Test del contrato pactado y de permisos; proyección sin datos ajenos al propósito acordado.
 
@@ -152,7 +150,7 @@ El sistema deberá generar un informe por período con empleados con membresía,
 
 ### RF-15 — Solicitar revisión o turno
 
-El sistema deberá solicitar por la API del hospital de Octi un turno para un empleado registrado que necesita consulta, usando el contrato publicado y los datos mínimos acordados. El flujo adicional de candidatos permanece separado. Conservará solicitud y resultado sin equiparar petición, confirmación y asistencia.
+El sistema deberá solicitar por la API del hospital de Octi un turno para un empleado registrado y activo que necesita consulta, usando el contrato publicado y los datos mínimos acordados. La condición activa se comprobará al vincular paciente, registrar intención y reclamar el primer envío. Conservará solicitud y resultado sin equiparar petición, confirmación y asistencia.
 
 **Verificación:** Solicitud trazable; confirmación solo con evidencia del proveedor; timeout sin afirmación de ausencia ni repetición insegura.
 
@@ -168,7 +166,7 @@ El sistema deberá actualizar el seguimiento mediante el mecanismo pactado con l
 
 ### RF-17 — Informar existencia de turno
 
-El sistema deberá presentar empleados y, en un ámbito separado, candidatos con turno confirmado, sin turno informado y estado desconocido, respaldados por evidencia. El informe no determinará asistencia, aptitud médica ni contratación.
+El sistema deberá presentar empleados, incluidos inactivos con evidencia previa, con turno confirmado, sin turno informado y estado desconocido, respaldados por evidencia. El informe no determinará asistencia, aptitud médica ni contratación.
 
 **Verificación:** Clasificación consistente con la conciliación y ausencia de conclusiones médicas o de contratación automáticas.
 
@@ -194,7 +192,7 @@ El sistema deberá recibir o consultar al hospital de Octi la información de em
 
 RF-16 deberá reflejar cancelaciones, reprogramaciones y cambios de estado administrados por el hospital, conservar historial y evitar nuevas reservas automáticas. Verificar duplicados y orden de actualizaciones mediante el contrato vigente. RN-22 se vincula con RF-15, RF-16 y RF-17; RN-21 con RF-19. EXT-15 agrega el acuerdo del mecanismo de información sobre necesidad de consulta.
 
-RF-15 usa HU-23 cuando la necesidad procede del hospital; HU-10 queda reservado al flujo adicional de candidatos. RF-19 requiere definir el contrato y el vínculo de identidad antes de probar el intercambio real.
+RF-15 usa HU-23 cuando la necesidad procede del hospital; HU-10 y RF-10 quedan retirados. RF-19 requiere definir el contrato y el vínculo de identidad antes de probar el intercambio real.
 
 ### RF-20 — Publicar y consumir eventos de dominio
 
@@ -254,7 +252,7 @@ Clientes, Flota, Alquileres y Empleados conservarán datos y casos de uso propio
 
 **Verificación:** Con gimnasio o clínica fuera de servicio y dependencias propias sanas, el flujo de alquiler continúa. Trazas y revisión de accesos comprueban que Alquileres no llama esas integraciones ni lee bases ajenas.
 
-**Trazabilidad:** HU-05, HU-10 a HU-17, HU-21; RN-20. **Fuente:** 2.1, 4.1; D1, D2 y D9. **Estado:** Diseñado.
+**Trazabilidad:** HU-05, HU-11 a HU-17, HU-21; RN-20. **Fuente:** 2.1, 4.1; D1, D2 y D9. **Estado:** Diseñado.
 
 ### RNF-05 — Seguridad y minimización
 
@@ -262,7 +260,7 @@ La publicación operativa protegerá identidad y acceso; los servicios autorizar
 
 **Verificación:** Pruebas de permisos rechazan identidades o ámbitos inválidos. Revisión de repositorio, logs, respuestas e informes no encuentra secretos ni datos clínicos publicados al gimnasio. Campos externos se verificarán contra el acuerdo, sin anticiparlos.
 
-**Trazabilidad:** HU-01, HU-03, HU-06, HU-10 a HU-18, HU-20, HU-22; RN-12, RN-14. **Fuente:** 2.12, 4.1; D8 y D9. **Estado:** Diseñado.
+**Trazabilidad:** HU-01, HU-03, HU-06, HU-11 a HU-18, HU-20, HU-22; RN-12, RN-14. **Fuente:** 2.12, 4.1; D8 y D9. **Estado:** Diseñado.
 
 ### RNF-06 — Balanceo y disponibilidad de Flota
 
@@ -326,14 +324,14 @@ Las reglas RN-01 a RN-12 de SPEC mantienen su definición. Las nuevas reglas se 
 
 | Regla en SPEC | Finalidad | Requisitos principales |
 | --- | --- | --- |
-| RN-13 | Separar candidato y empleado; alta autorizada | RF-10, RF-11, RF-12, RF-17 |
+| RN-13 | Alta laboral autorizada y elegibilidad activa para nuevas acciones clínicas | RF-11, RF-12, RF-15, RF-17 |
 | RN-14 | Datos mínimos y ámbito para el gimnasio | RF-12, RF-13, RF-18; RNF-05, RNF-12 |
 | RN-15 | Uso, no uso y desconocido por período y evidencia | RF-13, RF-14; RNF-03, RNF-07 |
 | RN-16 | Costos y gastos individuales/totales respaldados por el gimnasio | RF-13, RF-14 |
-| RN-17 | Solicitud de turno distinta de confirmación o asistencia | RF-10, RF-15, RF-16, RF-17 |
+| RN-17 | Solicitud de turno distinta de confirmación o asistencia | RF-15, RF-16, RF-17 |
 | RN-18 | Sin turno informado distinto de fallo o desconocimiento | RF-15, RF-16, RF-17; RNF-03 |
 | RN-19 | Proteger repetición y orden de comunicaciones | RF-13, RF-15, RF-16; RNF-02 |
-| RN-20 | Aislar alquileres de integraciones de personal | RF-10 a RF-13, RF-15, RF-16; RNF-04 |
+| RN-20 | Aislar alquileres de integraciones de personal | RF-11 a RF-13, RF-15, RF-16; RNF-04 |
 | RN-21 | Necesidad de consulta vinculada a empleado y evidencia vigente | RF-19; HU-23 |
 | RN-22 | Turno administrado por el hospital; cambios e historia conservados | RF-15, RF-16, RF-17; HU-15 a HU-17 |
 
@@ -347,7 +345,7 @@ La política de desconocimiento aplica a todo fallo de integración: la ausencia
 | PA-02 | Forma de devolución del gimnasio: quién comunica, protocolo o modalidad, período de uso, evidencia, correcciones, duplicados y orden | RF-13, RF-14; RNF-02, RNF-03 |
 | PA-03 | Operaciones reales publicadas por la clínica para pedir, confirmar y comprobar turnos; identidad y datos exigidos | RF-15, RF-16, RF-17; RNF-12 |
 | PA-04 | Tratamiento pactado de respuesta perdida, ausencia informada, resultados desconocidos y reconciliación de turnos | RF-15, RF-16; RNF-02, RNF-03 |
-| PA-05 | Datos internos de candidato y empleado, permisos y decisión explícita de alta; separación de acceso a información de revisiones | RF-10, RF-11, RF-18; RNF-05 |
+| PA-05 | Datos internos del empleado, permisos y decisión explícita de alta; separación de acceso a información de revisiones | RF-11, RF-18; RNF-05 |
 | PA-06 | Objetivos por dependencia: presupuesto de tiempo, reintentos, alertas, disponibilidad y conservación de evidencias | RNF-03, RNF-06, RNF-07, RNF-12 |
 | PA-07 | Métricas y resultados que justifiquen búsqueda, caché, capacidad y costos | RNF-08, RNF-09, RNF-10 |
 
@@ -370,7 +368,7 @@ Ni estas tablas ni las pruebas existentes del mock acreditan el cumplimiento com
 - [Enunciado académico](../Enunciado%20TP%20Final.md): requisitos de arquitectura, integración y Entrega 2.
 - [SPEC.md](../SPEC.md): reglas RN-01 a RN-22 y estados del dominio.
 - [BACKLOG.md](BACKLOG.md): E-01 a E-09 y HU-01 a HU-28.
-- [ARCHITECTURE.md](ARCHITECTURE.md), [D1 vigente](adr/ADR-014-limites-servicios-v2.md), [D3 vigente](adr/ADR-015-persistencia-v2.md) y [D5 vigente](adr/ADR-016-comunicacion-v2.md): límites, propiedad de datos y comunicación.
+- [ARCHITECTURE.md](ARCHITECTURE.md), [D1/D3 vigentes — alcance y conservación](adr/ADR-018-empleados-sin-candidatos.md), junto con las decisiones de infraestructura conservadas de ADR-014/ADR-015 y [D5 vigente](adr/ADR-016-comunicacion-v2.md): límites, propiedad de datos y comunicación.
 - [clases.zip](../clases.zip): teoría 02 para consistencia local; teoría 04 para outbox, duplicados y orden; teoría 06 para distinguir gateway de Load Balancer; teoría 07 para presupuestos, fallas y resultados desconocidos; teoría 08 para capas, Hexagonal y aislamiento mediante puertos/adaptadores.
 
 Los patrones internos deben proteger reglas y dependencias de cada servicio de forma reconocible. Las capas organizan presentación, lógica y datos; Hexagonal permite adaptar proveedores sin incorporar sus modelos al núcleo. Los contratos externos se traducen al lenguaje de Empleados y no determinan por sí solos un patrón ni una tecnología de implementación.

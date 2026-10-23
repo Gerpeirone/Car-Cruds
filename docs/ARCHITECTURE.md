@@ -1,16 +1,18 @@
 # Documento de arquitectura — Car Cruds
 
+**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: se retiran candidatos del dominio y de la API, conservando tablas, migraciones y referencias históricas sin acceso activo. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
+
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Backend propio implementado; diseño externo y frontend pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos y adaptadores externos siguen pendientes.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra el registro de empleados, membresías y seguimiento administrativo de turnos. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos externos siguen pendientes; el adaptador de Turnos observado está implementado y su migración al contrato de socios queda para la siguiente etapa.
 
 Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
@@ -20,7 +22,7 @@ Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice
 flowchart TB
     Client["Cliente<br/>Busca y reserva"]
     Operator["Operador<br/>Gestiona alquileres"]
-    Personnel["Responsable de personal<br/>Gestiona empleados y candidatos"]
+    Personnel["Responsable de personal<br/>Gestiona empleados"]
     System["Car Cruds<br/>Alquiler de autos y personal"]
     Gym["Gimnasio de Pablo<br/>Sistema consumidor"]
     Clinic["Hospital de Octi<br/>Sistema proveedor"]
@@ -82,7 +84,7 @@ flowchart TB
     end
     User -->|"HTTP local con Bearer"| GW
     Gym -.->|"Lista propia; acceso por acordar"| GW
-    Employees -.->|"Adaptador futuro"| Clinic
+    Employees -.->|"Cliente observado; acceso compartido pendiente"| Clinic
     classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
     classDef data fill:#27ae60,color:#fff,stroke:#207c48;
     classDef support fill:#c98b2b,color:#fff,stroke:#91631e;
@@ -132,7 +134,7 @@ flowchart TB
 | Clientes | Perfil, licencia/estado, inbox e historial | Habilitación e historial deduplicado |
 | Flota | Ficha, tarifa, versión y eventos pendientes | Documento/outbox atómicos |
 | Alquileres | Agenda, reserva, precio, idempotencia y outbox | Exclusión de períodos y un alquiler activo por auto |
-| Empleados | Empleados y candidatos | Separación, bajas y lista mínima; referencias/informes externos futuros |
+| Empleados | Empleados, membresías, vínculos de pacientes, intenciones y evidencia de turnos | Baja lógica, lista mínima y trazabilidad; datos históricos de candidatos sin API activa |
 
 **Alquileres es la única autoridad sobre disponibilidad temporal.** Flota no duplica esa verdad con un booleano. Solr y Redis no autorizan el precio de confirmación. Un cambio de tarifa no modifica una reserva ya confirmada.
 
@@ -143,7 +145,7 @@ flowchart TB
 | Clientes | Capas | Presentación HTTP → negocio → datos PostgreSQL |
 | Flota | Capas | HTTP → servicio → repositorios MongoDB/Solr y caché |
 | Alquileres | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP, PostgreSQL y mensajería |
-| Empleados | Hexagonal | Dominio/aplicación → puertos → HTTP/PostgreSQL; puertos externos sin adaptador |
+| Empleados | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP/PostgreSQL y cliente clínico observado |
 
 El núcleo hexagonal no depende de HTTP, SQL ni SDK de infraestructura. Repository, Adapter e inyección por constructores aíslan cambios y permiten unitarios con falsos. Outbox y consumidor idempotente protegen efectos derivados; cache-aside optimiza exploración. Circuit Breaker sigue previsto y no se incluye entre los mecanismos implementados.
 
@@ -166,11 +168,11 @@ La revisión del 15 de octubre alinea la implementación con esa separación: le
 
 ## 6. Personal e integración pendiente
 
-La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. Gimnasio tiene lectura y no acceso a candidatos, escrituras o datos médicos.
+La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. El gimnasio consulta la lista mínima y envía evidencia de membresías; no administra empleados ni accede a datos médicos.
 
 Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).
 
-Para una futura solicitud externa con efecto, el diseño exige intención local durable antes del envío y recuperación acordada ante resultado desconocido. Los puertos actuales no acreditan ese flujo ni el almacenamiento de turnos; la ruta administrativa informa `503 NOT_CONFIGURED`. [D9](adr/ADR-009-consumo-clinica.md) conserva el diseño.
+El flujo clínico implementado conserva vínculo explícito con paciente, intención durable y marca anterior al envío, consulta y conciliación de turnos e informe. El vínculo, la nueva intención y el reclamo del primer envío comprueban empleado activo dentro de la transacción local. Una baja posterior no borra evidencia ni cancela turnos; permite consulta y `refresh` de solicitudes previas. `personKind` se conserva por compatibilidad con único valor `employee`; el informe ya no selecciona candidatos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el cliente actual fijado a la API observada en `5e4c210`; migrar al contrato de socios publicado posteriormente sigue pendiente. [D9](adr/ADR-009-consumo-clinica.md) y [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) registran las decisiones.
 
 ## 7. Mensajería, índice y caché
 
@@ -195,7 +197,7 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 | Aspecto | Pendiente |
 | --- | --- |
 | Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
-| Integraciones | Adaptadores reales, informes de gastos/uso/turnos y pruebas contra los proveedores |
+| Integraciones | Aceptación y prueba conjunta; migración del adaptador clínico al contrato de socios publicado; pacientes reales y credenciales |
 | Presentación | Frontend y acceso público HTTPS |
 | Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
 | Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |
@@ -205,7 +207,7 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 
 [Enunciado](../Enunciado%20TP%20Final.md), [SPEC](../SPEC.md), [BACKLOG](BACKLOG.md), [REQUERIMIENTOS](REQUERIMIENTOS.md) e [índice ADR](adr/README.md). Material en `clases.zip`: teoría 02, 03, 04, 05, 06, 07 y 08; prácticas Repository, caché, RabbitMQ, Solr y NGINX.
 
-Los ADR-001/003/005/008 conservan su cuerpo histórico y están reemplazados por ADR-014/015/016/017. Las nuevas API propias no renombran el contrato del mock.
+Los ADR-001/003/005/008 conservan su cuerpo histórico y fueron reemplazados por ADR-014/015/016/017. ADR-018 sustituye el alcance de personal de ADR-014/015 y revisa ADR-016/017/009; las decisiones técnicas restantes se conservan. Las nuevas API propias no renombran el contrato del mock.
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |

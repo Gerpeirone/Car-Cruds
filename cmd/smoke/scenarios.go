@@ -18,10 +18,6 @@ type employee struct {
 	DisplayName string `json:"displayName"`
 	Active      bool   `json:"active"`
 }
-type candidate struct {
-	ID          string `json:"candidateId"`
-	DisplayName string `json:"displayName"`
-}
 type vehicle struct {
 	ID             string `json:"vehicleId"`
 	Brand          string `json:"brand"`
@@ -86,8 +82,8 @@ func (h *harness) personnel(ctx context.Context) error {
 		{"cliente_sin_lista_personal", "GET", "/v1/employees", h.client, nil, 403},
 		{"gimnasio_sin_lista_admin", "GET", "/v1/admin/employees", h.gym, nil, 403},
 		{"gimnasio_sin_alta_personal", "POST", "/v1/employees", h.gym, map[string]any{"displayName": "smoke-denied-" + h.runID, "active": true}, 403},
-		{"gimnasio_sin_candidatos", "GET", "/v1/candidates", h.gym, nil, 403},
-		{"gimnasio_sin_alta_candidato", "POST", "/v1/candidates", h.gym, map[string]any{"displayName": "smoke-denied-" + h.runID}, 403},
+		{"ruta_candidatos_retirada", "GET", "/v1/candidates", h.admin, nil, 404},
+		{"alta_candidatos_retirada", "POST", "/v1/candidates", h.admin, map[string]any{"displayName": "smoke-retired-" + h.runID}, 404},
 	} {
 		if _, err := h.request(ctx, check.name, check.method, check.path, check.token, check.input, "", check.status, nil); err != nil {
 			return err
@@ -105,14 +101,6 @@ func (h *harness) personnel(ctx context.Context) error {
 	if !person.Active {
 		return errors.New("empleado creado no está activo")
 	}
-	var applicant candidate
-	if _, err := h.request(ctx, "crear_candidato", "POST", "/v1/candidates", h.admin, map[string]string{"displayName": "smoke-candidato-" + h.runID}, "", 201, &applicant); err != nil {
-		return err
-	}
-	if _, err := uuid.Parse(applicant.ID); err != nil || applicant.ID == person.ID || applicant.DisplayName != "smoke-candidato-"+h.runID {
-		return errors.New("alta de candidato no conserva su identidad separada")
-	}
-	h.candidateID = applicant.ID
 	found, err := h.gymListContains(ctx, h.employeeID)
 	if err != nil || !found {
 		if err != nil {
@@ -127,15 +115,12 @@ func (h *harness) personnel(ctx context.Context) error {
 		{"gimnasio_sin_ficha_personal", "GET", "/v1/employees/" + person.ID, nil},
 		{"gimnasio_sin_edicion_personal", "PUT", "/v1/employees/" + person.ID, map[string]any{"displayName": name, "active": false}},
 		{"gimnasio_sin_baja_personal", "DELETE", "/v1/employees/" + person.ID, nil},
-		{"gimnasio_sin_ficha_candidato", "GET", "/v1/candidates/" + applicant.ID, nil},
-		{"gimnasio_sin_edicion_candidato", "PUT", "/v1/candidates/" + applicant.ID, map[string]string{"displayName": "smoke-denied"}},
-		{"gimnasio_sin_baja_candidato", "DELETE", "/v1/candidates/" + applicant.ID, nil},
 	} {
 		if _, err := h.request(ctx, check.name, check.method, check.path, h.gym, check.input, "", 403, nil); err != nil {
 			return err
 		}
 	}
-	h.log("PASS personal: proyección mínima y candidato excluido employeeID=%s candidateID=%s", person.ID, applicant.ID)
+	h.log("PASS personal: proyección mínima de empleados activos y rutas de candidatos retiradas employeeID=%s", person.ID)
 	return nil
 }
 
@@ -158,9 +143,6 @@ func (h *harness) gymListContains(ctx context.Context, id string) (bool, error) 
 			var employeeID, displayName string
 			if len(item) != 2 || json.Unmarshal(item["employeeId"], &employeeID) != nil || json.Unmarshal(item["displayName"], &displayName) != nil || employeeID == "" || displayName == "" {
 				return false, errors.New("lista de gimnasio expone campos adicionales o incompletos")
-			}
-			if employeeID == h.candidateID || displayName == "smoke-candidato-"+h.runID {
-				return false, errors.New("un candidato apareció en la lista de empleados")
 			}
 			if employeeID == id {
 				if displayName != "smoke-empleado-"+h.runID {

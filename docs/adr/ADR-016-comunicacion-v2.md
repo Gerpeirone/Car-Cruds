@@ -1,5 +1,7 @@
 # ADR-016 — Comunicación entre servicios, revisión 2
 
+> **Revisión de alcance — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) retira candidatos y limita nuevas vinculaciones, intenciones y primer envío de turnos a empleados activos; conserva historia y seguimiento previo de inactivos. Los cuerpos y resultados siguientes mantienen sus fechas históricas. Los contratos propios actuales son personal/gimnasio 0.3.0 y clínica 0.2.0; la lista y membresías del gimnasio no cambian. La migración al contrato Turnos para socios publicado posteriormente por el hospital queda pendiente.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D5: comunicación |

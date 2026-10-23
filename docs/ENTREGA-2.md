@@ -1,5 +1,7 @@
 # Entrega 2 — dominio propio de punta a punta
 
+> **Nota de corte — 23/10/2026:** el alcance vigente retira candidatos por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Las referencias a candidatos y los resultados del 13/14/22 de octubre que siguen corresponden a la implementación histórica; no acreditan esta revisión ni forman parte de la API activa. La validación de la nueva rama se distingue en ADR-018 y en su pull request. La adaptación al contrato de socios del hospital queda pendiente para otro cambio.
+
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |

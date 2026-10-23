@@ -4,7 +4,7 @@ Estado al 22 de octubre de 2026: implementado del lado de Car Cruds en `entrega-
 
 ## Dirección y alcance
 
-1. **Gimnasio → Car Cruds:** consulta `GET /v1/employees?page=1&pageSize=20`, con `Authorization: Bearer <AUTH_GYM_TOKEN>`. Obtiene activos con `employeeId` estable y `displayName`; candidatos excluidos. `pageSize` máximo 100.
+1. **Gimnasio → Car Cruds:** consulta `GET /v1/employees?page=1&pageSize=20`, con `Authorization: Bearer <AUTH_GYM_TOKEN>`. Obtiene activos con `employeeId` estable y `displayName`; sin registros ajenos a empleados activos. `pageSize` máximo 100.
 2. **Gimnasio → Car Cruds:** entrega una instantánea por empleado y período mediante `POST /v1/employees/membership-evidence`, con el mismo token y `Content-Type: application/json`. Car Cruds almacena afiliación, uso, costo y gasto informados por el gimnasio.
 3. **Administración de Car Cruds:** consulta `GET /v1/employees/reports/memberships?period=2026-10&page=1&pageSize=20` con token administrativo o de servicio. Ve hechos individuales, faltantes, origen y totales por moneda. El gimnasio no puede leer este informe ni administrar empleados.
 
@@ -12,7 +12,7 @@ Se retiró el envío desde Car Cruds a `POST /api/v1/integraciones/empleados` de
 
 ## Contrato propio de devolución — pendiente de aceptación
 
-El diseño original exige recibir evidencia y evitar duplicados, pero deja abierto el transporte. Se ofrece una entrada HTTP **de Car Cruds**; no se atribuye este endpoint al gimnasio ni se presenta como acuerdo bilateral. OpenAPI 3.0.3, versión 0.2.0: [employees-openapi.json](contracts/employees-openapi.json). La operación de lista mantiene su formato anterior.
+El diseño original exige recibir evidencia y evitar duplicados, pero deja abierto el transporte. Se ofrece una entrada HTTP **de Car Cruds**; no se atribuye este endpoint al gimnasio ni se presenta como acuerdo bilateral. OpenAPI 3.0.3, versión 0.3.0 (la lista y las membresías conservan su formato y comportamiento): [employees-openapi.json](contracts/employees-openapi.json). La operación de lista mantiene su formato anterior.
 
 Ejemplo exclusivamente ficticio de cuerpo:
 
@@ -31,7 +31,7 @@ Ejemplo exclusivamente ficticio de cuerpo:
 }
 ```
 
-- `employeeId` debe existir como empleado. Se admite evidencia tardía de inactivos para conservar gastos históricos. Un candidato o identificador desconocido obtiene 404; no crea personas ni asociaciones automáticamente.
+- `employeeId` debe existir como empleado. Se admite evidencia tardía de inactivos para conservar gastos históricos. Un identificador que no corresponde a un empleado obtiene 404; no crea personas ni asociaciones automáticamente.
 - `period` y `sourceReference` son identificadores opacos de 1–100 caracteres, sin controles ni espacios exteriores. `2026-10` es solo un ejemplo; la delimitación y vigencia del período deben acordarse con Pablo. La referencia permanece estable para ese empleado y período.
 - `member`, `used`, `costMinor` y `spendingMinor` son independientes. Ausencia o `null` significa desconocido; `false` y `0` son hechos explícitos. Un afiliado puede no haber usado el gimnasio y tener costo. No se inventan tarifas, asistencia, compras, pagos ni facturas.
 - Los importes son enteros no negativos en unidades menores de la moneda acordada, hasta el máximo `int64`. Se exige moneda de tres letras mayúsculas cuando hay importes. Este contrato admite una moneda por empleado y período; no convierte monedas. `costMinor` es el costo de membresía y `spendingMinor` el gasto individual del período: se muestran y suman por separado, nunca se suman uno al otro.

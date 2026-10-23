@@ -14,9 +14,4 @@ type Repository interface {
 	CreateEmployee(context.Context, domain.Employee) error
 	UpdateEmployee(context.Context, domain.Employee) (domain.Employee, error)
 	DeactivateEmployee(context.Context, string) (domain.Employee, error)
-	ListCandidates(context.Context, domain.Page) ([]domain.Candidate, int64, error)
-	GetCandidate(context.Context, string) (domain.Candidate, error)
-	CreateCandidate(context.Context, domain.Candidate) error
-	UpdateCandidate(context.Context, domain.Candidate) (domain.Candidate, error)
-	DeleteCandidate(context.Context, string) error
 }

@@ -1,14 +1,16 @@
 # Especificación de alcance y requisitos
 
-**Actualización de implementación — 22/10/2026:** la recepción e informe del gimnasio se describen en [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md). La solicitud y consulta de turnos del hospital, con vínculo de pacientes, intención persistente e informe, se implementan según [COMUNICACION-HOSPITAL](docs/COMUNICACION-HOSPITAL.md). Se conserva el alcance de las reglas originales; aceptación externa, autenticación del hospital, pacientes reales e indicaciones provenientes del hospital siguen pendientes. Los estados históricos de cobertura de las secciones siguientes deben leerse con esta actualización.
+**Revisión de alcance — 23/10/2026:** Empleados administra únicamente empleados. Se retira la gestión de candidatos según [ADR-018](docs/adr/ADR-018-empleados-sin-candidatos.md); RF-10 y HU-10 conservan su identificador como retirados. Nuevos vínculos de paciente, intenciones y primer envío de turnos requieren un empleado registrado y activo. La baja conserva historia y permite consultar/actualizar evidencia anterior, sin cancelar turnos automáticamente. Los registros históricos de candidatos se conservan sin acceso por la API activa. Esta revisión no adapta todavía el cliente al nuevo contrato del hospital.
+
+**Actualización de implementación — 22/10/2026:** la recepción e informe del gimnasio se describen en [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md). La solicitud y consulta de turnos del hospital, con vínculo de pacientes, intención persistente e informe, se implementan según [COMUNICACION-HOSPITAL](docs/COMUNICACION-HOSPITAL.md). La revisión del 23 de octubre indicada arriba sustituye el alcance de candidatos; aceptación externa, autenticación del hospital, pacientes reales e indicaciones provenientes del hospital siguen pendientes. Los estados históricos de cobertura de las secciones siguientes deben leerse con esta actualización.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Especificación vigente con cobertura parcial verificada del backend |
 | Hito | Entrega 2: 23 de octubre de 2026 |
 
@@ -18,7 +20,7 @@ Este documento establece el alcance funcional y las reglas del sistema de alquil
 
 Una concesionaria administra una flota para alquiler. Necesita asignar autos a clientes, preservar el precio acordado y controlar reserva, retiro y devolución. Dos clientes no pueden reservar el mismo auto durante períodos superpuestos. Un auto aún no devuelto tampoco puede entregarse a otro cliente.
 
-La empresa también necesita gestionar su personal: intercambiar con el gimnasio el listado de empleados y la información de uso de membresías, y solicitar consultas médicas de empleados registrados y revisiones de posibles incorporaciones mediante los turnos de una clínica. Los informes administrativos deben mostrar qué datos están confirmados y cuáles faltan. Esta ampliación no cambia las reglas de reserva ni la autoridad de Alquileres.
+La empresa también necesita gestionar su personal: intercambiar con el gimnasio el listado de empleados y la información de uso de membresías, y solicitar consultas médicas para empleados registrados y activos mediante los turnos de una clínica. Los informes administrativos deben mostrar qué datos están confirmados y cuáles faltan. Esta ampliación no cambia las reglas de reserva ni la autoridad de Alquileres.
 
 ## 2. Actores
 
@@ -26,11 +28,11 @@ La empresa también necesita gestionar su personal: intercambiar con el gimnasio
 | --- | --- |
 | Cliente | Buscar, cotizar, reservar, consultar y cancelar su reserva |
 | Operador | Administrar catálogo/clientes, registrar retiro y devolución, bloquear períodos por mantenimiento |
-| Responsable de personal | Gestionar candidatos y empleados; solicitar revisiones y consultar informes de turnos y membresías |
+| Responsable de personal | Gestionar empleados; solicitar revisiones y consultar informes de turnos y membresías |
 | Gimnasio, sistema consumidor | Consumir la lista de empleados y comunicar el uso o no uso de membresías |
-| Clínica, sistema proveedor | Ofrecer la capacidad de turnos para consultas médicas de empleados y revisiones de posibles incorporaciones |
+| Clínica, sistema proveedor | Ofrecer la capacidad de turnos para consultas médicas de empleados registrados y activos |
 
-La identidad del gimnasio identifica una aplicación con un permiso acotado. Un empleado no es un cliente conductor; un candidato tampoco se considera automáticamente contratado. Los identificadores de vinculación externa, permisos, población compartida y protocolos se acordarán según [el registro de integraciones](docs/INTEGRACIONES.md).
+La identidad del gimnasio identifica una aplicación con un permiso acotado. Un empleado no es un cliente conductor. Su alta laboral exige una decisión administrativa autorizada. Los identificadores de vinculación externa, permisos, población compartida y protocolos se acordarán según [el registro de integraciones](docs/INTEGRACIONES.md).
 
 ## 3. Alcance funcional
 
@@ -40,7 +42,7 @@ La identidad del gimnasio identifica una aplicación con un permiso acotado. Un 
 - Consulta de disponibilidad y cálculo del precio para fechas seleccionadas.
 - Reserva, cancelación previa al retiro, retiro y devolución.
 - Bloqueos de agenda por mantenimiento; historial de reservas y alquileres.
-- Gestión administrativa de candidatos y empleados en un cuarto microservicio de negocio.
+- Gestión administrativa de empleados en un cuarto microservicio de negocio.
 - Lista de empleados publicada al gimnasio de Pablo; recepción o consulta de empleados con membresía, uso informado, costo individual y gastos por empleado, con informe de costos totales por período.
 - Consumo del servicio de turnos de la clínica e informe de personas con turno confirmado, sin turno confirmado y con información pendiente de verificar.
 - Capacidad compartida centrada en Empleados; el contrato y el mock de reservas de la entrega 1 se conservan como evidencia histórica.
@@ -79,7 +81,7 @@ Estas convenciones se aplican en Alquileres y sus pruebas; la aprobación acadé
 | RN-10 | Devolución tardía | Llegar al fin previsto no finaliza el alquiler automáticamente; el operador recibe un conflicto de entrega mientras siga activo |
 | RN-11 | Mantenimiento | Registrar un bloqueo de agenda se valida en Alquileres contra reservas y otros bloqueos; no se confirma silenciosamente sobre una reserva existente |
 | RN-12 | Propiedad y permisos | Cliente consulta/modifica solo sus reservas; operador administra las permitidas; consumidor accede solo al ámbito asignado |
-| RN-13 | Candidato y empleado | Registrar un candidato no lo incorpora a la lista de empleados del gimnasio; la vinculación y el alta laboral requieren una acción administrativa autorizada |
+| RN-13 | Alta laboral y elegibilidad | El alta laboral requiere una acción administrativa autorizada. Nuevos vínculos clínicos, intenciones y primer envío requieren empleado registrado y activo; la baja conserva historia y no cancela turnos automáticamente |
 | RN-14 | Datos mínimos para el gimnasio | La lista expone únicamente los campos administrativos acordados y autorizados; excluye datos de clientes, credenciales y datos médicos |
 | RN-15 | Uso de membresías | El informe distingue uso informado, no uso informado e información faltante para el período; ausencia de respuesta no se registra como no uso |
 | RN-16 | Membresías y gastos | Se distinguen afiliación, uso y costo; se muestran costo por membresía, gastos por empleado y total por período/moneda respaldados por el gimnasio, sin duplicar registros ni convertir datos faltantes en cero |
@@ -88,7 +90,7 @@ Estas convenciones se aplican en Alquileres y sus pruebas; la aprobación acadé
 | RN-19 | Repetición y orden | Repetir la misma comunicación no duplica efectos; la regla para mensajes atrasados y modificaciones se acordará y probará antes de integrar |
 | RN-20 | Aislamiento de funcionalidades | Una falla del gimnasio o la clínica afecta el flujo de personal correspondiente y no bloquea una reserva de vehículos ni cambia su agenda |
 
-El backend propio implementa las reglas de alquiler RN-01 a RN-12 y su persistencia. RN-13 se aplica mediante registros separados de candidatos y empleados. RN-14 tiene una proyección mínima propia implementada y probada; población y campos externos siguen sujetos a acuerdo. RN-15 a RN-19 y los informes económicos/médicos permanecen pendientes de contratos. RN-20 se conserva como separación de dependencias: Alquileres no consulta gimnasio ni hospital; una falla real de esos proveedores todavía no se ensayó. La cobertura de criterios y las limitaciones están en [BACKLOG](docs/BACKLOG.md), [REQUERIMIENTOS](docs/REQUERIMIENTOS.md) y [ESTADO-IMPLEMENTACION](docs/ESTADO-IMPLEMENTACION.md).
+El backend propio implementa las reglas de alquiler RN-01 a RN-12 y su persistencia. RN-13 se aplica mediante alta administrativa y comprobación de empleado activo para nuevas acciones clínicas; la consulta y actualización de evidencia previa admiten empleados inactivos. RN-14 tiene una proyección mínima propia implementada y probada; población y campos externos siguen sujetos a acuerdo. RN-15 a RN-19 y los informes económicos/médicos permanecen pendientes de contratos. RN-20 se conserva como separación de dependencias: Alquileres no consulta gimnasio ni hospital; una falla real de esos proveedores todavía no se ensayó. La cobertura de criterios y las limitaciones están en [BACKLOG](docs/BACKLOG.md), [REQUERIMIENTOS](docs/REQUERIMIENTOS.md) y [ESTADO-IMPLEMENTACION](docs/ESTADO-IMPLEMENTACION.md).
 
 ### Ampliación de reglas de personal
 
@@ -137,7 +139,7 @@ La entrega 2 requiere al menos un servicio operativo además de la funcionalidad
 
 **Capacidad ofrecida al gimnasio:** lista de empleados de la empresa. El gimnasio administra las membresías y sus costos. Car Cruds recibe o consulta empleados con membresía, costo por membresía, gastos por empleado y totales por período; uso y afiliación se distinguen. Empleados vincula esos datos y el responsable de personal obtiene un informe de uso para controlar beneficios y apoyar el análisis de gastos. La población, los campos, el período, la devolución de información y las condiciones de uso requieren acuerdo. La API propia implementada se identifica como provisional en [la documentación de contratos](docs/contracts/README.md).
 
-**Capacidad consumida de la clínica:** turnos para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Empleados conserva la intención local, solicita o gestiona el turno conforme al contrato externo y concilia su estado para producir un informe administrativo. Car Cruds debe solicitar el turno para el empleado mediante la API del hospital. El contrato deberá definir cómo se confirma y qué pasos adicionales exige al empleado; esa incertidumbre técnica no sustituye el requisito de solicitud desde nuestro sistema. La llamada sale de Empleados; el frontend y el gateway propio no realizan la llamada al proveedor.
+**Capacidad consumida de la clínica:** turnos para consultas médicas para empleados registrados y activos. Empleados conserva la intención local, solicita o gestiona el turno conforme al contrato externo y concilia su estado para producir un informe administrativo. Car Cruds debe solicitar el turno para el empleado mediante la API del hospital. El contrato deberá definir cómo se confirma y qué pasos adicionales exige al empleado; esa incertidumbre técnica no sustituye el requisito de solicitud desde nuestro sistema. La llamada sale de Empleados; el frontend y el gateway propio no realizan la llamada al proveedor.
 
 Los acuerdos, los estados de información y los escenarios de falla se detallan en [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md). La API de reservas de entrega 1 conserva su mock local. La API real de Alquileres es un artefacto separado y ninguna de ellas constituye la capacidad compartida actual para el gimnasio.
 
@@ -172,7 +174,7 @@ Estos criterios describen el alcance original de la entrega 1, de tres servicios
 | Alquiler activo | Operación iniciada con el retiro del auto y pendiente de devolución |
 | Idempotencia | Propiedad que permite repetir una solicitud identificada sin duplicar su efecto |
 | Mock | Simulación ejecutable del contrato mediante datos de demostración |
-| Candidato | Persona considerada para una incorporación; no es automáticamente un empleado |
+| Empleado activo | Empleado registrado habilitado para nuevas vinculaciones, intenciones y primer envío de turno; su baja conserva la historia |
 | Empleado | Persona con una relación laboral registrada por la empresa |
 | Uso informado | Evidencia comunicada por el gimnasio para un período y una persona identificados |
 | Turno confirmado | Turno cuya existencia se verificó mediante una respuesta válida del proveedor |

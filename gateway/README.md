@@ -18,9 +18,9 @@ La verificación de disponibilidad consulta en paralelo a los cuatro servicios c
 
 ## Alcance de acceso
 
-El gimnasio puede leer la lista mínima de empleados activos. Las operaciones administrativas, candidatos y datos de clientes no forman parte de ese permiso. Los acuerdos externos y el entorno público permanecen pendientes; los tokens identifican aplicaciones del laboratorio, no cuentas personales.
+El gimnasio puede leer la lista mínima de empleados activos. Las operaciones administrativas y datos de clientes no forman parte de ese permiso. Los acuerdos externos y el entorno público permanecen pendientes; los tokens identifican aplicaciones del laboratorio, no cuentas personales.
 
-La futura llamada al hospital saldrá directamente de Empleados mediante su adaptador. El gateway propio no actúa como proxy saliente al proveedor. No se implementó una interfaz HTML ni terminación TLS pública.
+La llamada al hospital sale directamente de Empleados mediante su adaptador. Las rutas de candidatos fueron retiradas del enrutamiento activo y, con autenticación válida, devuelven 404. El gateway propio no actúa como proxy saliente al proveedor. No se implementó una interfaz HTML ni terminación TLS pública.
 
 ## Ejecución y evidencia
 

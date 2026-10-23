@@ -6,8 +6,8 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Backend propio implementado y verificado localmente; integración externa pendiente |
 | Hito | Entrega 2 — viernes 23 de octubre de 2026 |
 | Equipo | Alterman, Ivo · Peirone, German · Grbavac, Darko |
@@ -19,6 +19,8 @@ Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsq
 
 La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
 
+La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y primer envío de turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. La adaptación al nuevo contrato del hospital queda para un cambio posterior.
+
 ## Estado disponible
 
 | Componente | Implementación y alcance |
@@ -26,7 +28,7 @@ La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El 
 | Clientes | Servicio Go por capas; perfiles, habilitación e historial derivado en PostgreSQL propio |
 | Flota | Servicio Go por capas; catálogo versionado en MongoDB, caché Redis, eventos e índice Solr |
 | Alquileres | Servicio Go hexagonal; agenda, reservas, idempotencia durable, mantenimiento, retiro y devolución en PostgreSQL propio |
-| Empleados | Servicio Go hexagonal; empleados y candidatos separados, PostgreSQL propio y lista mínima de empleados activos |
+| Empleados | Servicio Go hexagonal; gestión de empleados, PostgreSQL propio y lista mínima de empleados activos |
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
 | Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
@@ -76,11 +78,11 @@ Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/
 | Clientes | Perfil y habilitación de conductor; historial de alquileres completados | [README](services/customers/README.md) |
 | Flota | Características, tarifa vigente y proyecciones de lectura | [README](services/fleet/README.md) |
 | Alquileres | Disponibilidad temporal, agenda y ciclo de vida | [README](services/rentals/README.md) |
-| Empleados | Personal y candidatos; integración administrativa prevista | [README](services/employees/README.md) |
+| Empleados | Empleados, membresías y seguimiento administrativo de turnos | [README](services/employees/README.md) |
 
 Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
 
-`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar candidatos o informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.2.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.3.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
 
 ## Documentación
 
@@ -88,8 +90,8 @@ Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fecha
 | --- | --- |
 | [Enunciado TP Final.md](Enunciado%20TP%20Final.md) y [clases.zip](clases.zip) | Requisitos y material de cátedra |
 | [SPEC.md](SPEC.md) | Alcance, reglas RN-01 a RN-22 y estados |
-| [BACKLOG.md](docs/BACKLOG.md) | 9 épicas y 28 historias, prioridades y cobertura |
-| [REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | 22 RF y 12 RNF con trazabilidad |
+| [BACKLOG.md](docs/BACKLOG.md) | 9 épicas; identificadores HU-01 a HU-28 conservados, HU-10 retirada |
+| [REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | Identificadores RF-01 a RF-22 y 12 RNF; RF-10 retirado |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Servicios, estilos, datos y comunicaciones |
 | [Índice ADR](docs/adr/README.md) | D1 a D13, decisiones actuales e historial |
 | [ESTADO-IMPLEMENTACION.md](docs/ESTADO-IMPLEMENTACION.md) | Código disponible, pruebas y límites de la evidencia |

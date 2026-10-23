@@ -1,5 +1,7 @@
 # ADR-017 — Capacidad compartida de Empleados
 
+> **Revisión de alcance — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) retira candidatos y limita nuevas vinculaciones, intenciones y primer envío de turnos a empleados activos; conserva historia y seguimiento previo de inactivos. Los cuerpos y resultados siguientes mantienen sus fechas históricas. Los contratos propios actuales son personal/gimnasio 0.3.0 y clínica 0.2.0; la lista y membresías del gimnasio no cambian. La migración al contrato Turnos para socios publicado posteriormente por el hospital queda pendiente.
+
 ## Actualización del 22 de octubre de 2026
 
 Se conserva el sentido original: gimnasio consume la lista de Car Cruds y proporciona membresías, uso y gastos. Se retiró el alta saliente al gimnasio agregada posteriormente, por solicitud del responsable del proyecto. No se modifica el repositorio del otro equipo ni se implementa el hospital en esta etapa.

@@ -1,5 +1,7 @@
 # ADR-009 — Consumo de la capacidad de Clínica
 
+> **Revisión de alcance — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) retira candidatos y limita nuevas vinculaciones, intenciones y primer envío de turnos a empleados activos; conserva historia y seguimiento previo de inactivos. Los cuerpos y resultados siguientes mantienen sus fechas históricas. Los contratos propios actuales son personal/gimnasio 0.3.0 y clínica 0.2.0; la lista y membresías del gimnasio no cambian. La migración al contrato Turnos para socios publicado posteriormente por el hospital queda pendiente.
+
 ## Implementación del 22 de octubre de 2026
 
 Se implementa el consumo de Turnos observado en `feature/entrega-2` del hospital de Octi, commit `5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d`. Su `main` conserva una revisión anterior. Se mantiene la decisión original: Empleados solicita turnos directamente al proveedor y presenta evidencia administrativa; no se sustituye por Notificaciones ni se modifica el otro repositorio.

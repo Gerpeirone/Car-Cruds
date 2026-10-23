@@ -30,19 +30,38 @@ func (r *Repository) LinkClinicPatient(ctx context.Context, l domain.PatientLink
 	if !domain.ValidPersonKind(l.PersonKind) || !domain.ValidEvidenceKey(l.PersonID) || !domain.ValidEvidenceKey(l.PatientID) || !domain.ValidEvidenceKey(l.RegisteredBy) {
 		return domain.ErrInvalidInput
 	}
-	var employee, candidate *string
-	if l.PersonKind == "employee" {
-		employee = &l.PersonID
-	} else {
-		candidate = &l.PersonID
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
 	}
-	command, err := r.pool.Exec(ctx, `INSERT INTO clinic_patient_links(person_kind,person_id,patient_id,registered_by,employee_id,candidate_id) VALUES($1,$2,$3,$4,$5,$6)
-	ON CONFLICT(person_kind,person_id) DO UPDATE SET patient_id=clinic_patient_links.patient_id WHERE clinic_patient_links.patient_id=EXCLUDED.patient_id`, l.PersonKind, l.PersonID, l.PatientID, l.RegisteredBy, employee, candidate)
+	defer tx.Rollback(ctx)
+	if err = requireActiveEmployee(ctx, tx, l.PersonID); err != nil {
+		return err
+	}
+	command, err := tx.Exec(ctx, `INSERT INTO clinic_patient_links(person_kind,person_id,patient_id,registered_by,employee_id) VALUES('employee',$1,$2,$3,$1)
+	ON CONFLICT(person_kind,person_id) DO UPDATE SET patient_id=clinic_patient_links.patient_id WHERE clinic_patient_links.patient_id=EXCLUDED.patient_id`, l.PersonID, l.PatientID, l.RegisteredBy)
 	if err != nil {
 		return clinicStorageError(err)
 	}
 	if command.RowsAffected() == 0 {
 		return domain.ErrEvidenceConflict
+	}
+	return tx.Commit(ctx)
+}
+
+// Lock the employee until the local action commits, so a concurrent leave
+// cannot pass between checking eligibility and persisting the new action.
+func requireActiveEmployee(ctx context.Context, tx pgx.Tx, id string) error {
+	var active bool
+	err := tx.QueryRow(ctx, `SELECT active FROM employees WHERE employee_id=$1 FOR SHARE`, id).Scan(&active)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !active {
+		return domain.ErrEmployeeInactive
 	}
 	return nil
 }
@@ -56,10 +75,13 @@ func decodeClinic(row pgx.Row) (domain.ClinicRequest, error) {
 		return request, err
 	}
 	err := json.Unmarshal(b, &request)
+	if err == nil && !domain.ValidPersonKind(request.PersonKind) {
+		return domain.ClinicRequest{}, domain.ErrNotFound
+	}
 	return request, err
 }
 func (r *Repository) GetClinicRequest(ctx context.Context, id string) (domain.ClinicRequest, error) {
-	return decodeClinic(r.pool.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1`, id))
+	return decodeClinic(r.pool.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 AND person_kind='employee'`, id))
 }
 func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicRequest) (domain.ClinicRequest, error) {
 	if err := s.ValidateInput(); err != nil {
@@ -73,7 +95,7 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,724105))`, s.LocalReference); err != nil {
 		return s, err
 	}
-	old, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE local_reference=$1`, s.LocalReference))
+	old, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE local_reference=$1 AND person_kind='employee'`, s.LocalReference))
 	if err == nil {
 		if old.PersonKind != s.PersonKind || old.PersonID != s.PersonID || old.DoctorID != s.DoctorID || !old.StartAt.Equal(s.StartAt) {
 			return old, domain.ErrEvidenceConflict
@@ -81,6 +103,9 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 		return old, tx.Commit(ctx)
 	}
 	if !errors.Is(err, domain.ErrNotFound) {
+		return s, err
+	}
+	if err = requireActiveEmployee(ctx, tx, s.PersonID); err != nil {
 		return s, err
 	}
 	err = tx.QueryRow(ctx, `SELECT patient_id FROM clinic_patient_links WHERE person_kind=$1 AND person_id=$2`, s.PersonKind, s.PersonID).Scan(&s.PatientID)
@@ -111,7 +136,7 @@ func (r *Repository) mutateClinic(ctx context.Context, id string, change func(*d
 		return domain.ClinicRequest{}, err
 	}
 	defer tx.Rollback(ctx)
-	s, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 FOR UPDATE`, id))
+	s, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 AND person_kind='employee' FOR UPDATE`, id))
 	if err != nil {
 		return s, err
 	}
@@ -133,9 +158,12 @@ func (r *Repository) mutateClinic(ctx context.Context, id string, change func(*d
 }
 func (r *Repository) ClaimClinicRequest(ctx context.Context, id string) (domain.ClinicRequest, bool, error) {
 	claimed := false
-	s, err := r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, _ pgx.Tx) error {
+	s, err := r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, tx pgx.Tx) error {
 		if s.AttemptedAt != nil {
 			return nil
+		}
+		if err := requireActiveEmployee(ctx, tx, s.PersonID); err != nil {
+			return err
 		}
 		now := time.Now().UTC()
 		s.AttemptedAt = &now
@@ -210,13 +238,8 @@ func (r *Repository) ClinicReport(ctx context.Context, kind string, page domain.
 	if err := page.Validate(); err != nil {
 		return nil, 0, err
 	}
-	// Kind is allowlisted above; SQL identifiers are never supplied by callers.
-	population := `SELECT employee_id AS id,display_name,active FROM employees`
-	if kind == "candidate" {
-		population = `SELECT candidate_id AS id,display_name,NULL::boolean AS active FROM candidates`
-	}
-	rows, err := r.pool.Query(ctx, `SELECT p.id,p.display_name,p.active,r.payload FROM (`+population+`) p
-	LEFT JOIN LATERAL (SELECT payload FROM clinic_review_requests WHERE person_kind=$1 AND person_id=p.id ORDER BY created_at DESC,request_id DESC LIMIT 1) r ON true ORDER BY p.id`, kind)
+	rows, err := r.pool.Query(ctx, `SELECT p.employee_id,p.display_name,p.active,r.payload FROM employees p
+	LEFT JOIN LATERAL (SELECT payload FROM clinic_review_requests WHERE person_kind='employee' AND person_id=p.employee_id ORDER BY created_at DESC,request_id DESC LIMIT 1) r ON true ORDER BY p.employee_id`)
 	if err != nil {
 		return nil, 0, err
 	}

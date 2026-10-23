@@ -1,5 +1,7 @@
 # Estado de implementación de la entrega 2
 
+> **Revisión de alcance — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y exige empleado activo para nuevo vínculo, intención y primer envío; preserva datos históricos sin API activa y seguimiento previo de empleados inactivos. Sus resultados locales son 107 pruebas/subpruebas aprobadas, 20 omitidas y ninguna fallida en Go 1.26.4 Windows sin detector de carreras; análisis estático satisfactorio. Las omisiones no acreditan integración real. La CI de esta rama se registrará en el PR. El cuerpo siguiente conserva los cortes originales; las pruebas y cifras del 13/14/22 de octubre no verifican esta revisión ni la migración pendiente al contrato de socios del hospital.
+
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.3 |

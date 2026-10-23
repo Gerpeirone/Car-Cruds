@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds: consultas al hospital",
-    "version": "0.1.0",
-    "description": "API administrativa propia. Cada 200 devuelve el estado administrativo, no necesariamente un turno confirmado. Aceptación bilateral, acceso externo y pacientes reales pendientes."
+    "version": "0.2.0",
+    "description": "API administrativa propia. Cada 200 devuelve el estado administrativo, no necesariamente un turno confirmado. Aceptación bilateral, acceso externo y pacientes reales pendientes. El alcance vigente comprende exclusivamente empleados. personKind y personId se conservan por compatibilidad; personKind solo admite employee. Los registros históricos de candidatos se conservan en la base y quedan fuera de esta API."
   },
   "security": [
     {
@@ -13,8 +13,8 @@
   "paths": {
     "/v1/employees/clinic/patient-links": {
       "post": {
-        "summary": "Vincular persona y paciente verificado",
-        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "summary": "Vincular empleado activo y paciente verificado",
+        "description": "Solo admin; requiere un empleado registrado y activo. personKind solo admite employee. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "204": {
             "description": "Consultar estado y documentación de la operación."
@@ -60,7 +60,7 @@
             }
           },
           "409": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar el primer envío.",
             "content": {
               "application/json": {
                 "schema": {
@@ -105,7 +105,7 @@
     "/v1/employees/clinic/requests": {
       "post": {
         "summary": "Guardar intención durable y referencia local estable",
-        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "description": "Solo admin; requiere un empleado registrado y activo para una nueva intención. personKind solo admite employee. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
             "description": "Consultar estado y documentación de la operación.",
@@ -158,7 +158,7 @@
             }
           },
           "409": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar el primer envío.",
             "content": {
               "application/json": {
                 "schema": {
@@ -215,7 +215,7 @@
       ],
       "get": {
         "summary": "Leer intención local",
-        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "description": "Solo admin; consulta solicitudes de empleados activos o inactivos y conserva su historia. Sin parámetros de consulta. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
             "description": "Consultar estado y documentación de la operación.",
@@ -315,7 +315,7 @@
       ],
       "post": {
         "summary": "Enviar una única vez: sin cuerpo; no repite creaciones inciertas",
-        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "description": "Solo admin; el primer envío requiere que el empleado continúe activo. Una baja impide nuevas solicitudes o primeros envíos, pero conserva la consulta, conciliación e historia de solicitudes previas. No reenvía una intención ya intentada. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
             "description": "Consultar estado y documentación de la operación.",
@@ -368,7 +368,7 @@
             }
           },
           "409": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar el primer envío.",
             "content": {
               "application/json": {
                 "schema": {
@@ -415,7 +415,7 @@
       ],
       "post": {
         "summary": "Consultar turno conocido o conciliar un ID verificado del hospital",
-        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "description": "Solo admin; permite consulta y conciliación de turnos de empleados activos o inactivos. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
             "description": "Consultar estado y documentación de la operación.",
@@ -512,8 +512,8 @@
     },
     "/v1/employees/reports/clinic": {
       "get": {
-        "summary": "Informe de última intención por persona",
-        "description": "admin o service. Toda la población del tipo solicitado; faltantes pendientes. Lectura local; no certifica todos los turnos externos de una persona.",
+        "summary": "Informe de última intención por empleado",
+        "description": "admin o service. Incluye empleados activos e inactivos; faltantes pendientes. personKind solo admite employee y su valor predeterminado es employee. Lectura local; no certifica todos los turnos externos de un empleado. Conserva las solicitudes e historia tras una baja.",
         "responses": {
           "200": {
             "description": "Consultar estado y documentación de la operación.",
@@ -603,10 +603,10 @@
             "schema": {
               "type": "string",
               "enum": [
-                "employee",
-                "candidate"
+                "employee"
               ],
-              "default": "employee"
+              "default": "employee",
+              "description": "Campo conservado por compatibilidad; solo admite employee."
             }
           },
           {
@@ -673,9 +673,10 @@
           "personKind": {
             "type": "string",
             "enum": [
-              "employee",
-              "candidate"
-            ]
+              "employee"
+            ],
+            "default": "employee",
+            "description": "Campo conservado por compatibilidad; solo admite employee."
           },
           "personId": {
             "type": "string",
@@ -806,9 +807,10 @@
           "personKind": {
             "type": "string",
             "enum": [
-              "employee",
-              "candidate"
-            ]
+              "employee"
+            ],
+            "default": "employee",
+            "description": "Campo conservado por compatibilidad; solo admite employee."
           },
           "personId": {
             "type": "string",
@@ -834,9 +836,10 @@
           "personKind": {
             "type": "string",
             "enum": [
-              "employee",
-              "candidate"
-            ]
+              "employee"
+            ],
+            "default": "employee",
+            "description": "Campo conservado por compatibilidad; solo admite employee."
           },
           "personId": {
             "type": "string",
@@ -886,9 +889,10 @@
           "personKind": {
             "type": "string",
             "enum": [
-              "employee",
-              "candidate"
-            ]
+              "employee"
+            ],
+            "default": "employee",
+            "description": "Campo conservado por compatibilidad; solo admite employee."
           },
           "personId": {
             "type": "string",
@@ -927,9 +931,10 @@
               "personKind": {
                 "type": "string",
                 "enum": [
-                  "employee",
-                  "candidate"
-                ]
+                  "employee"
+                ],
+                "default": "employee",
+                "description": "Campo conservado por compatibilidad; solo admite employee."
               },
               "personId": {
                 "type": "string",

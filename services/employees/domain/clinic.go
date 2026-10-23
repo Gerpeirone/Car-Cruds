@@ -10,7 +10,8 @@ var ErrClinicUnavailable = errors.New("hospital no disponible o respuesta incomp
 
 type PatientLink struct{ PersonKind, PersonID, PatientID, RegisteredBy string }
 
-func ValidPersonKind(kind string) bool { return kind == "employee" || kind == "candidate" }
+// The legacy personKind field remains for employee request compatibility.
+func ValidPersonKind(kind string) bool { return kind == "employee" }
 
 type ClinicAppointment struct {
 	ID, PatientID, DoctorID, Status string

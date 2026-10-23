@@ -20,8 +20,6 @@ func New(service *application.Service) http.Handler {
 	mux.HandleFunc("/v1/employees", h.employees)
 	mux.HandleFunc("/v1/employees/{id}", h.employee)
 	mux.HandleFunc("/v1/admin/employees", h.adminEmployees)
-	mux.HandleFunc("/v1/candidates", h.candidates)
-	mux.HandleFunc("/v1/candidates/{id}", h.candidate)
 	mux.HandleFunc("/v1/employees/integrations", h.integrations)
 	mux.HandleFunc("/v1/employees/membership-evidence", h.membershipEvidence)
 	mux.HandleFunc("/v1/employees/reports/memberships", h.membershipReport)
@@ -45,11 +43,6 @@ type employeeRecord struct {
 	Active      bool   `json:"active"`
 }
 
-type candidateRecord struct {
-	ID          string `json:"candidateId"`
-	DisplayName string `json:"displayName"`
-}
-
 type pageResponse[T any] struct {
 	Items    []T   `json:"items"`
 	Page     int   `json:"page"`
@@ -60,10 +53,6 @@ type pageResponse[T any] struct {
 type employeeInput struct {
 	DisplayName string `json:"displayName"`
 	Active      *bool  `json:"active"`
-}
-
-type candidateInput struct {
-	DisplayName string `json:"displayName"`
 }
 
 func (h *Handler) employees(w http.ResponseWriter, r *http.Request) {
@@ -168,78 +157,6 @@ func (h *Handler) employee(w http.ResponseWriter, r *http.Request) {
 	platform.WriteJSON(w, 200, employeeDTO(item))
 }
 
-func (h *Handler) candidates(w http.ResponseWriter, r *http.Request) {
-	if !platform.RequireRole(w, r, "admin") {
-		return
-	}
-	switch r.Method {
-	case http.MethodGet:
-		page, err := parsePage(r.URL)
-		if err != nil {
-			writeError(w, err)
-			return
-		}
-		items, total, err := h.service.ListCandidates(r.Context(), page)
-		if err != nil {
-			writeError(w, err)
-			return
-		}
-		projection := make([]candidateRecord, 0, len(items))
-		for _, item := range items {
-			projection = append(projection, candidateDTO(item))
-		}
-		platform.WriteJSON(w, 200, pageResponse[candidateRecord]{Items: projection, Page: page.Number, PageSize: page.Size, Total: total})
-	case http.MethodPost:
-		var input candidateInput
-		if !decode(w, r, &input) {
-			return
-		}
-		item, err := h.service.CreateCandidate(r.Context(), input.DisplayName)
-		if err != nil {
-			writeError(w, err)
-			return
-		}
-		w.Header().Set("Location", "/v1/candidates/"+item.ID)
-		platform.WriteJSON(w, 201, candidateDTO(item))
-	default:
-		methodNotAllowed(w, "GET, POST")
-	}
-}
-
-func (h *Handler) candidate(w http.ResponseWriter, r *http.Request) {
-	if !platform.RequireRole(w, r, "admin") {
-		return
-	}
-	var item domain.Candidate
-	var err error
-	switch r.Method {
-	case http.MethodGet:
-		item, err = h.service.GetCandidate(r.Context(), r.PathValue("id"))
-	case http.MethodPut:
-		var input candidateInput
-		if !decode(w, r, &input) {
-			return
-		}
-		item, err = h.service.UpdateCandidate(r.Context(), r.PathValue("id"), input.DisplayName)
-	case http.MethodDelete:
-		err = h.service.DeleteCandidate(r.Context(), r.PathValue("id"))
-		if err != nil {
-			writeError(w, err)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-		return
-	default:
-		methodNotAllowed(w, "GET, PUT, DELETE")
-		return
-	}
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	platform.WriteJSON(w, 200, candidateDTO(item))
-}
-
 func (h *Handler) integrations(w http.ResponseWriter, r *http.Request) {
 	if !platform.RequireRole(w, r, "admin", "service") {
 		return
@@ -254,10 +171,6 @@ func (h *Handler) integrations(w http.ResponseWriter, r *http.Request) {
 func employeeDTO(item domain.Employee) employeeRecord {
 	return employeeRecord{ID: item.ID, DisplayName: item.DisplayName, Active: item.Active}
 }
-func candidateDTO(item domain.Candidate) candidateRecord {
-	return candidateRecord{ID: item.ID, DisplayName: item.DisplayName}
-}
-
 func parsePage(location *url.URL) (domain.Page, error) {
 	query, err := url.ParseQuery(location.RawQuery)
 	if err != nil {
@@ -301,6 +214,8 @@ func methodNotAllowed(w http.ResponseWriter, allowed string) {
 
 func writeError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, domain.ErrEmployeeInactive):
+		platform.Error(w, 409, "EMPLOYEE_INACTIVE", "El empleado debe estar activo para iniciar una nueva solicitud clínica")
 	case errors.Is(err, domain.ErrPatientLinkRequired):
 		platform.Error(w, 409, "PATIENT_LINK_REQUIRED", "Registrar primero el vínculo con el paciente del hospital")
 	case errors.Is(err, domain.ErrClinicUnavailable):

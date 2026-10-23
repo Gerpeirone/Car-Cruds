@@ -1,13 +1,15 @@
 # Backlog del producto — Car Cruds
 
-**Avance del 22/10/2026:** HU-15 dispone de vínculo de paciente, intención durable y envío de turno; HU-16 de conciliación por ID externo e historia; HU-17 de informe de la última intención por persona. Implementación y límites: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se consideran aceptadas por el proveedor: faltan contrato formal de Turnos, acceso autenticado y pacientes reales. HU-23 continúa pendiente de una operación del hospital; la indicación administrativa local sí permite iniciar una consulta. Los criterios originales se conservan.
+**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos del dominio y de la API activa. HU-10 queda retirada sin reutilizar su identificador. HU-11/HU-15/HU-17 y RN-13 se acotan a empleados: nuevas vinculaciones, intenciones y primer envío requieren empleado activo; el seguimiento previo de inactivos se conserva. La cobertura histórica siguiente corresponde a sus fechas y no verifica esta revisión. La migración al contrato de Turnos para socios publicado por el hospital permanece pendiente.
+
+**Avance del 22/10/2026:** HU-15 dispone de vínculo de paciente, intención durable y envío de turno; HU-16 de conciliación por ID externo e historia; HU-17 de informe de la última intención por persona. Implementación y límites: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se consideran aceptadas por el proveedor: faltan contrato formal de Turnos, acceso autenticado y pacientes reales. HU-23 continúa pendiente de una operación del hospital; la indicación administrativa local sí permite iniciar una consulta. Los criterios siguen vigentes salvo los cambios de alcance del 23 de octubre indicados arriba.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Backlog con cobertura parcial del backend; cierre de historias pendiente |
 | Hito objetivo | Viernes 23 de octubre de 2026 |
 | Negocio principal | Alquiler de vehículos |
@@ -15,7 +17,7 @@
 
 ## 1. Alcance y situación de la entrega
 
-El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión de la primera entrega. El gimnasio consume la lista de empleados y comunica uso o no uso de membresía; Car Cruds consume la capacidad de turnos de la clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Estas integraciones pertenecen a Empleados y conservan independiente la operación de alquileres.
+El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión de la primera entrega. El gimnasio consume la lista de empleados y comunica uso o no uso de membresía; Car Cruds consume la capacidad de turnos de la clínica para consultas médicas de empleados registrados y activos. Estas integraciones pertenecen a Empleados y conservan independiente la operación de alquileres.
 
 Los contratos, campos, protocolos, identidad de consumidores y mecanismos de devolución o consulta externos están pendientes de acuerdo. Los criterios que dependen de esos acuerdos son obligaciones de comportamiento para el diseño; todavía no constituyen endpoints, eventos o esquemas publicados.
 
@@ -35,7 +37,7 @@ Los cuatro servicios propios, gateway, balanceador e infraestructura están impl
 | Historias | Cobertura disponible | Validación o alcance pendiente |
 | --- | --- | --- |
 | HU-01 a HU-09 | Catálogo/búsqueda, perfil de conductor, disponibilidad, reserva, cancelación, retiro/devolución y mantenimiento propios | Revisión completa de criterios, interfaz web y operación definitiva; Clientes no implementa edición/baja de perfiles |
-| HU-10 y HU-11 | CRUD de candidatos y empleados, con registros independientes y bajas administrativas | Seguimiento externo de candidatos y criterios dependientes del hospital |
+| HU-11 | Gestión de empleados y bajas administrativas; HU-10 retirada por ADR-018 | Integración externa de turnos; la matriz histórica no acredita la revisión del 23 de octubre |
 | HU-12 | Lista activa mínima, autenticación, paginación e aislamiento verificados en PostgreSQL y por gateway | Aceptación del contrato, población, publicación y consumo real del gimnasio |
 | HU-13 a HU-17 y HU-23 | Puertos internos y condiciones de integración definidos | Contratos y accesos reales: membresías/uso/gastos, necesidad de consulta, solicitud y conciliación de turnos |
 | HU-18 | Tokens de aplicación y permisos de recurso implementados; respuestas 401/403 verificadas | Identidad personal, condiciones públicas y revisión final de todos los criterios |
@@ -57,7 +59,7 @@ La evidencia verificable se enlaza desde [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMEN
 | E-01 | Catálogo | Administrar y seleccionar vehículos para alquiler. | Flota | HU-01, HU-02 |
 | E-02 | Clientes y reservas | Validar al conductor y confirmar una asignación con precio acordado. | Clientes / Alquileres | HU-03 a HU-06 |
 | E-03 | Operación de alquiler | Controlar retiro, devolución y mantenimiento. | Alquileres | HU-07 a HU-09 |
-| E-04 | Personal | Distinguir posibles incorporaciones del registro de empleados. | Empleados | HU-10, HU-11 |
+| E-04 | Personal | Mantener empleados y su condición activa. | Empleados | HU-11; HU-10 retirada |
 | E-05 | Integración con gimnasio | Publicar empleados y recibir/consultar membresías, uso y costos individuales/totales. | Empleados | HU-12 a HU-14 |
 | E-06 | Integración con clínica | Identificar empleados que necesitan consulta, solicitar turnos y reflejar cambios del hospital. | Empleados | HU-15 a HU-17, HU-23 |
 | E-07 | Plataforma | Controlar acceso, balancear consultas de Flota y protegerse de fallas de dependencias. | Gateway / Load Balancer / servicios | HU-18, HU-19, HU-27 |
@@ -193,18 +195,9 @@ Como **operador**, quiero registrar bloqueos de agenda para impedir reservas dur
 1. **Dado** un vehículo y período sin conflicto, **cuando** registra mantenimiento, **entonces** Alquileres ocupa ese período y las nuevas reservas incompatibles se rechazan.
 2. **Dado** un período que se solapa con una reserva o bloqueo existente, **cuando** intenta agregar mantenimiento, **entonces** recibe un conflicto; no se cancelan reservas silenciosamente.
 
-### HU-10 — Registrar candidatos
+### HU-10 — Registrar candidatos — retirada
 
-Como **responsable de personal**, quiero registrar una posible incorporación para gestionar su revisión y seguimiento.
-
-**Épica:** E-04. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Cobertura parcial; ver matriz.
-
-**Hito objetivo:** E2: modelo de personal; PG: flujo completo. **Dependencias:** HU-18; definición de datos internos de candidatos.
-
-**Trazabilidad:** RF-10, RNF-05, RN-13, RN-17, RN-20.
-
-1. **Dado** datos internos de un candidato aprobados para su registro, **cuando** se registra una posible incorporación, **entonces** Empleados conserva su identidad y seguimiento como candidato, separado de la condición de empleado.
-2. **Dado** un candidato registrado o una revisión con turno confirmado, **cuando** se consulta la lista destinada al gimnasio, **entonces** el candidato no aparece por ese solo hecho; no se infiere contratación ni aptitud médica.
+**Estado:** Retirada del alcance el 23 de octubre de 2026 por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Se conserva el identificador para trazabilidad con RF-10, sin renumerar las otras historias. El CRUD y el flujo clínico de candidatos dejan de ser capacidades activas. Las migraciones, filas y referencias históricas se conservan sin exposición en la API ni promoción automática a empleados.
 
 ### HU-11 — Gestionar empleados
 
@@ -218,6 +211,7 @@ Como **responsable de personal**, quiero mantener el registro de empleados de la
 
 1. **Dado** una decisión de alta autorizada y datos internos válidos, **cuando** se registra un empleado, **entonces** Empleados conserva el registro y sus cambios; la condición de empleado proviene de esa decisión explícita.
 2. **Dado** un cambio de empleado registrado, **cuando** se prepara la lista para el gimnasio, **entonces** se usa la información vigente del ámbito acordado; no se accede directamente a bases de otros servicios.
+3. **Dado** un empleado inactivo, **cuando** se intenta un nuevo vínculo, intención o primer envío clínico, **entonces** se rechaza sin llamar al proveedor; su historia y actualización de evidencia previa permanecen disponibles y no se cancelan turnos automáticamente.
 
 ### HU-12 — Publicar la lista de empleados al gimnasio
 
@@ -230,7 +224,7 @@ Como **aplicación del gimnasio autorizada**, quiero consultar la lista de emple
 **Trazabilidad:** RF-12, RNF-05, RNF-12, RN-13, RN-14, RN-20.
 
 1. **Dado** el contrato de lista acordado y un consumidor autorizado, **cuando** solicita la lista dentro de su ámbito, **entonces** recibe los empleados correspondientes con únicamente los datos mínimos pactados.
-2. **Dado** candidatos o información de revisiones clínicas en Empleados, **cuando** el gimnasio obtiene la lista, **entonces** esos datos quedan excluidos de la capacidad; no se publica información médica.
+2. **Dado** empleados inactivos o información de revisiones clínicas en Empleados, **cuando** el gimnasio obtiene la lista, **entonces** esos datos quedan excluidos de la capacidad; no se publica información médica.
 
 ### HU-13 — Recibir membresías, uso y costos
 
@@ -266,15 +260,15 @@ Los criterios 3 a 5 también aplican a HU-13 en lo que respecta a la incorporaci
 
 ### HU-15 — Solicitar revisión o turno a la clínica
 
-Como **responsable de personal**, quiero solicitar por la API del hospital de Octi un turno para un empleado registrado que necesita consulta médica. El flujo adicional de candidatos se conserva separado.
+Como **responsable de personal**, quiero solicitar por la API del hospital de Octi un turno para un empleado registrado y activo que necesita consulta médica.
 
 **Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P1. **Estado:** Diseñada; bloqueada por contrato externo.
 
-**Hito objetivo:** E2: acuerdo de consumo y primer flujo; PG: integración completa. **Dependencias:** HU-11; HU-18; contrato publicado por el hospital; HU-10 para el flujo adicional de candidatos.
+**Hito objetivo:** E2: acuerdo de consumo y primer flujo; PG: integración completa. **Dependencias:** HU-11; HU-18; contrato publicado por el hospital.
 
 **Trazabilidad:** RF-15, RNF-02, RNF-03, RNF-05, RNF-12, RN-17, RN-18, RN-19, RN-20.
 
-1. **Dado** un empleado registrado y los datos mínimos requeridos por el contrato acordado, **cuando** se solicita una revisión o turno, **entonces** se conserva la solicitud y el resultado que el proveedor efectivamente confirme; pedir un turno no acredita confirmación ni asistencia.
+1. **Dado** un empleado registrado y activo y los datos mínimos requeridos por el contrato acordado, **cuando** se solicita una revisión o turno, **entonces** se conserva la solicitud y el resultado que el proveedor efectivamente confirme; pedir un turno no acredita confirmación ni asistencia.
 2. **Dado** una respuesta perdida o un timeout después de solicitar, **cuando** finaliza la espera, **entonces** se informa resultado pendiente de comprobación y no se crea otro turno a ciegas; el modo de recuperación respeta el contrato de la clínica.
 
 ### HU-16 — Conciliar el estado del turno
@@ -296,11 +290,11 @@ Como **responsable de personal**, quiero comprobar el estado de las solicitudes 
 
 ### HU-17 — Consultar el informe de turnos
 
-Como **responsable de personal**, quiero consultar empleados y, por separado, posibles incorporaciones con turno, sin turno y con estado desconocido para gestionar revisiones pendientes.
+Como **responsable de personal**, quiero consultar empleados con turno, sin turno y con estado desconocido para gestionar revisiones pendientes.
 
 **Épica:** E-06. **Tipo:** Historia funcional. **Prioridad:** P2. **Estado:** Diseñada; bloqueada por contrato externo.
 
-**Hito objetivo:** PG; definición en E2. **Dependencias:** HU-11; HU-16; HU-10 para candidatos.
+**Hito objetivo:** PG; definición en E2. **Dependencias:** HU-11; HU-16.
 
 **Trazabilidad:** RF-17, RNF-05, RNF-07, RN-13, RN-17, RN-18.
 
@@ -460,10 +454,10 @@ Como **equipo de desarrollo**, quiero ejecutar una prueba de carga documentada p
 
 | Acuerdo pendiente | Historias afectadas | Condición de preparación |
 | --- | --- | --- |
-| Lista para el gimnasio | HU-12 | Definir datos mínimos, alcance, identidad, actualización y contrato formal; separar candidatos y datos clínicos |
+| Lista para el gimnasio | HU-12 | Definir datos mínimos, alcance, identidad, actualización y contrato formal; excluir inactivos y datos clínicos |
 | Devolución del gimnasio | HU-13, HU-14 | Acordar quién comunica, por qué mecanismo, período, evidencia de uso/no uso, duplicados, orden y correcciones |
 | Capacidad de turnos de la clínica | HU-15 a HU-17, HU-23 | Obtener contrato publicado; distinguir solicitud, confirmación y ausencia informada; acordar recuperación e identificación |
-| Datos internos y permisos | HU-03, HU-10, HU-11, HU-18 | Definir datos obligatorios y matriz de acceso, conservando minimización y separación de responsabilidades |
+| Datos internos y permisos | HU-03, HU-11, HU-18 | Definir datos obligatorios y matriz de acceso, conservando minimización y separación de responsabilidades |
 | Objetivos de operación | HU-19 a HU-21, HU-27, HU-28 | Registrar balanceo, detección de fallas, tiempos de espera, alertas y mediciones en los ADR correspondientes |
 
 Un resultado desconocido conserva esa clasificación hasta contar con evidencia válida. Ni la falta de comunicación del gimnasio equivale a no uso, ni una caída de la clínica equivale a ausencia de turno. Los informes apoyan decisiones humanas: no calculan precios externos no acordados, no determinan aptitud médica y no generan contrataciones automáticas.
@@ -473,7 +467,7 @@ Un resultado desconocido conserva esa clasificación hasta contar con evidencia 
 - [SPEC.md](../SPEC.md): reglas, estados y alcance.
 - [REQUERIMIENTOS.md](REQUERIMIENTOS.md): requisitos y verificación.
 - [ARCHITECTURE.md](ARCHITECTURE.md): servicios, comunicaciones y patrones internos.
-- [D1 vigente — límites](adr/ADR-014-limites-servicios-v2.md), [D3 vigente — persistencia](adr/ADR-015-persistencia-v2.md) y [D5 vigente — comunicación](adr/ADR-016-comunicacion-v2.md): propiedad y tratamiento de fallas.
+- [D1/D3 vigentes — alcance y conservación](adr/ADR-018-empleados-sin-candidatos.md), junto con las decisiones de infraestructura conservadas de ADR-014/ADR-015 y [D5 vigente — comunicación](adr/ADR-016-comunicacion-v2.md): propiedad y tratamiento de fallas.
 - [Enunciado](../Enunciado%20TP%20Final.md): requisitos 2.1, 2.3, 2.5–2.12, integración entre grupos y Entrega 2.
 - [clases.zip](../clases.zip): teoría 02 (datos), 04 (idempotencia/outbox), 06 (gateway y balanceo), 07 (resultados desconocidos y resiliencia) y 08 (capas, Hexagonal y dependencias).
 

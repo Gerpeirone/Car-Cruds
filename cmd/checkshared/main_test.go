@@ -52,6 +52,8 @@ func TestVerificationOnlyReadsAndDetectsAuthorizationRegression(t *testing.T) {
 			if r.URL.Path != "/v1/employees" {
 				if leak {
 					w.WriteHeader(200)
+				} else if r.URL.Path == "/v1/candidates" {
+					w.WriteHeader(404)
 				} else {
 					w.WriteHeader(403)
 				}
