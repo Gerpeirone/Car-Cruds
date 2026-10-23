@@ -116,6 +116,12 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 		return s, err
 	}
 	s.State = "ready"
+	if !domain.ValidClinicIdempotencyKey(s.ID) {
+		return s, domain.ErrInvalidInput
+	}
+	s.ProviderContract = domain.ClinicProviderContract
+	s.IdempotencyKey = s.ID
+	s.NextAttemptAt = nil
 	s.Revision = 1
 	s.CreatedAt = time.Now().UTC()
 	s.StartAt = s.StartAt.UTC()
@@ -159,14 +165,29 @@ func (r *Repository) mutateClinic(ctx context.Context, id string, change func(*d
 func (r *Repository) ClaimClinicRequest(ctx context.Context, id string) (domain.ClinicRequest, bool, error) {
 	claimed := false
 	s, err := r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, tx pgx.Tx) error {
-		if s.AttemptedAt != nil {
+		// Evidence already known and definitive rejections are never POSTed again.
+		// Legacy uncertain requests cannot inherit the new provider's guarantees.
+		if s.Appointment != nil || (s.State != "ready" && s.State != "unknown") || s.FailureCode == "CLINIC_IDEMPOTENCY_CONFLICT" || (s.AttemptedAt != nil && (s.ProviderContract != domain.ClinicProviderContract || s.IdempotencyKey != s.ID)) {
 			return nil
 		}
+		now := time.Now().UTC()
 		if err := requireActiveEmployee(ctx, tx, s.PersonID); err != nil {
 			return err
 		}
-		now := time.Now().UTC()
-		s.AttemptedAt = &now
+		if s.NextAttemptAt != nil && now.Before(*s.NextAttemptAt) {
+			return nil
+		}
+		if !domain.ValidClinicIdempotencyKey(s.ID) {
+			return domain.ErrInvalidInput
+		}
+		// An unsent legacy intention can adopt v1; a sent one cannot.
+		s.ProviderContract = domain.ClinicProviderContract
+		s.IdempotencyKey = s.ID
+		if s.AttemptedAt == nil {
+			s.AttemptedAt = &now
+		}
+		next := now.Add(10 * time.Second)
+		s.NextAttemptAt = &next
 		s.State = "unknown"
 		s.FailureCode = "AWAITING_CONFIRMATION"
 		s.Revision++
@@ -175,9 +196,13 @@ func (r *Repository) ClaimClinicRequest(ctx context.Context, id string) (domain.
 	})
 	return s, claimed, err
 }
-func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision int64, code string, rejected bool) (domain.ClinicRequest, error) {
+func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision int64, code string, rejected bool, nextAttemptAt *time.Time) (domain.ClinicRequest, error) {
 	return r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, _ pgx.Tx) error {
 		if s.Revision != revision {
+			return nil
+		}
+		if s.State == "rejected" || s.FailureCode == "CLINIC_IDEMPOTENCY_CONFLICT" {
+			// Failed reconciliation cannot make a terminal POST eligible again.
 			return nil
 		}
 		s.State = "unknown"
@@ -185,6 +210,19 @@ func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision 
 			s.State = "rejected"
 		}
 		s.FailureCode = code
+		s.NextAttemptAt = nil
+		// Cooldown protects against bursts after a fast error as well as crashes.
+		// A conflict preserves uncertainty and requires manual reconciliation.
+		if !rejected && s.Appointment == nil && s.ProviderContract == domain.ClinicProviderContract && code != "CLINIC_IDEMPOTENCY_CONFLICT" {
+			next := time.Now().UTC().Add(10 * time.Second)
+			if nextAttemptAt != nil && nextAttemptAt.After(next) {
+				next = nextAttemptAt.UTC()
+			}
+			s.NextAttemptAt = &next
+		} else if !rejected && nextAttemptAt != nil && code == "CLINIC_RATE_LIMITED" {
+			next := nextAttemptAt.UTC()
+			s.NextAttemptAt = &next
+		}
 		s.Revision++
 		return nil
 	})
@@ -227,6 +265,7 @@ func (r *Repository) ObserveClinicAppointment(ctx context.Context, id string, a 
 		s.State = a.Status
 		s.ObservedAt = &now
 		s.FailureCode = ""
+		s.NextAttemptAt = nil
 		s.Revision++
 		return nil
 	})

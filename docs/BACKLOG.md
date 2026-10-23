@@ -1,6 +1,6 @@
 # Backlog del producto — Car Cruds
 
-**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos del dominio y de la API activa. HU-10 queda retirada sin reutilizar su identificador. HU-11/HU-15/HU-17 y RN-13 se acotan a empleados: nuevas vinculaciones, intenciones y primer envío requieren empleado activo; el seguimiento previo de inactivos se conserva. La cobertura histórica siguiente corresponde a sus fechas y no verifica esta revisión. La migración al contrato de Turnos para socios publicado por el hospital permanece pendiente.
+**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos; HU-10 conserva su identificador como retirada. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta HU-15/HU-16/HU-17 a Turnos para socios 1.0.0: credencial privada, clave idempotente persistida, recuperación explícita con el mismo cuerpo y espera durable. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; seguimiento previo de inactivos continúa permitido. Los resultados históricos mantienen sus fechas; pruebas de la rama, aceptación bilateral y conexión pública se registran por separado.
 
 **Avance del 22/10/2026:** HU-15 dispone de vínculo de paciente, intención durable y envío de turno; HU-16 de conciliación por ID externo e historia; HU-17 de informe de la última intención por persona. Implementación y límites: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se consideran aceptadas por el proveedor: faltan contrato formal de Turnos, acceso autenticado y pacientes reales. HU-23 continúa pendiente de una operación del hospital; la indicación administrativa local sí permite iniciar una consulta. Los criterios siguen vigentes salvo los cambios de alcance del 23 de octubre indicados arriba.
 
@@ -269,7 +269,7 @@ Como **responsable de personal**, quiero solicitar por la API del hospital de Oc
 **Trazabilidad:** RF-15, RNF-02, RNF-03, RNF-05, RNF-12, RN-17, RN-18, RN-19, RN-20.
 
 1. **Dado** un empleado registrado y activo y los datos mínimos requeridos por el contrato acordado, **cuando** se solicita una revisión o turno, **entonces** se conserva la solicitud y el resultado que el proveedor efectivamente confirme; pedir un turno no acredita confirmación ni asistencia.
-2. **Dado** una respuesta perdida o un timeout después de solicitar, **cuando** finaliza la espera, **entonces** se informa resultado pendiente de comprobación y no se crea otro turno a ciegas; el modo de recuperación respeta el contrato de la clínica.
+2. **Dado** una respuesta perdida o un timeout, **cuando** finaliza la espera, **entonces** se conserva resultado desconocido; una acción explícita posterior, con empleado activo, repite la misma clave y datos bajo el contrato de socios, respetando `nextAttemptAt`. Una solicitud antigua enviada sin procedencia idempotente nunca se reenvía como POST.
 
 ### HU-16 — Conciliar el estado del turno
 

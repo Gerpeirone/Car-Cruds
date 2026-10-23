@@ -61,6 +61,6 @@ func (s *Service) DeactivateEmployee(ctx context.Context, id string) (domain.Emp
 	return s.repository.DeactivateEmployee(ctx, id)
 }
 
-// External acceptance and the hospital adapter are still pending. The gym
-// inbox reports only evidence actually received, never assumed supplier facts.
+// External acceptance is still pending. The clinic adapter and gym inbox report
+// only evidence actually received, never assumed supplier facts.
 func (s *Service) IntegrationStatus(context.Context) error { return domain.ErrNotConfigured }

@@ -1,6 +1,6 @@
 # Requerimientos del sistema — Car Cruds
 
-**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. RF-10 queda retirado sin reutilizar su identificador. RN-13 y RF-11/RF-15/RF-17 se acotan a empleados: nuevos vínculos, intenciones y primer envío de turno requieren empleado activo; consulta y actualización de evidencia previa admiten inactivos. Se preservan datos históricos sin acceso por la API activa. Las matrices fechadas no acreditan esta revisión ni la migración futura al contrato de Turnos para socios publicado por el hospital.
+**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos, conservando RF-10 como retirado y datos históricos sin API activa. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta RF-15/RF-16/RF-17 a Turnos para socios 1.0.0: autenticación privada, idempotencia persistida y recuperación explícita con espera durable. Nuevos vínculos, intenciones y cualquier POST que pueda crear exigen empleado activo; consulta/actualización previa admite inactivos. Las matrices históricas conservan sus cortes; la evidencia nueva se registra por separado.
 
 **Cobertura ampliada del 22/10/2026:** RF-15/RF-16/RF-17 cuentan con solicitud, conciliación por referencia externa e informe de la última intención, con persistencia, incertidumbre explícita y permisos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) distingue código implementado, API observada y acuerdos pendientes. RF-19 sigue pendiente de una capacidad real de indicaciones del hospital; no se inventa información clínica. Aceptación externa y operación pública no se deducen de estas pruebas. Se preservan los requisitos salvo la reducción de alcance registrada el 23 de octubre.
 
@@ -150,7 +150,7 @@ El sistema deberá generar un informe por período con empleados con membresía,
 
 ### RF-15 — Solicitar revisión o turno
 
-El sistema deberá solicitar por la API del hospital de Octi un turno para un empleado registrado y activo que necesita consulta, usando el contrato publicado y los datos mínimos acordados. La condición activa se comprobará al vincular paciente, registrar intención y reclamar el primer envío. Conservará solicitud y resultado sin equiparar petición, confirmación y asistencia.
+El sistema deberá solicitar por la API del hospital de Octi un turno para un empleado registrado y activo, mediante el contrato Turnos para socios 1.0.0. La condición activa se comprobará al vincular paciente, registrar intención y reclamar cada envío que pueda crear, incluido el reintento incierto. Persistirá contrato y clave antes de HTTP; una recuperación explícita conservará clave/datos y respetará espera durable/Retry-After. Una solicitud antigua enviada sin procedencia idempotente no se reenvía. Conservará resultado sin equiparar petición, confirmación y asistencia.
 
 **Verificación:** Solicitud trazable; confirmación solo con evidencia del proveedor; timeout sin afirmación de ausencia ni repetición insegura.
 

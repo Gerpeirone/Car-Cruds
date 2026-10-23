@@ -12,7 +12,7 @@
 
 ## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra el registro de empleados, membresías y seguimiento administrativo de turnos. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos externos siguen pendientes; el adaptador de Turnos observado está implementado y su migración al contrato de socios queda para la siguiente etapa.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra empleados, membresías y seguimiento administrativo de turnos. El gimnasio consumirá su lista y aportará membresías/gastos; el hospital de Octi provee Turnos para socios 1.0.0. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a ese contrato; acuerdos operativos y aceptación conjunta siguen pendientes.
 
 Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
@@ -145,7 +145,7 @@ flowchart TB
 | Clientes | Capas | Presentación HTTP → negocio → datos PostgreSQL |
 | Flota | Capas | HTTP → servicio → repositorios MongoDB/Solr y caché |
 | Alquileres | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP, PostgreSQL y mensajería |
-| Empleados | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP/PostgreSQL y cliente clínico observado |
+| Empleados | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP/PostgreSQL y cliente del contrato Turnos para socios |
 
 El núcleo hexagonal no depende de HTTP, SQL ni SDK de infraestructura. Repository, Adapter e inyección por constructores aíslan cambios y permiten unitarios con falsos. Outbox y consumidor idempotente protegen efectos derivados; cache-aside optimiza exploración. Circuit Breaker sigue previsto y no se incluye entre los mecanismos implementados.
 
@@ -172,7 +172,7 @@ La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo
 
 Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).
 
-El flujo clínico implementado conserva vínculo explícito con paciente, intención durable y marca anterior al envío, consulta y conciliación de turnos e informe. El vínculo, la nueva intención y el reclamo del primer envío comprueban empleado activo dentro de la transacción local. Una baja posterior no borra evidencia ni cancela turnos; permite consulta y `refresh` de solicitudes previas. `personKind` se conserva por compatibilidad con único valor `employee`; el informe ya no selecciona candidatos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el cliente actual fijado a la API observada en `5e4c210`; migrar al contrato de socios publicado posteriormente sigue pendiente. [D9](adr/ADR-009-consumo-clinica.md) y [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) registran las decisiones.
+El flujo clínico conserva vínculo explícito con paciente, intención durable, solicitud, consulta e informe. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta POST/GET a `/v1` con clave privada de consumidor e idempotencia. Antes de la red se guardan contrato, clave estable igual a `requestId` y espera durable. Cada acción explícita realiza como máximo un intento HTTP; no hay reintentos automáticos. Los recuperables reutilizan clave/datos al vencer `nextAttemptAt`; 429 respeta `Retry-After`. El vínculo, la intención y cada POST que pueda crear comprueban empleado activo en la transacción local. Una baja permite consulta y `refresh` de evidencia anterior sin cancelar. Las intenciones antiguas enviadas sin procedencia idempotente jamás se reenvían; su lectura exige pertenencia verificable al consumidor. `personKind` conserva únicamente `employee`; candidatos históricos permanecen sin acceso activo. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) detalla incertidumbre, errores operativos e historia. La adaptación no incorpora catálogo, cancelación saliente, facturación, frontend ni despliegue.
 
 ## 7. Mensajería, índice y caché
 
@@ -197,7 +197,7 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 | Aspecto | Pendiente |
 | --- | --- |
 | Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
-| Integraciones | Aceptación y prueba conjunta; migración del adaptador clínico al contrato de socios publicado; pacientes reales y credenciales |
+| Integraciones | Aceptación y prueba conjunta; verificación de rama contra gateway de socios; pacientes reales, URL/clave y condiciones económicas |
 | Presentación | Frontend y acceso público HTTPS |
 | Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
 | Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |

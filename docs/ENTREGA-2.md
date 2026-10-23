@@ -1,6 +1,6 @@
 # Entrega 2 — dominio propio de punta a punta
 
-> **Nota de corte — 23/10/2026:** el alcance vigente retira candidatos por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Las referencias a candidatos y los resultados del 13/14/22 de octubre que siguen corresponden a la implementación histórica; no acreditan esta revisión ni forman parte de la API activa. La validación de la nueva rama se distingue en ADR-018 y en su pull request. La adaptación al contrato de socios del hospital queda pendiente para otro cambio.
+> **Nota de corte — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta solicitud/consulta al contrato de socios 1.0.0 con autenticación e idempotencia. Se conserva el alcance 6.3: no se agrega frontend, facturación ni operaciones clínicas adicionales al producto. Las referencias a candidatos y resultados del 13/14/22 de octubre son históricos y no acreditan estas revisiones. La validación de la rama se registra por separado en ESTADO-IMPLEMENTACION y en su pull request.
 
 | Campo | Valor |
 | --- | --- |
@@ -13,7 +13,7 @@
 
 ## 1. Alcance y evolución
 
-Se conserva el alquiler de autos y se incorpora Empleados para la administración de personal. El gimnasio de Pablo consumirá la lista y aportará membresías, uso y gastos; Car Cruds ofrece recepción, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), con aceptación de la devolución pendiente. Para el hospital de Octi se implementa solicitud y seguimiento de turnos con intención durable según su código de `feature/entrega-2`: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). Contrato formal de Turnos, autenticación, pacientes reales, aceptación y entornos accesibles siguen pendientes de coordinación externa.
+Se conserva el alquiler de autos y Empleados administra personal. El gimnasio de Pablo consumirá la lista y aportará membresías, uso y gastos; Car Cruds ofrece recepción, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), con aceptación pendiente. El hospital de Octi publica Turnos para socios 1.0.0; [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) adapta solicitud y seguimiento con intención durable e idempotencia. URL/clave compartidas, pacientes reales, médicos, condiciones económicas y aceptación conjunta siguen pendientes de coordinación externa.
 
 La preparación documental consolidó **9 épicas, 28 historias, 22 RF, 12 RNF, 22 reglas y 15 acuerdos pendientes**. Sobre ese diseño se implementaron los cuatro servicios propios, gateway, balanceador con dos réplicas de Flota, persistencia, índice, caché, mensajería y observabilidad HTTP. El mock de la entrega 1 se conserva como antecedente, independiente del backend real.
 

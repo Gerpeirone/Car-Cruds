@@ -1,5 +1,7 @@
 # ADR-018 — Empleados sin candidatos
 
+> **Complemento posterior del 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) adapta el consumo a Turnos para socios 1.0.0 y reemplaza D9 anterior. Mantiene la conservación histórica y exige empleado activo también para reintentar un envío incierto que pueda crear un turno. Las afirmaciones siguientes sobre la migración pendiente corresponden al corte original de este ADR.
+
 | Campo | Valor |
 | --- | --- |
 | Decisiones afectadas | D1: límites; D3: persistencia; revisión de alcance de D5, D8 y D9 |

@@ -19,7 +19,7 @@ Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsq
 
 La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
 
-La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y primer envío de turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. La adaptación al nuevo contrato del hospital queda para un cambio posterior.
+La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
 
 ## Estado disponible
 
@@ -121,6 +121,6 @@ Los cambios se presentan en ramas de trabajo y mediante pull request. Su integra
 
 El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero.
 
-La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) implementa vínculo con paciente, intención durable, solicitud de turno y conciliación por la API observada en su rama `feature/entrega-2`. `GET /v1/employees/reports/clinic` muestra la última intención administrativa por persona. Configurar `CLINIC_BASE_URL` según la guía; sin URL, el envío permanece deshabilitado. Un timeout no prueba ausencia de turno y no genera otro POST. La API externa de Turnos todavía necesita contrato formal, autenticación y aceptación de Octi; su capacidad pública de Notificaciones es distinta.
+La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) mantiene vínculo, intención durable, solicitud y consulta por el contrato oficial Turnos para socios 1.0.0 fijado a `c0b65f4`. `GET /v1/employees/reports/clinic` muestra la última intención por empleado. Configurar `CLINIC_BASE_URL` terminada en `/v1` y `CLINIC_API_KEY` fuera de Git; sin URL el envío permanece deshabilitado. Un timeout conserva estado desconocido y permite recuperación explícita con la misma clave/datos, tras la espera durable. Solicitudes antiguas enviadas sin procedencia idempotente nunca se reenvían como POST. URL compartida, pacientes reales, condiciones económicas y aceptación conjunta siguen pendientes.
 
 Estas funciones corresponden a RN-15 a RN-22, RF-13 a RF-17/RF-19 y HU-13 a HU-17/HU-23. No se han implementado endpoints de otros grupos ni se han asignado tarifas o resultados médicos. La lista propia y los puertos permiten avanzar sin presentar acuerdos inexistentes.

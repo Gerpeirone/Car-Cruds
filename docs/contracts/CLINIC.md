@@ -1,6 +1,6 @@
 # Consumo de la clínica — acuerdos pendientes
 
-> **Antecedente histórico — revisión del 10/11 de octubre.** Los faltantes y la ausencia de implementación descritos abajo corresponden a esas fechas. El alcance vigente retira candidatos según [ADR-018](../adr/ADR-018-empleados-sin-candidatos.md). La [guía de comunicación](../COMUNICACION-HOSPITAL.md) documenta el adaptador implementado contra la revisión antigua `5e4c210` y la migración pendiente al contrato de socios 1.0.0 publicado posteriormente; este archivo no describe el estado actual completo.
+> **Antecedente histórico — revisión del 10/11 de octubre.** Los faltantes y la ausencia de implementación descritos abajo corresponden a esas fechas. [ADR-018](../adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y [ADR-019](../adr/ADR-019-consumo-turnos-socios.md) adapta el flujo a Turnos para socios 1.0.0 fijado a `c0b65f4`. El [contrato oficial](providers/octi-turnos-partner-v1.openapi.json) y la [guía vigente](../COMUNICACION-HOSPITAL.md) son las referencias actuales; este archivo conserva únicamente el contexto histórico.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 

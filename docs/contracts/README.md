@@ -1,6 +1,6 @@
 # Contratos propios e integración
 
-**Revisión vigente — 23/10/2026:** personal/gimnasio usa versión 0.3.0 y la API administrativa clínica, 0.2.0. [ADR-018](../adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y exige empleado activo para nuevo vínculo, intención y primer envío. La lista y membresías del gimnasio conservan su comportamiento. El contrato observado del proveedor sigue fijado a 5e4c210; migrar al contrato de socios 1.0.0 publicado posteriormente queda pendiente.
+**Revisión vigente — 23/10/2026:** personal/gimnasio y la API administrativa clínica usan versión 0.3.0. [ADR-018](../adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y [ADR-019](../adr/ADR-019-consumo-turnos-socios.md) adapta el flujo clínico a Turnos para socios 1.0.0 fijado a `c0b65f4`. Nuevos vínculos, intenciones y envíos que puedan crear exigen empleado activo; seguimiento previo de inactivos se conserva. La lista y membresías del gimnasio no cambian. Pruebas locales y aceptación externa se registran por separado.
 
 Actualización del 22 de octubre: [API administrativa de hospital](clinic-integration-openapi.json), versión 0.1.0, y [contrato observado de Turnos de Octi](providers/octi-turnos-observed.openapi.json). El segundo documenta código publicado, no un acuerdo bilateral ni el OpenAPI oficial del proveedor. Guía de configuración, uso y recuperación: [COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md). Se conserva la lista e intercambio propio del gimnasio.
 
@@ -18,8 +18,9 @@ Empleados concentra la integración con el gimnasio del grupo de Pablo y el hosp
 | [employees-openapi-draft.json](employees-openapi-draft.json) y [EMPLOYEES.md](EMPLOYEES.md) | Propuesta inicial de lista compartida | Antecedente de diseño; no es un acuerdo externo ni la referencia completa del servicio actual |
 | [rentals-openapi.json](rentals-openapi.json) | Disponibilidad, reservas, mantenimiento, retiro y devolución | Contrato del backend propio implementado; revisar junto con [su guía](../../services/rentals/README.md) |
 | [openapi-v1.json](openapi-v1.json) y [RESERVAS.md](RESERVAS.md) | Disponibilidad/reservas de entrega 1 | Contrato histórico 1.0.0 del mock; conservado sin cambiar su significado |
-| [clinic-integration-openapi.json](clinic-integration-openapi.json) | Vinculación, intenciones, seguimiento e informe de turnos de empleados | API administrativa propia 0.2.0; no reemplaza el contrato del hospital |
-| [CLINIC.md](CLINIC.md) y [contrato observado](providers/octi-turnos-observed.openapi.json) | Antecedente y revisión antigua de Turnos consumida | Referencia fijada a `5e4c210`; migración al contrato de socios pendiente |
+| [clinic-integration-openapi.json](clinic-integration-openapi.json) | Vinculación, intenciones, seguimiento e informe de turnos de empleados | API administrativa propia 0.3.0, con `nextAttemptAt` opcional; no expone clave ni procedencia interna |
+| [Turnos para socios](providers/octi-turnos-partner-v1.openapi.json) | Contrato oficial del hospital, versión 1.0.0 | Copia exacta de `c0b65f4`; consume POST/GET de turnos por gateway con credencial e idempotencia |
+| [CLINIC.md](CLINIC.md) y [contrato observado](providers/octi-turnos-observed.openapi.json) | Antecedente y revisión antigua de Turnos | Referencia histórica fijada a `5e4c210`; sus evidencias no acreditan el contrato nuevo |
 
 ## API propia de Empleados
 
@@ -33,6 +34,6 @@ Las operaciones administrativas requieren `admin`; el gimnasio no puede modifica
 
 La verificación reproducible propia es `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env`. En una máquina consumidora con `AUTH_GYM_TOKEN` se utiliza `-url https://<host>` sin el archivo de credenciales del servidor. Comprueba `401` sin token/con token inválido, lista mínima y paginación, entrada inválida y `403` para lecturas administrativas/integraciones y `404` para rutas de candidatos retiradas; realiza únicamente GET y no imprime nombres ni credenciales. No sustituye al test de contrato que deberá acordarse con el consumidor.
 
-Las pruebas locales de contrato y autorización verifican el servicio propio. La prueba conjunta con el gimnasio, su servidor consumidor y el intercambio económico continúan pendientes. El adaptador y su prueba contra el código original de Turnos utilizan la revisión antigua `5e4c210`; no verifican el nuevo contrato de socios. Su migración y la prueba conjunta permanecen pendientes.
+Las pruebas locales verifican la API propia. La prueba conjunta con el gimnasio, su servidor consumidor y el intercambio económico continúan pendientes. El escenario de contrato clínico se adapta al gateway original de `c0b65f4`, con autenticación e idempotencia; sus resultados se registran al ejecutarlo. Los resultados previos de `5e4c210` no acreditan esta adaptación. La prueba conjunta y la operación pública siguen pendientes.
 
 La capacidad compartida deberá permanecer accesible hasta finalizar la evaluación una vez publicada. La URL pública y fecha de publicación se registrarán al disponer de ellas; la forma de publicación (HTTPS mediante Caddy delante del gateway) está en [DESPLIEGUE](../DESPLIEGUE.md). La API de reservas del mock conserva su historial y no se utiliza como integración actual del gimnasio.

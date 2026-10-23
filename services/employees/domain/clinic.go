@@ -2,11 +2,18 @@ package domain
 
 import (
 	"errors"
+	"regexp"
 	"time"
 )
 
 var ErrPatientLinkRequired = errors.New("falta vincular la persona con un paciente del hospital")
 var ErrClinicUnavailable = errors.New("hospital no disponible o respuesta incompatible")
+
+const ClinicProviderContract = "turnos-partner-v1"
+
+var clinicIdempotencyKey = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,128}$`)
+
+func ValidClinicIdempotencyKey(key string) bool { return clinicIdempotencyKey.MatchString(key) }
 
 type PatientLink struct{ PersonKind, PersonID, PatientID, RegisteredBy string }
 
@@ -32,6 +39,8 @@ type ClinicRequest struct {
 	StartAt, CreatedAt                                                          time.Time
 	AttemptedAt, ObservedAt                                                     *time.Time
 	State, FailureCode                                                          string
+	ProviderContract, IdempotencyKey                                            string
+	NextAttemptAt                                                               *time.Time
 	Revision                                                                    int64
 	Appointment                                                                 *ClinicAppointment
 }
@@ -64,3 +73,13 @@ type ClinicPersonReview struct {
 type ClinicRejection struct{ Code string }
 
 func (e *ClinicRejection) Error() string { return "solicitud rechazada por el hospital: " + e.Code }
+
+// Failure identifies a technical or access problem, never a clinical refusal.
+// RetryAfter is advisory evidence from the provider's rate limit response.
+type ClinicFailure struct {
+	Code       string
+	RetryAfter time.Duration
+}
+
+func (e *ClinicFailure) Error() string { return "integración con el hospital: " + e.Code }
+func (e *ClinicFailure) Unwrap() error { return ErrClinicUnavailable }

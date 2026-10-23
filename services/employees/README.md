@@ -6,8 +6,8 @@
 | Estado | Implementación propia con PostgreSQL; integración externa pendiente de aceptación |
 | Entrada ejecutable | [cmd/employees](../../cmd/employees/main.go) |
 | Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.3.0 |
-| Contrato administrativo de turnos | [OpenAPI 3.0.3](../../docs/contracts/clinic-integration-openapi.json), versión 0.2.0 |
-| Decisión vigente | [ADR-018 — Empleados sin candidatos](../../docs/adr/ADR-018-empleados-sin-candidatos.md) |
+| Contrato administrativo de turnos | [OpenAPI 3.0.3](../../docs/contracts/clinic-integration-openapi.json), versión 0.3.0 |
+| Decisiones vigentes | [ADR-018 — Empleados sin candidatos](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
 
 Empleados administra el registro laboral de la concesionaria, la evidencia de membresías del gimnasio y el seguimiento administrativo de turnos médicos. El dominio activo contiene únicamente empleados; la gestión de candidatos fue retirada. La lista compartida con el gimnasio mantiene exclusivamente `employeeId` y `displayName` de empleados activos, sin cambios en su formato ni en el intercambio de membresías.
 
@@ -17,7 +17,7 @@ Empleados administra el registro laboral de la concesionaria, la evidencia de me
 - `application/`: casos de uso y puertos de repositorio, clínica y evidencia de membresías.
 - `adapters/httpapi/`: autorización por operación, entrada JSON y proyecciones de respuesta.
 - `adapters/postgres/`: persistencia propia, migraciones SQL embebidas y datos ficticios optativos.
-- `adapters/clinic/`: cliente HTTP del hospital observado en la revisión `5e4c210`; su migración al contrato de Turnos para socios queda pendiente.
+- `adapters/clinic/`: cliente HTTP de Turnos para socios 1.0.0, revisión `c0b65f4`; autenticación, clave idempotente, errores operativos y consultas de evidencia.
 - `cmd/employees/`: ensamblado por inyección explícita y servidor de la plataforma compartida.
 
 El servicio conserva base y credenciales PostgreSQL propias; no consulta bases ajenas. Sus datos activos incluyen `employees`, evidencia de membresías, vínculos de pacientes, intenciones de turno e historia. La migración de inicio usa una transacción, registro de versión y bloqueo para coordinar arranques concurrentes.
@@ -43,7 +43,7 @@ Las operaciones usan autenticación Bearer de aplicación. El rol procede del mi
 | `/v1/employees/clinic/patient-links` | POST | `admin`: vínculo explícito con paciente verificado |
 | `/v1/employees/clinic/requests` | POST | `admin`: registrar intención durable |
 | `/v1/employees/clinic/requests/{requestId}` | GET | `admin`: consultar intención local |
-| `/v1/employees/clinic/requests/{requestId}/submit` | POST | `admin`: primer envío controlado |
+| `/v1/employees/clinic/requests/{requestId}/submit` | POST | `admin`: envío o recuperación explícita de la misma intención, con espera durable |
 | `/v1/employees/clinic/requests/{requestId}/refresh` | POST | `admin`: consultar o conciliar evidencia del hospital |
 | `/v1/employees/reports/clinic` | GET | `admin`, `service`: informe de empleados |
 | `/v1/employees/integrations` | GET | `admin`, `service`: estado general `503 NOT_CONFIGURED`, sin acreditar aceptación externa |
@@ -54,11 +54,11 @@ Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, mú
 
 ## Elegibilidad para turnos
 
-Nuevos vínculos de paciente, nuevas intenciones y el reclamo del primer envío exigen empleado existente y activo. Un empleado inexistente devuelve `404`; un inactivo, `409 EMPLOYEE_INACTIVE`. La validación y la escritura local se coordinan en PostgreSQL para no admitir una baja concurrente entre ambos pasos.
+Nuevos vínculos, intenciones y cualquier envío que pueda crear turno, incluido el reintento incierto, exigen empleado existente y activo. Un empleado inexistente devuelve `404`; un inactivo, `409 EMPLOYEE_INACTIVE`. La validación y la escritura local se coordinan en PostgreSQL para no admitir una baja concurrente entre ambos pasos. No se mantiene una transacción durante HTTP.
 
 Se conservan `personKind` y `personId` en el formato clínico por compatibilidad, pero el único tipo admitido es `employee`. El informe puede consultarse sin selector; `personKind=employee` sigue siendo válido y `candidate` se rechaza. No incluye registros históricos de candidatos.
 
-Una baja posterior permite consultar la solicitud y actualizar evidencia previa del empleado mediante `refresh`; no permite iniciar otra consulta. Repetir la referencia de una intención existente recupera el registro original sin crear otra. Repetir un envío ya reclamado conserva el resultado y no crea otro turno. La garantía saliente sigue siendo la de la API antigua: envío como máximo una vez y conciliación por ID externo si la respuesta se pierde. Las operaciones nuevas del contrato de socios del hospital se abordarán por separado.
+Una baja permite consultar/actualizar evidencia previa mediante `refresh`, sin cancelar automáticamente ni permitir otro POST incierto que pueda crear. Repetir la referencia administrativa recupera la intención original. Antes de HTTP se persisten procedencia `turnos-partner-v1` y clave igual a `requestId`. Cada acción explícita hace como máximo un intento; al vencer `nextAttemptAt` puede repetirse la misma clave/datos, sin trabajador automático. El reclamo y el enfriamiento mínimo duran diez segundos; 429 amplía la espera con `Retry-After`. Conflicto idempotente requiere revisión. Solicitudes terminales/con turno y solicitudes antiguas ya enviadas sin procedencia idempotente nunca se reenvían como POST.
 
 ## Configuración y arranque
 
@@ -71,7 +71,8 @@ Una baja posterior permite consultar la solicitud y actualizar evidencia previa 
 | `AUTH_CLIENT_TOKEN` | Identidad de cliente optativa; sin permisos sobre personal |
 | `HTTP_ADDR` | Dirección de escucha; predeterminado `:8080` |
 | `SEED_DEMO` | `true` carga empleados ficticios; predeterminado `false` |
-| `CLINIC_BASE_URL` | URL de la API de Turnos antigua actualmente consumida; optativa |
+| `CLINIC_BASE_URL` | Base pública del hospital terminada en `/v1`; optativa |
+| `CLINIC_API_KEY` | Clave privada de consumidor; requerida cuando se configura URL |
 | `CLINIC_ALLOW_HTTP` | Permiso explícito de HTTP para laboratorio; predeterminado `false` |
 | `CLINIC_TIMEOUT` | Entre 100 ms y 5 s; predeterminado 2 s |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Exportación de trazas de la plataforma compartida |
@@ -107,4 +108,4 @@ $env:TEST_DATABASE_URL = $env:DATABASE_URL
 go test ./services/employees/adapters/postgres -count=1 -v
 ```
 
-Los resultados anteriores a esta revisión se conservan con su fecha y no acreditan su ejecución. Una prueba omitida no acredita integración real. Consumo externo, pacientes reales, URL pública y migración al contrato nuevo del hospital continúan pendientes.
+Los resultados anteriores conservan sus fechas y no acreditan esta revisión. La suite debe comprobar recuperación idempotente, elegibilidad, espera, historia y credenciales contra el gateway original fijado a `c0b65f4`; sus resultados se registran al ejecutarla. Una omisión no acredita integración real. Prueba conjunta, pacientes reales, URL/clave compartidas y condiciones económicas continúan pendientes. Esta adaptación conserva solicitud/consulta e informe, sin agregar catálogo, cancelación saliente, facturación, frontend ni despliegue.

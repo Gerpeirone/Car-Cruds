@@ -1,6 +1,6 @@
 # Integraciones de personal — Car Cruds
 
-**Revisión vigente — 23/10/2026:** se retira candidatos según [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). El flujo clínico queda limitado a empleados: nuevo vínculo, intención y primer envío requieren estado activo; evidencia previa de inactivos se conserva. El hospital publicó el contrato de socios 1.0.0 posteriormente a la revisión observada 5e4c210; la migración del cliente y de su suite queda pendiente para otra etapa.
+**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, fijado a `c0b65f4`. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; evidencia previa de inactivos se conserva. La adaptación agrega clave privada, idempotencia persistida, recuperación explícita y espera durable sin ampliar el producto hacia otras operaciones clínicas. La validación de la rama y la aceptación conjunta se registran por separado.
 
 **Actualización — 22/10/2026:** se conserva el alcance original. Gimnasio: lista, recepción propuesta, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md); aceptación de Pablo pendiente. Hospital: vínculo de paciente, intención persistente, solicitud y consulta de turnos mediante operaciones reales observadas en `feature/entrega-2`, con informe y recuperación en [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se modifica ninguno de los proyectos externos ni se reemplazan turnos por correos. Acuerdos y acceso externo siguen pendientes.
 
@@ -13,7 +13,7 @@
 | Estado | Alcance comunicado por el grupo; diseño propuesto y acuerdos pendientes |
 | Responsable funcional | Servicio Empleados |
 
-Este documento distingue lo comunicado por el grupo de las propuestas de Car Cruds. No sustituye un contrato del gimnasio o de la clínica. Para el hospital se revisó Turnos de `feature/entrega-2`, commit `5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d`; el contrato público en esa revisión antigua describía Notificaciones. El contrato de Turnos para socios 1.0.0 publicado posteriormente todavía no se consume. No se recibieron URLs operativas, credenciales, tarifas ni aceptación bilateral de Turnos.
+Este documento distingue propuestas propias, contrato publicado y acuerdo bilateral. No sustituye el contrato externo. El [OpenAPI oficial de Turnos para socios 1.0.0](contracts/providers/octi-turnos-partner-v1.openapi.json), commit `c0b65f45867f884e0bdc8f7c23eb0f344f646bb2`, permite adaptar solicitud y consulta. La revisión observada antigua `5e4c210` se conserva como historia. No se recibieron URL compartida ni credencial; la tarifa inicial publicada de ARS 25.000 está pendiente de confirmación bilateral y no se fija en nuestro código.
 
 ## 1. Capacidades y consecuencia de negocio
 
@@ -77,8 +77,10 @@ El alcance requerido incluye empleados con membresía, costo de cada membresía,
 | Situación | Tratamiento propuesto |
 | --- | --- |
 | Rechazo explícito del proveedor | Registrar el motivo administrativo permitido; no mostrar turno confirmado |
-| Timeout después de enviar una solicitud | Resultado desconocido: conservar referencia y conciliar; no afirmar fracaso ni repetir a ciegas |
-| Reintento de una creación | Solo si el contrato garantiza idempotencia con la misma intención; en otro caso, consulta/revisión antes de un nuevo envío |
+| Timeout después de enviar una solicitud | Resultado desconocido: conservar intención, contrato, clave y datos; recuperación explícita posterior |
+| Reintento bajo Turnos para socios | Misma clave y cuerpo persistidos, empleado activo, una llamada por acción y espera durable; 429 respeta Retry-After |
+| Solicitud antigua ya enviada sin procedencia idempotente | Nunca otro POST; conciliar por ID solo si el proveedor habilita pertenencia al consumidor |
+| Credencial inválida o conflicto de idempotencia | Conservar desconocido; corregir credencial del mismo consumidor o revisar conflicto, sin cambiar claves para eludirlo |
 | Consulta de estado fallida | Conservar la última evidencia y su fecha, indicar desactualización y permitir recuperación posterior |
 | Turno cancelado o reprogramado | Actualizar conforme al contrato y conservar historia; no confundirlo con “nunca solicitó” |
 | Proveedor caído | Limitar espera y concurrencia, indicar situación pendiente y conservar funciones de alquiler de vehículos |
@@ -95,17 +97,18 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | EXT-04 | Mecanismo y contrato de devolución/consulta de membresías, uso y costos | Gimnasio | Define adaptador, entradas y prueba de contrato |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
 | EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Bloquea el informe económico de gastos individuales y totales; el informe de uso puede avanzar parcialmente |
-| EXT-07 | Migración al contrato de Turnos para socios 1.0.0 publicado por la clínica | Clínica y Car Cruds | Adaptar cliente, recuperación y test de contrato; pendiente para la siguiente etapa |
-| EXT-08 | Solicitud desde Car Cruds, confirmación del hospital y pasos adicionales del empleado | Clínica y empresa | Define el flujo de revisión y la confirmación |
-| EXT-09 | Consulta de estado, cancelación, reprogramación e idempotencia | Clínica | Define reconciliación y recuperación de respuestas perdidas |
-| EXT-10 | Autenticación, autorización, entornos y URLs accesibles | Ambos equipos externos | Necesario para integración y publicación reales |
+| EXT-07 | Publicado: Turnos para socios 1.0.0, `c0b65f4`; aceptación de integración pendiente | Clínica y Car Cruds | Adaptación propia de POST/GET e idempotencia; test de rama no sustituye prueba conjunta |
+| EXT-08 | Alta, identidad, recuperación de patientId y habilitación de empleados como pacientes | Clínica y empresa | Falta procedimiento real; el vínculo local no crea ni habilita pacientes |
+| EXT-09 | Pertenencia al consumidor de turnos creados antes del contrato de socios | Clínica | Sin asociación verificada la nueva API puede devolver 404; no recrearlos para recuperarlos |
+| EXT-10 | URL HTTPS compartida, clave privada de Car Cruds y entornos de prueba | Ambos equipos externos | La autenticación clínica está especificada; faltan datos operativos para conexión real |
 | EXT-11 | Datos administrativos permitidos, acceso y conservación | Empresa y equipos externos | Limita los datos compartidos y registrados |
-| EXT-12 | Tiempos de espera, límites, disponibilidad y cambios compatibles | Ambos equipos externos | Permite fijar políticas operativas realistas |
-| EXT-13 | Responsables por equipo y ejemplos de prueba controlados | Ambos equipos externos | Permite validar con el contrato vigente |
+| EXT-12 | Confirmar límite de solicitudes del entorno (inicial documentado: 60/min), disponibilidad y cambios compatibles | Ambos equipos externos | Timeout/límite local no sustituyen el límite por minuto; se respeta Retry-After sin inventar SLA |
+| EXT-13 | Responsables, pacientes habilitados, médicos y horarios controlados de prueba conjunta | Ambos equipos externos | Permite comprobar identidad, reserva, repetición y consulta sin afectar datos reales |
+| EXT-16 | Tarifa inicial ARS 25.000 y condiciones publicadas de cobro, cancelación sin reintegro y nueva reserva | Clínica y empresa | Pendiente aceptación; sin precio fijo ni facturación clínica propia en esta adaptación |
 | EXT-15 | Información del hospital sobre empleados que requieren consulta: consulta/notificación, identidad, vigencia y correcciones | Hospital de Octi | Define identificación y seguimiento de la necesidad de consulta |
 | EXT-14 | Validación docente de la ampliación y su flujo de negocio | Cátedra y grupo | Confirma correspondencia con el enunciado |
 
-La migración al contrato publicado y los acuerdos operativos/bilaterales están **pendientes**, sin fechas ni aprobaciones inventadas. Los dos sistemas externos ya fueron identificados por el grupo; lo pendiente son sus condiciones de integración, no elegir sistemas diferentes.
+El contrato clínico formal ya está publicado y la adaptación propia está en rama de propuesta. Los acuerdos operativos y la aceptación bilateral continúan **pendientes**, sin fechas ni aprobaciones inventadas. Los sistemas externos ya fueron identificados por el grupo; lo pendiente es completar su operación compartida.
 
 ## 6. Validación prevista y fuentes
 

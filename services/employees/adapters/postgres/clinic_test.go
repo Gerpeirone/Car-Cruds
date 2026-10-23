@@ -85,6 +85,7 @@ func TestClinicDurableIntentionUnknownRecoveryAndHistory(t *testing.T) {
 	a := domain.ClinicAppointment{ID: "appointment", PatientID: "patient", DoctorID: "doctor", StartAt: start, EndAt: start.Add(30 * time.Minute), Status: "booked", Version: 1}
 	provider.lookup = func(context.Context, string) (domain.ClinicAppointment, error) { return a, nil }
 	svc.WithClinic(repo, provider)
+	expireClinicCooldown(t, pool, r.ID)
 	r, err = svc.RefreshClinicRequest(ctx, r.ID, "appointment")
 	if err != nil || r.State != "booked" || r.ObservedAt == nil {
 		t.Fatalf("recovery: %+v %v", r, err)
@@ -96,7 +97,7 @@ func TestClinicDurableIntentionUnknownRecoveryAndHistory(t *testing.T) {
 	if err != nil || r.Classification() != "without_confirmed_appointment" {
 		t.Fatalf("cancel: %+v %v", r, err)
 	}
-	if r, err = repo.FailClinicRequest(ctx, r.ID, oldRevision, "LATE_FAILURE", false); err != nil || r.State != "cancelled" {
+	if r, err = repo.FailClinicRequest(ctx, r.ID, oldRevision, "LATE_FAILURE", false, nil); err != nil || r.State != "cancelled" {
 		t.Fatalf("late failure overwrote newer evidence: %+v %v", r, err)
 	}
 	a.Version = 1
@@ -131,6 +132,295 @@ func TestClinicDurableIntentionUnknownRecoveryAndHistory(t *testing.T) {
 	svc = application.New(repo, platform.UUID).WithClinic(repo, provider)
 	if _, err = svc.SubmitClinicRequest(ctx, r.ID); err != nil || calls.Load() != 1 {
 		t.Fatalf("restart replay: calls=%d err=%v", calls.Load(), err)
+	}
+}
+
+// Expire the durable deadline without sleeping, simulating a later explicit
+// action while preserving all other payload evidence.
+func expireClinicCooldown(t *testing.T, pool *pgxpool.Pool, id string) {
+	t.Helper()
+	ctx := context.Background()
+	var payload []byte
+	if err := pool.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1`, id).Scan(&payload); err != nil {
+		t.Fatal(err)
+	}
+	var request domain.ClinicRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		t.Fatal(err)
+	}
+	expired := time.Now().UTC().Add(-time.Minute)
+	request.NextAttemptAt = &expired
+	payload, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE clinic_review_requests SET payload=$2 WHERE request_id=$1`, id, payload); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func newClinicIntention(t *testing.T, repo *postgres.Repository) domain.ClinicRequest {
+	t.Helper()
+	ctx := context.Background()
+	if err := repo.CreateEmployee(ctx, domain.Employee{ID: "employee", DisplayName: "Persona ficticia", Active: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.LinkClinicPatient(ctx, domain.PatientLink{PersonKind: "employee", PersonID: "employee", PatientID: "patient", RegisteredBy: "operator"}); err != nil {
+		t.Fatal(err)
+	}
+	svc := application.New(repo, platform.UUID).WithClinic(repo, nil)
+	r, err := svc.CreateClinicRequest(ctx, domain.ClinicRequest{PersonKind: "employee", PersonID: "employee", LocalReference: "review", DoctorID: "doctor", StartAt: time.Now().UTC().Add(72 * time.Hour).Truncate(time.Second), RegisteredBy: "operator"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
+
+func appointmentFor(r domain.ClinicRequest) domain.ClinicAppointment {
+	return domain.ClinicAppointment{ID: "appointment", PatientID: r.PatientID, DoctorID: r.DoctorID, StartAt: r.StartAt, EndAt: r.StartAt.Add(30 * time.Minute), Status: "booked", Version: 1}
+}
+
+func TestClinicV1LostResponseRecoversSameKeyAfterRestartWithoutDuplicateEffects(t *testing.T) {
+	pool, config := isolatedDatabase(t)
+	repo := postgres.New(pool)
+	ctx := context.Background()
+	r := newClinicIntention(t, repo)
+	if r.ProviderContract != domain.ClinicProviderContract || r.IdempotencyKey != r.ID || r.NextAttemptAt != nil {
+		t.Fatalf("new intention provenance: %+v", r)
+	}
+	var calls, effects int
+	var upstreamKey string
+	a := appointmentFor(r)
+	provider := clinicDouble{book: func(_ context.Context, request domain.ClinicRequest) (domain.ClinicAppointment, error) {
+		calls++
+		saved, err := repo.GetClinicRequest(ctx, request.ID)
+		if err != nil || saved.IdempotencyKey != request.ID || saved.ProviderContract != domain.ClinicProviderContract || saved.AttemptedAt == nil || saved.NextAttemptAt == nil {
+			t.Fatalf("network preceded durable key/claim: %+v %v", saved, err)
+		}
+		if upstreamKey == "" {
+			upstreamKey = request.IdempotencyKey
+			effects++
+			return domain.ClinicAppointment{}, &domain.ClinicFailure{Code: "CLINIC_UNAVAILABLE"}
+		}
+		if request.IdempotencyKey != upstreamKey || request.PatientID != r.PatientID || request.DoctorID != r.DoctorID || !request.StartAt.Equal(r.StartAt) {
+			t.Fatalf("replay changed key/body: %+v", request)
+		}
+		// The provider's replay returns current evidence, including cancellation.
+		a.Status, a.Version = "cancelled", 2
+		return a, nil
+	}}
+	svc := application.New(repo, platform.UUID).WithClinic(repo, provider)
+	r, err := svc.SubmitClinicRequest(ctx, r.ID)
+	if err != nil || r.State != "unknown" || r.FailureCode != "CLINIC_UNAVAILABLE" || r.NextAttemptAt == nil {
+		t.Fatalf("lost response: %+v %v", r, err)
+	}
+	if _, err = svc.SubmitClinicRequest(ctx, r.ID); err != nil || calls != 1 {
+		t.Fatalf("cooldown calls=%d err=%v", calls, err)
+	}
+	pool.Close()
+	reopened, err := pgxpool.NewWithConfig(ctx, config.Copy())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	repo = postgres.New(reopened)
+	expireClinicCooldown(t, reopened, r.ID)
+	svc = application.New(repo, platform.UUID).WithClinic(repo, provider)
+	r, err = svc.SubmitClinicRequest(ctx, r.ID)
+	if err != nil || r.State != "cancelled" || r.Appointment == nil || r.Appointment.Version != 2 || r.NextAttemptAt != nil || calls != 2 || effects != 1 {
+		t.Fatalf("recovery: %+v calls=%d effects=%d err=%v", r, calls, effects, err)
+	}
+	if _, err = svc.SubmitClinicRequest(ctx, r.ID); err != nil || calls != 2 {
+		t.Fatalf("known appointment replayed POST: %d %v", calls, err)
+	}
+}
+
+func TestClinicV1ClaimLeaseSurvivesCrashAndSerializesConcurrentSubmit(t *testing.T) {
+	pool, _ := isolatedDatabase(t)
+	repo := postgres.New(pool)
+	ctx := context.Background()
+	r := newClinicIntention(t, repo)
+	first, claimed, err := repo.ClaimClinicRequest(ctx, r.ID)
+	if err != nil || !claimed || first.NextAttemptAt == nil {
+		t.Fatalf("first claim: %+v %t %v", first, claimed, err)
+	}
+	// No failure write: the previous process stopped after its durable claim.
+	if _, claimed, err = repo.ClaimClinicRequest(ctx, r.ID); err != nil || claimed {
+		t.Fatalf("live lease claimed again: %t %v", claimed, err)
+	}
+	expireClinicCooldown(t, pool, r.ID)
+	var calls atomic.Int64
+	entered, release := make(chan struct{}), make(chan struct{})
+	provider := clinicDouble{book: func(_ context.Context, request domain.ClinicRequest) (domain.ClinicAppointment, error) {
+		if calls.Add(1) == 1 {
+			close(entered)
+		}
+		<-release
+		return appointmentFor(request), nil
+	}}
+	svc := application.New(repo, platform.UUID).WithClinic(repo, provider)
+	done := make(chan error, 1)
+	go func() { _, err := svc.SubmitClinicRequest(ctx, r.ID); done <- err }()
+	<-entered
+	var wg sync.WaitGroup
+	for range 6 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := svc.SubmitClinicRequest(ctx, r.ID); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	close(release)
+	if err := <-done; err != nil || calls.Load() != 1 {
+		t.Fatalf("concurrent lease calls=%d err=%v", calls.Load(), err)
+	}
+	if r, err = repo.FailClinicRequest(ctx, r.ID, first.Revision, "CLINIC_UNAVAILABLE", false, nil); err != nil || r.State != "booked" {
+		t.Fatalf("stale claim failure overwrote success: %+v %v", r, err)
+	}
+}
+
+func TestClinicV1LegacyProvenanceAndActiveEmployeeGate(t *testing.T) {
+	for _, scenario := range []string{"legacy-sent", "legacy-ready", "inactive-uncertain"} {
+		t.Run(scenario, func(t *testing.T) {
+			pool, _ := isolatedDatabase(t)
+			repo := postgres.New(pool)
+			ctx := context.Background()
+			r := newClinicIntention(t, repo)
+			if scenario == "legacy-sent" || scenario == "legacy-ready" {
+				r.ProviderContract, r.IdempotencyKey = "", ""
+			}
+			if scenario != "legacy-ready" {
+				now := time.Now().UTC()
+				r.AttemptedAt, r.State = &now, "unknown"
+			}
+			payload, err := json.Marshal(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = pool.Exec(ctx, `UPDATE clinic_review_requests SET payload=$2 WHERE request_id=$1`, r.ID, payload); err != nil {
+				t.Fatal(err)
+			}
+			if scenario == "inactive-uncertain" {
+				if _, err = repo.DeactivateEmployee(ctx, r.PersonID); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var calls int
+			provider := clinicDouble{book: func(_ context.Context, request domain.ClinicRequest) (domain.ClinicAppointment, error) {
+				calls++
+				if request.ProviderContract != domain.ClinicProviderContract || request.IdempotencyKey != request.ID {
+					t.Fatalf("legacy ready did not adopt v1 durably: %+v", request)
+				}
+				return appointmentFor(request), nil
+			}}
+			svc := application.New(repo, platform.UUID).WithClinic(repo, provider)
+			got, err := svc.SubmitClinicRequest(ctx, r.ID)
+			if scenario == "inactive-uncertain" {
+				if !errors.Is(err, domain.ErrEmployeeInactive) || calls != 0 {
+					t.Fatalf("inactive uncertain POST calls=%d err=%v", calls, err)
+				}
+			} else if scenario == "legacy-sent" {
+				if err != nil || calls != 0 || got.ProviderContract != "" || got.IdempotencyKey != "" || got.State != "unknown" {
+					t.Fatalf("legacy uncertain replay: %+v calls=%d err=%v", got, calls, err)
+				}
+			} else if err != nil || calls != 1 || got.State != "booked" {
+				t.Fatalf("legacy ready: %+v calls=%d err=%v", got, calls, err)
+			}
+		})
+	}
+}
+
+func TestClinicV1TechnicalFailuresRemainUnknownAndRespectRetryPolicy(t *testing.T) {
+	for _, code := range []string{"CLINIC_UNAUTHORIZED", "CLINIC_RATE_LIMITED", "CLINIC_IDEMPOTENCY_CONFLICT"} {
+		t.Run(code, func(t *testing.T) {
+			pool, _ := isolatedDatabase(t)
+			repo := postgres.New(pool)
+			ctx := context.Background()
+			r := newClinicIntention(t, repo)
+			var calls int
+			provider := clinicDouble{book: func(_ context.Context, request domain.ClinicRequest) (domain.ClinicAppointment, error) {
+				calls++
+				if calls == 1 {
+					delay := time.Duration(0)
+					if code == "CLINIC_RATE_LIMITED" {
+						delay = time.Minute
+					}
+					return domain.ClinicAppointment{}, &domain.ClinicFailure{Code: code, RetryAfter: delay}
+				}
+				return appointmentFor(request), nil
+			}, lookup: func(context.Context, string) (domain.ClinicAppointment, error) {
+				return domain.ClinicAppointment{}, &domain.ClinicFailure{Code: "CLINIC_NOT_FOUND"}
+			}}
+			svc := application.New(repo, platform.UUID).WithClinic(repo, provider)
+			before := time.Now().UTC()
+			r, err := svc.SubmitClinicRequest(ctx, r.ID)
+			if err != nil || r.State != "unknown" || r.FailureCode != code {
+				t.Fatalf("technical failure became clinical rejection: %+v %v", r, err)
+			}
+			if code == "CLINIC_IDEMPOTENCY_CONFLICT" {
+				if r.NextAttemptAt != nil {
+					t.Fatalf("conflict scheduled retry: %+v", r)
+				}
+				// Even an unsuccessful lookup cannot clear the POST conflict.
+				if r, err = svc.RefreshClinicRequest(ctx, r.ID, "appointment"); err != nil || r.FailureCode != code {
+					t.Fatalf("reconciliation weakened conflict: %+v %v", r, err)
+				}
+			} else {
+				minimum := 9 * time.Second
+				if code == "CLINIC_RATE_LIMITED" {
+					minimum = 59 * time.Second
+				}
+				if r.NextAttemptAt == nil || !r.NextAttemptAt.After(before.Add(minimum)) {
+					t.Fatalf("Retry-After lost: %+v", r)
+				}
+				if _, err = svc.SubmitClinicRequest(ctx, r.ID); err != nil || calls != 1 {
+					t.Fatalf("cooldown ignored: calls=%d err=%v", calls, err)
+				}
+				expireClinicCooldown(t, pool, r.ID)
+			}
+			r, err = svc.SubmitClinicRequest(ctx, r.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if code == "CLINIC_IDEMPOTENCY_CONFLICT" {
+				if calls != 1 || r.State != "unknown" || r.FailureCode != code {
+					t.Fatalf("conflict POST retried: %+v calls=%d", r, calls)
+				}
+			} else if calls != 2 || r.State != "booked" || r.IdempotencyKey != r.ID {
+				t.Fatalf("corrected access recovery: %+v calls=%d", r, calls)
+			}
+		})
+	}
+}
+
+func TestClinicV1RefreshRateLimitPreservesHistoryAndDefersNetwork(t *testing.T) {
+	pool, _ := isolatedDatabase(t)
+	repo := postgres.New(pool)
+	ctx := context.Background()
+	r := newClinicIntention(t, repo)
+	var lookups int
+	provider := clinicDouble{book: func(_ context.Context, request domain.ClinicRequest) (domain.ClinicAppointment, error) {
+		return appointmentFor(request), nil
+	}, lookup: func(context.Context, string) (domain.ClinicAppointment, error) {
+		lookups++
+		return domain.ClinicAppointment{}, &domain.ClinicFailure{Code: "CLINIC_RATE_LIMITED", RetryAfter: time.Minute}
+	}}
+	svc := application.New(repo, platform.UUID).WithClinic(repo, provider)
+	if _, err := svc.SubmitClinicRequest(ctx, r.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.DeactivateEmployee(ctx, r.PersonID); err != nil {
+		t.Fatal(err)
+	}
+	r, err := svc.RefreshClinicRequest(ctx, r.ID, "")
+	if err != nil || r.NextAttemptAt == nil || r.FailureCode != "CLINIC_RATE_LIMITED" || r.Appointment == nil || r.Appointment.Status != "booked" {
+		t.Fatalf("rate limit lost prior evidence: %+v %v", r, err)
+	}
+	if _, err := svc.RefreshClinicRequest(ctx, r.ID, ""); err != nil || lookups != 1 {
+		t.Fatalf("GET ignored rate cooldown: %d %v", lookups, err)
 	}
 }
 
@@ -301,7 +591,7 @@ func TestClinicLegacyCandidatesArePreservedAndInaccessible(t *testing.T) {
 	if _, _, err = repo.ClaimClinicRequest(ctx, legacy.ID); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("legacy claim: %v", err)
 	}
-	if _, err = repo.FailClinicRequest(ctx, legacy.ID, 1, "FAIL", false); !errors.Is(err, domain.ErrNotFound) {
+	if _, err = repo.FailClinicRequest(ctx, legacy.ID, 1, "FAIL", false, nil); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("legacy mutation: %v", err)
 	}
 	a := domain.ClinicAppointment{ID: "appointment", PatientID: "legacy-patient", DoctorID: "doctor", StartAt: start, EndAt: start.Add(30 * time.Minute), Status: "booked", Version: 1}
