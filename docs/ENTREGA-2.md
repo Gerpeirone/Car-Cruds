@@ -1,88 +1,74 @@
-# Preparación de la entrega 2 — dominio propio de punta a punta
-
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+# Entrega 2 — dominio propio de punta a punta
 
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
-| Versión documental | 0.2 |
-| Fecha de revisión | 12 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha de revisión | 14 de octubre de 2026 |
 | Fecha de entrega | Viernes 23 de octubre de 2026 |
-| Estado | Documentación de diseño; implementación de entrega 2 pendiente |
-| Referencia | [Enunciado](../Enunciado%20TP%20Final.md), sección 6.3 y requisitos del sistema |
+| Estado | Backend propio verificado localmente; integración externa y cierre académico pendientes |
+| Referencia | [Enunciado](../Enunciado%20TP%20Final.md), sección 6.3 |
 
-## 1. Cambios a partir del feedback
+## 1. Alcance y evolución
 
-Se conserva el negocio de alquiler de autos y se incorpora el microservicio de Empleados para gestión administrativa de personal. El Load Balancer aparece como componente explícito, con dos réplicas de Flota previstas. El gimnasio consumirá empleados y devolverá uso de membresías; Car Cruds consumirá turnos de una clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones.
+Se conserva el alquiler de autos y se incorpora Empleados para la administración de personal. El gimnasio de Pablo consumirá la lista y aportará membresías, uso y gastos; Car Cruds ofrece recepción, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), con aceptación de la devolución pendiente. Para el hospital de Octi se implementa solicitud y seguimiento de turnos con intención durable según su código de `feature/entrega-2`: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). Contrato formal de Turnos, autenticación, pacientes reales, aceptación y entornos accesibles siguen pendientes de coordinación externa.
 
-Se documentan épicas, historias, requerimientos y patrones antes de programar. Este trabajo actual es documental. El único ejecutable sigue siendo el mock de reservas de la entrega 1; no hay nuevos servicios, persistencia, Load Balancer o integraciones operativas.
+La preparación documental consolidó **9 épicas, 28 historias, 22 RF, 12 RNF, 22 reglas y 15 acuerdos pendientes**. Sobre ese diseño se implementaron los cuatro servicios propios, gateway, balanceador con dos réplicas de Flota, persistencia, índice, caché, mensajería y observabilidad HTTP. El mock de la entrega 1 se conserva como antecedente, independiente del backend real.
 
-## 2. Documentación preparada
-
-La versión consolidada reúne los aportes del grupo: 9 épicas, 28 historias de usuario, 22 requerimientos funcionales, 12 no funcionales, 22 reglas de negocio y 15 acuerdos externos pendientes. El índice de ADR contiene propuestas para las decisiones D1 a D13, incluida la nueva D4 de consistencia y concurrencia. Los controles completados de la primera entrega se conservan como antecedentes históricos.
+## 2. Documentación y evidencia
 
 | Artefacto | Finalidad |
 | --- | --- |
-| [SPEC.md](../SPEC.md) | Alcance actualizado, actores y RN-01 a RN-22 |
-| [BACKLOG.md](BACKLOG.md) | Épicas, historias, prioridades y criterios de aceptación |
-| [REQUERIMIENTOS.md](REQUERIMIENTOS.md) | RF/RNF verificables y trazabilidad |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Contexto C4, contenedores, propiedad de datos y distribución prevista |
-| [ADR](adr/README.md) | Estilos, patrones, alternativas y consecuencias; historia de reemplazos |
-| [INTEGRACIONES.md](INTEGRACIONES.md) | Alcance comunicado, propuestas locales y EXT-01 a EXT-15 pendientes |
-| [Contratos](contracts/README.md) | Borrador propio de lista de empleados y condiciones que faltan del proveedor |
+| [SPEC](../SPEC.md), [BACKLOG](BACKLOG.md) y [REQUERIMIENTOS](REQUERIMIENTOS.md) | Alcance y trazabilidad HU → RF/RNF → RN |
+| [ARCHITECTURE](ARCHITECTURE.md) e [índice ADR](adr/README.md) | Propiedad de datos, estilos, comunicaciones y decisiones D1–D13 |
+| [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) | Código operativo, resultados registrados y límites |
+| [INTEGRACIONES](INTEGRACIONES.md) y [contratos](contracts/README.md) | API propias implementadas y condiciones externas sin acuerdo |
+| [Suite](evidence/tests-summary.json), [recorrido](evidence/integration-summary.json), [persistencia](evidence/runtime-persistence.json) y [traza](evidence/trace-reservation.json) | Evidencia real del entorno local |
 
-## 3. Correspondencia con lo exigido el 23 de octubre
+## 3. Correspondencia con el hito del 23 de octubre
 
-| Exigencia del enunciado | Preparación actual | Evidencia pendiente para acreditar el hito |
+| Exigencia | Cobertura obtenida | Pendiente para acreditar el hito |
 | --- | --- | --- |
-| Al menos un servicio operativo, además de la funcionalidad compartida funcionando | Servicios y casos de uso definidos; mock histórico de reservas | Flujo propio real con servicios necesarios y capacidad de Empleados disponible al gimnasio |
-| Al menos un almacenamiento integrado al flujo | Persistencia propuesta en D3 | Operación contra una base real y recuperación tras reinicio |
-| Logs estructurados y correlacionados, primera traza distribuida | Estrategia inicial D11 | Logs/traza de una operación real entre componentes; no salida simulada |
-| D2, D6, D7, D9, D10 y D12 | Propuestas documentadas | Aplicación y verificación de decisiones según el avance real |
-| D13: capacidad y costos | Protocolo de medición y HU-28 priorizada para E2 | Carga ejecutada sobre el flujo real disponible, límite identificado, alternativa de escalado y estimación de costos con fuente y fecha; estos resultados se requieren el 23 de octubre |
-| Validación de D1, D3 y D5 | Registros revisados con Empleados e integraciones | Evidencia de límites, almacenamiento y comunicaciones implementados |
-| Primera versión de D11 | Diseño de observabilidad | Instrumentación inicial del flujo principal |
-| Actualización de D8 si cambió contrato | ADR-017 y borrador propio de empleados | Acuerdo, contrato revisado, servidor accesible y validación con el consumidor |
+| Servicio operativo además de funcionalidad compartida funcionando | Flujo propio de alquiler operativo; lista de empleados operativa por gateway local | Publicar la capacidad compartida, acordar su contrato y comprobar consumo del gimnasio |
+| Almacenamiento integrado al flujo | PostgreSQL y MongoDB reales; reservas/candidatos/empleados persistentes; reinicio verificado | Condiciones operativas de respaldo y despliegue definitivo |
+| Logs estructurados y correlacionados, primera traza distribuida | Registros JSON y traza HTTP real entre cuatro servicios | Observabilidad de integración externa y mensajería; tableros/alertas posteriores |
+| D2: estilos internos | Capas en Clientes/Flota; Hexagonal en Alquileres/Empleados | Revisión y aceptación del grupo |
+| D6: búsqueda | Solr actualizado por cambios; reconstrucción inicial y comparación fuente/índice realizadas | Medir frescura desde commit; evaluar índice sombra y operación de reconstrucción |
+| D7: caché | Redis/versiones/expulsión verificados; comparación caliente/fallback muestra reducción de lecturas de ficha | Fase fría, línea base deshabilitada, ensayo sostenido y retención; no mejora universal de latencia |
+| D9: consumo externo | Puertos de clínica y membresías definidos; estado no configurado explícito | Contrato y pruebas contra el proveedor real; adaptadores externos |
+| D10: resiliencia | Protecciones y fallas/recuperación reales con postmortem; mensaje incompatible a DLQ | Circuit Breaker, alertas, reproceso de negocios y ensayos ampliados/exteriores |
+| D12: balanceo | Dos réplicas y retirada/recuperación verificadas; tres errores iniciales documentados | Caída del balanceador/fuente común y comparación sostenida |
+| D13: capacidad y costos | Carga inicial, límite de admisión, alternativa y estimación USD44/84 documentados | Ampliar duración/mezcla, medir alternativa y validar recursos cloud |
+| Validación D1/D3/D5 | Cuatro propietarios de datos; almacenes separados; recorrido HTTP y RentalCompleted real | Validación de comunicaciones y condiciones externas |
+| Primera versión D11 | Instrumentación HTTP, registros y exportación Jaeger verificadas | Acordar indicadores/alertas y documentar propagación asíncrona pendiente |
+| Actualización D8 | ADR-017 y API propia de empleados implementada provisionalmente; historial conservado | Acuerdo del consumidor, acceso publicado y prueba conjunta |
 
-Un borrador procesable, una historia escrita o un directorio no equivalen a un servicio operativo. Los resultados de búsqueda, caché, carga, balanceo e integración permanecen pendientes; no se atribuyen al mock histórico ni a las demostraciones de las clases.
+Los resultados locales acreditan las operaciones ensayadas. No acreditan automáticamente toda una historia, integración externa, acceso cloud, alta disponibilidad ni cumplimiento académico integral. Una prueba omitida por falta de variables no se considera evidencia de dependencia real.
 
-## 4. Orden de trabajo propuesto
+## 4. Resultados registrados
 
-1. Revisar alcance y prioridades de épicas/historias con el grupo y la cátedra; asignar responsables.
-2. Cerrar los acuerdos indispensables EXT-01 a EXT-05 y EXT-07 a EXT-13 para las integraciones. EXT-06 bloquea el informe económico requerido; el informe de uso puede avanzar como resultado parcial sin sustituirlo. EXT-15 define la información del hospital sobre empleados que necesitan consulta.
-3. Validar patrones y dependencias de los cuatro servicios, el balanceador y la propiedad de datos.
-4. Implementar un flujo propio de alquiler con persistencia y sus dependencias necesarias; implementar Empleados y la lista revisada para el consumidor.
-5. Instrumentar logs correlacionados y una traza del flujo, agregar pruebas de integración y contrato sobre dependencias reales.
-6. Implementar y demostrar turnos e informes conforme a los acuerdos, así como comunicación de uso del gimnasio. Registrar incertidumbre, fallas y duplicados.
-7. Ejecutar las mediciones previstas; actualizar ADR, estado de historias y esta matriz con evidencia obtenida.
+El 14 de octubre, después de corregir Redis y reconstruir el entorno, la suite real con detector de carreras aprobó 60 pruebas sin omisiones sobre la revisión `8327268`; `go vet` finalizó con salida 0. La prueba focal de presión Redis registró 69 expulsiones y conservó la marca necesaria para rechazar un llenado anterior.
 
-El orden es una propuesta de coordinación, no un cronograma de resultados ya alcanzados. Las historias del sistema completo incluyen funciones de presentación grupal y defensa que no se declaran obligatoriamente implementadas en este trabajo documental.
+El 13 de octubre, `cmd/smoke -history` finalizó con salida 0 tras 75 solicitudes. Verificó autenticación y aislamiento, ambas réplicas, catálogo/caché/búsqueda, reservas concurrentes con una respuesta `201` y otra `409`, cancelación, retiro/devolución y un evento aplicado una sola vez en Clientes. La traza exportada contiene siete spans enlazados en cuatro servicios.
 
-## 5. Criterio para comenzar una historia
+El recorrido final del 14 de octubre sobre `8327268` aprobó 78 solicitudes y la limpieza, con ejecución `10ead0c0c22142bc968ec9e8ef55cb60`. Volvió a verificar un efecto único de `RentalCompleted`, observado en 1712 ms desde el primer sondeo. La traza de siete spans corresponde al antecedente del 13; no se atribuye al recorrido final.
 
-Debe tener actor y valor claros, requerimientos vinculados, criterios de aceptación verificables, reglas y propietario de datos, dependencias identificadas y acuerdo de contrato si utiliza una API externa. Una duda que cambia el resultado esperado se conserva como pendiente y bloquea solo la parte dependiente.
+Tras reiniciar Clientes, Empleados y Alquileres se conservaron una reserva completada y un empleado inactivo. La reindexación inicial aceptó tres vehículos; tras completar los ensayos, la comparación de los dos vehículos activos mostró los mismos identificadores y versiones en MongoDB y Solr. No se simuló la pérdida total del core. La respuesta `202` indica aceptación, no finalización; la evidencia de conclusión es la comparación posterior.
 
-## 6. Criterio para acreditar una implementación
+Los [ensayos de fallas](POSTMORTEM.md) verificaron detección pasiva, fallback y recuperación de índice/outbox. [D13](adr/ADR-013-capacidad-costos.md) registró la carga de disponibilidad, el límite principal observado de 64 solicitudes simultáneas del gateway, una alternativa de escalado y costos de laboratorio. Se conserva el detalle y alcance en [EVIDENCIA-E2](EVIDENCIA-E2.md).
 
-- Código y comportamiento acordes con historia, requerimientos y ADR, revisados por el grupo.
-- Pruebas pertinentes ejecutadas; las de integración utilizan una dependencia real y las de contrato la versión efectivamente consumida.
-- Persistencia, errores y recuperación comprobados; logs/traza con evidencia del flujo.
-- Instrucciones reproducibles, configuraciones sin secretos y documentación actualizada.
-- Para la capacidad compartida: servidor accesible, contrato versionado y prueba con el consumidor, mantenido operativo hasta finalizar la evaluación.
+## 5. Prioridades de cierre
 
-Estos criterios no están cumplidos por la preparación documental actual. No se agrega un informe de postmortem ficticio ni resultados de carga: se producirán a partir de ensayos reales.
+La [revisión del 15 de octubre](REVISION-E2-2026-10-15.md) incorpora correcciones de recuperación del despliegue, verificación automática de la lista propia y transacciones cortas en reservas. El acceso público y los acuerdos externos se mantienen expresamente pendientes; estos cambios no declaran el hito completo.
 
-## 7. Referencia a la primera entrega
+1. Publicar y validar la lista propia con el gimnasio (configuración de despliegue en [DESPLIEGUE](DESPLIEGUE.md); VM pendiente); cerrar los acuerdos que bloquean uso, costos e intercambio administrativo.
+2. Obtener el contrato del hospital para información de necesidad, solicitud y seguimiento de turnos, conservando incertidumbre y referencias.
+3. Revisar y ampliar los informes iniciales de D10/D12/D13; ampliar comparación de caché y validar límites/alternativa sin extrapolar cifras locales a cloud.
+4. Revisar historias, contratos y evidencia con el grupo. La CI aprobó ambos trabajos sobre `11d475c` el 14 de octubre ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244)).
+5. Mantener los datos locales y completar las condiciones de acceso durante la evaluación. La integración a `main` requiere aprobación del equipo.
 
-[ENTREGA-1.md](ENTREGA-1.md) conserva el control histórico. El contrato [openapi-v1.json](contracts/openapi-v1.json), el código y las pruebas del mock de alquileres conservan su comportamiento. La nueva integración no presenta ese mock como una implementación de Empleados.
+## 6. Criterios de aceptación y referencia histórica
 
+Una implementación se acredita con comportamiento acorde a HU/RF/RN, pruebas pertinentes ejecutadas, persistencia y errores comprobados, instrucciones reproducibles y documentación actualizada. La capacidad compartida además exige contrato, servidor accesible y validación con el consumidor. Los proveedores reales se prueban sobre sus contratos; simulaciones futuras deben identificarse como tales.
 
-## Aclaración de alcance — 11 de octubre de 2026
-
-El gimnasio de Pablo consume nuestra lista de empleados y administra membresías y costos. Empleados deberá recibir o consultar afiliación, costo por membresía, gastos por empleado y costos totales por período/moneda; el informe de uso es complementario y no reemplaza el económico. Se conservarán origen, referencias y correcciones, sin duplicar gastos ni asumir cero ante datos faltantes. El borrador de lista no define todavía el intercambio económico.
-
-Car Cruds consume el hospital de Octi para empleados registrados: identificar quién necesita consulta mediante información recibida/consultada al hospital, solicitar el turno desde Empleados, conservar referencias y resultado, y reflejar cambios de estado, cancelaciones y reprogramaciones administrados por el hospital. La gestión de candidatos existente se mantiene como flujo adicional y separado. No se infieren diagnósticos ni asistencia a partir del turno.
-
-Contratos, operaciones externas, mecanismos de actualización, identificadores y configuración operativa siguen pendientes. No se inventan endpoints externos ni valores de tarifas/timeouts. El gateway encamina el acceso entrante a Empleados; el adaptador saliente llama al hospital directamente. PostgreSQL propio, Docker Compose, configuración y pruebas de estos componentes aún no existen. El balanceador y las dos réplicas de Flota siguen como diseño pendiente de implementación y demostración.
-
-La trazabilidad detallada está en SPEC (RN-16, RN-21 y RN-22), REQUERIMIENTOS (RF-13 a RF-17 y RF-19), BACKLOG (HU-13 a HU-17 y HU-23) e INTEGRACIONES (EXT-02, EXT-04 a EXT-10 y EXT-15). Esta aclaración registra el alcance solicitado por el grupo; no acredita aprobación externa ni implementación.
+[ENTREGA-1](ENTREGA-1.md), [openapi-v1.json](contracts/openapi-v1.json) y `mocks/rentals` conservan la evidencia original. No se utilizan como prueba de Empleados ni de las integraciones actuales.

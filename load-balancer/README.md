@@ -2,33 +2,29 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Implementación | Diseño documental; sin configuración NGINX ni contenedores ejecutables |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | NGINX configurado; distribución local verificada |
+| Configuración | [nginx.conf](nginx.conf), cargada por Docker Compose |
 
-## Responsabilidad y ubicación
+## Responsabilidad y distribución
 
-Se propone NGINX Open Source en la red interna entre el gateway y dos réplicas stateless de Flota. Alquileres utiliza el mismo punto lógico para consultar ficha y tarifa autoritativas. No llama directamente a una réplica.
+NGINX Open Source se ubica en la red privada entre gateway/Alquileres y dos réplicas equivalentes de Flota, `fleet-a` y `fleet-b`. Ambas comparten MongoDB y Redis; el estado de negocio no depende de memoria local. El upstream utiliza round-robin con pesos iguales y conexiones persistentes.
 
-El gateway mantiene autenticación, políticas de entrada y routing de API. El LB selecciona una réplica; no contiene reglas de alquiler ni sustituye la autorización del servicio. Las réplicas no ofrecen accesos públicos alternativos.
+Gateway mantiene autenticación y encaminamiento de API; Flota autoriza y ejecuta las operaciones. El balanceador no contiene reglas de alquiler ni ofrece una entrada pública alternativa.
 
-## Distribución y detección previstas
+## Configuración de fallas y tiempos
 
-Las réplicas tendrán configuración equivalente, almacenamiento MongoDB y caché Redis compartidos, sin sesión de negocio en memoria local. Se propone round-robin con pesos iguales.
+Se utiliza detección **pasiva**: `max_fails=3` y `fail_timeout=30s`. No hay una comprobación activa periódica ni discovery dinámico. Las dependencias Compose usan `restart: true`: una recreación controlada de Flota reinicia el LB para renovar sus direcciones; no es un mecanismo de discovery ni cubre todas las fallas espontáneas. La distinción entre comprobaciones pasivas de OSS y activas de NGINX Plus se describe en la [documentación oficial](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-health-check/).
 
-El diseño utilizará detección **pasiva** de fallas en solicitudes reales; la detección activa periódica documentada para NGINX Plus no se presenta como una capacidad implementada por OSS. [Referencia oficial](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-health-check/).
+La conexión tiene límite de 1 s; lectura del proxy de 3 s por período de inactividad y envío de 1 s. Se permiten hasta dos intentos ante error o timeout, limitados por `proxy_next_upstream_timeout=1s`. Esos valores no reemplazan el deadline total del cliente ni amplían el presupuesto de confirmación de una reserva. Alquileres controla su espera para obtener la tarifa autoritativa.
 
-Los umbrales, tiempos del proxy y recuperación serán explícitos y medidos. No se multiplicarán reintentos entre proxy y cliente. El cambio de destino para comandos necesita una política idempotente de aplicación; el LB no la proporciona.
+Se propagan autorización, request ID y contexto de traza. Un encabezado de instancia permite observar el destino sin afirmar que NGINX instrumenta spans propios.
 
-## Límites y evidencia necesaria
+## Evidencia y límites
 
-Un LB único, gateway único y fuentes compartidas siguen siendo puntos de falla. Dos réplicas toleran la caída de una instancia de Flota; no acreditan alta disponibilidad completa. No hay discovery dinámico ni readiness activa automáticamente configurados en esta propuesta.
+El recorrido real mostró respuestas de ambas réplicas desde el gateway. El [ensayo de retirada/recuperación](../docs/evidence/resilience.json) registró tres 503 iniciales y 17 respuestas 200 en A de 20 solicitudes; B reapareció 29 315,18 ms desde el sondeo tras su restauración. La caída del balanceador y la fuente común todavía no se ensayaron. La detección pasiva puede admitir fallas iniciales antes de apartar una réplica; no promete una transición sin errores.
 
-La demostración futura deberá mostrar destino por instancia mediante logs/métricas, tráfico desde gateway y Alquileres, caída/retirada y recuperación de una réplica, y comportamiento ante caída del propio LB. Readiness, si se incorpora, será interna y diferenciada de liveness; su formato, ruta y mecanismo se definirán al implementar.
+Un balanceador, un gateway y almacenes compartidos permanecen como puntos únicos de falla. Dos réplicas no constituyen alta disponibilidad integral. La configuración de laboratorio no prueba capacidad del despliegue cloud.
 
-## Referencias
-
-[D12 — Balanceo](../docs/adr/ADR-012-balanceo-carga.md), [arquitectura C4](../docs/ARCHITECTURE.md) y [D11 — Observabilidad](../docs/adr/ADR-011-observabilidad.md).
-
-Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-7-balanceo-nginx.md`. La configuración de laboratorio es una referencia; sus valores de ejemplo no son mediciones de Car Cruds.
+Referencias: [D12](../docs/adr/ADR-012-balanceo-carga.md), [D11](../docs/adr/ADR-011-observabilidad.md), [arquitectura](../docs/ARCHITECTURE.md) y [estado](../docs/ESTADO-IMPLEMENTACION.md). Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-7-balanceo-nginx.md`.

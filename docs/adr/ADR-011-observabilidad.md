@@ -3,14 +3,15 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D11: observabilidad |
-| Versión | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
-| Madurez | Primera versión documental; sin instrumentación ni mediciones |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Observabilidad HTTP verificada; operación de métricas pendiente |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
+| Madurez | Instrumentación y primera traza HTTP; tablero/alertas pendientes |
+
 ## 1. Contexto
 
-Debe poder reconstruirse una operación entre gateway, LB, servicios, almacenes y proveedor sin inspección manual aislada. Se necesita evidencia de balanceo, carga, retraso de proyecciones y fallas; todavía no hay instrumentación de los servicios reales.
+Debe poder reconstruirse una operación entre gateway, LB, servicios, almacenes y proveedor sin inspección manual aislada. Se necesita evidencia de balanceo, carga, retraso de proyecciones y fallas; la primera instrumentación HTTP está disponible; las condiciones externas y de operación requieren ampliación.
 
 ## 2. Decisión
 
@@ -42,9 +43,13 @@ Solo logs no acredita distribución ni tendencias. Solo métricas no explica una
 
 ## 4. Consecuencias y validación
 
-Se requiere seleccionar colector, almacenamiento, visualización, retención y muestreo. No hay resultados, capturas operativas ni SLO demostrado. La entrega 2 necesita logs correlacionados y primera traza del flujo implementado: esta decisión documental no sustituye esa evidencia.
+Se requiere seleccionar colector, almacenamiento, visualización, retención y muestreo. Hay resultados y una exportación operativa; no se acredita un SLO sostenido. La entrega 2 necesita logs correlacionados y primera traza del flujo implementado: esta decisión documental no sustituye esa evidencia.
 
 Validar correlación, ausencia de datos sensibles, métricas por instancia, activación de alerta y recorrido de una falla controlada. Conservar evidencia reproducible del ensayo.
+
+## Avance de implementación — 14 de octubre de 2026
+
+Los servicios y gateway emiten logs JSON con request ID e instancia e instrumentan métricas internas y trazas HTTP. Jaeger devolvió una traza real de reserva con siete spans enlazados en gateway, Alquileres, Clientes y Flota. NGINX propaga el contexto y registra upstream; no genera spans propios. La exportación está en [trace-reservation.json](../evidence/trace-reservation.json). El contexto de traza no se propaga todavía en mensajes RabbitMQ; esos efectos se vinculan por event ID. No se desplegaron colector Prometheus, tablero ni alertas. Los SLO de diseño no se consideran satisfechos por esta primera traza.
 
 ## 5. Referencias e historial
 
@@ -53,3 +58,4 @@ Material en `clases.zip`: `teoria/04-comunicacion-asincrona.md`, `teoria/06-gate
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera versión de señales, tablero y objetivos por validar |
+| 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |

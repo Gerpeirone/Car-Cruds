@@ -1,0 +1,1330 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — Alquileres: API propia implementada",
+    "version": "0.1.0",
+    "description": "Contrato del backend propio al 13 de octubre de 2026. Describe las operaciones implementadas en services/rentals y conserva separado openapi-v1.json, correspondiente al mock histórico. Reservas, agenda e idempotencia se almacenan en PostgreSQL propio; las verificaciones de cliente y tarifa consultan Clientes y Flota por HTTP. El presupuesto de operación es de hasta 5 segundos y cada llamada de dependencia usa hasta 1 segundo dentro del tiempo restante. Las fechas son días calendario de la sucursal America/Buenos_Aires; el período [startsOn, endsOn) dura entre 1 y 30 días. Los importes son enteros int64 en centavos de ARS. Los ejemplos son ilustrativos y sus fechas deben ajustarse al día de ejecución. Esta descripción de la API no acredita publicación externa, aceptación de la entrega ni compatibilidad con clínica o gimnasio. Referencias: [SPEC](../../SPEC.md), [D4](../adr/ADR-004-consistencia-concurrencia.md), [D5](../adr/ADR-016-comunicacion-v2.md)."
+  },
+  "x-contract-status": "implemented-own-api",
+  "x-source-files": [
+    "services/rentals/adapters/httpapi/handler.go",
+    "services/rentals/application/service.go",
+    "services/rentals/domain/model.go",
+    "services/rentals/adapters/postgres/repository.go"
+  ],
+  "x-academic-references": [
+    "Enunciado TP Final.md",
+    "clases.zip: practica/clase-1-monolito-rest-interfaces-mocks.md",
+    "clases.zip: teoria/02-datos-en-microservicios.md",
+    "clases.zip: teoria/07-resiliencia.md"
+  ],
+  "externalDocs": {
+    "description": "Especificación formal OpenAPI 3.0.3",
+    "url": "https://spec.openapis.org/oas/v3.0.3"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Entrada de la instalación propia. En desarrollo se utiliza el gateway local; no se publica una URL externa en este contrato."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Reservas",
+      "description": "Disponibilidad, confirmación, consulta y cancelación."
+    },
+    {
+      "name": "Operación",
+      "description": "Retiro, devolución y bloqueo administrativo por mantenimiento."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/availability": {
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "getRentalAvailability",
+        "summary": "Consultar disponibilidad y precio",
+        "description": "Roles admin, client y service; gym no está autorizado. Los tres parámetros obligatorios aparecen exactamente una vez. Consulta tarifa autoritativa y agenda para el período; un resultado disponible no inmoviliza el vehículo ni garantiza una reserva posterior. available=false es un resultado de negocio informado, no un fallo de dependencia. La confirmación vuelve a consultar la tarifa y verifica el solapamiento de forma atómica.",
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/VehicleIdQuery"
+          },
+          {
+            "$ref": "#/components/parameters/StartsOnQuery"
+          },
+          {
+            "$ref": "#/components/parameters/EndsOnQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Precio y disponibilidad para el período solicitado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "available": true,
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "NOT_FOUND: vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/reservations": {
+      "post": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "createRentalReservation",
+        "summary": "Confirmar una reserva idempotente",
+        "description": "Roles admin y service pueden reservar para cualquier cliente; client solo para su CustomerID autenticado. El cliente debe estar activo y su licencia cubrir al menos el último día ocupado (endsOn − 1 día). El vehículo debe estar activo y el importe esperado coincidir con tarifa diaria × días. La aplicación de origen queda asociada internamente a la reserva y no se recibe como dato del cuerpo. Agenda y respuesta idempotente se confirman en una transacción local. Una exclusión PostgreSQL impide reservas o mantenimientos solapados, también entre instancias. La clave se delimita por aplicación autenticada + operación de creación + Idempotency-Key. Misma clave y los mismos valores de los cinco campos, aunque cambien el orden JSON o los espacios, recuperan el estado HTTP y la respuesta originales antes de revalidar fechas, cliente o tarifa. Una reserva cancelada, retirada o devuelta conserva la respuesta original RESERVED de su creación; GET obtiene su estado actual. Otra carga con la misma clave produce 409 IDEMPOTENCY_KEY_REUSED. Se conservan también los rechazos de negocio registrados (fechas inválidas, recurso inexistente, precio, agenda o habilitación); para corregir la intención se usa una clave nueva. Errores de autenticación, permisos, formato, clave y tipo de contenido se resuelven antes de registrar la intención. Una falla técnica antes del commit no consume la clave. Ante respuesta perdida o 503, reintentar la misma intención con la misma clave para recuperar un posible commit. La retención es durable, atraviesa reinicios y actualmente no tiene purga automática.",
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "x-idempotency-scope": [
+          "authenticated-application",
+          "create-reservation",
+          "Idempotency-Key"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Objeto JSON único de hasta 1 MiB. Los nombres de campos son exactos; no se admiten null, propiedades desconocidas o duplicadas, otro valor JSON ni datos posteriores.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reserva confirmada en estado RESERVED o respuesta original de una repetición idempotente. Ambas devuelven 201.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Reservation"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "RESERVED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                  "status": "RESERVED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "NOT_FOUND: cliente o vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PRICE_CHANGED: el total autoritativo difiere del esperado. VEHICLE_UNAVAILABLE: vehículo inactivo o período ocupado. IDEMPOTENCY_KEY_REUSED: la clave ya pertenece a otra carga.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "PRICE_CHANGED",
+                            "VEHICLE_UNAVAILABLE",
+                            "IDEMPOTENCY_KEY_REUSED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE: Content-Type ausente o distinto de application/json. Se admiten parámetros del tipo de contenido, como charset=utf-8.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "UNSUPPORTED_MEDIA_TYPE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CUSTOMER_NOT_ELIGIBLE: cliente inactivo o licencia insuficiente para el período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "CUSTOMER_NOT_ELIGIBLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ReservationId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "getRentalReservation",
+        "summary": "Consultar el estado actual de una reserva",
+        "description": "Roles admin y service pueden consultar cualquier reserva. client solo accede si coinciden la aplicación de origen y el CustomerID autenticados; una reserva ajena se responde como inexistente. Se devuelve el estado actual, incluso si sus fechas ya son anteriores al día de consulta.",
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Representación actual y precio congelado de la reserva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reservation"
+                },
+                "example": {
+                  "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                  "status": "ACTIVE",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/ReservationNotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "cancelRentalReservation",
+        "summary": "Cancelar una reserva pendiente de retiro",
+        "description": "Roles admin y service; client solo para su aplicación de origen y CustomerID. RESERVED pasa a CANCELLED y libera la ocupación en una transacción. Repetir DELETE sobre CANCELLED devuelve 200 sin otro efecto; ACTIVE o COMPLETED producen 409 INVALID_STATE. La repetición se controla por la transición de la reserva y no requiere Idempotency-Key.",
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Reserva cancelada o resultado actual de una repetición.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Reservation"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CANCELLED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                  "status": "CANCELLED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/ReservationNotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "description": "INVALID_STATE: no se puede cancelar una reserva ACTIVE o COMPLETED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "INVALID_STATE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}/pickup": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ReservationId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Operación"
+        ],
+        "operationId": "pickUpRentalVehicle",
+        "summary": "Registrar el retiro del vehículo",
+        "description": "Solo admin y service. Requiere RESERVED y que el día de America/Buenos_Aires esté dentro de [startsOn, endsOn); vuelve a validar habilitación y licencia del cliente. La transición a ACTIVE impide un segundo alquiler activo para ese vehículo, incluso si un alquiler anterior venció su período previsto. Repetir sobre ACTIVE devuelve 200 con el estado actual sin repetir la transición. CANCELLED o COMPLETED producen 409 INVALID_STATE. No requiere cuerpo ni Idempotency-Key.",
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Retiro registrado o repetición de una reserva ya ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Reservation"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ACTIVE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                  "status": "ACTIVE",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/ReservationNotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "description": "INVALID_STATE: estado o día no admitidos para retirar. VEHICLE_UNAVAILABLE: otro alquiler permanece ACTIVE para el vehículo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "INVALID_STATE",
+                            "VEHICLE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CUSTOMER_NOT_ELIGIBLE: la revalidación informa cliente no habilitado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "CUSTOMER_NOT_ELIGIBLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/reservations/{id}/return": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ReservationId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Operación"
+        ],
+        "operationId": "returnRentalVehicle",
+        "summary": "Registrar la devolución del vehículo",
+        "description": "Solo admin y service. ACTIVE pasa a COMPLETED, libera la agenda y registra RentalCompleted.v1 en outbox dentro de una transacción. Su entrega al historial de Clientes es eventual; la respuesta no espera al broker ni acredita que el consumidor ya haya procesado el evento. Repetir sobre COMPLETED devuelve 200 sin liberar ni producir el evento nuevamente. RESERVED o CANCELLED producen 409 INVALID_STATE. No requiere cuerpo ni Idempotency-Key.",
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Devolución registrada o repetición de una reserva ya COMPLETED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Reservation"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "COMPLETED"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                  "status": "COMPLETED",
+                  "vehicleId": "auto-001",
+                  "customerId": "cli-001",
+                  "startsOn": "2030-01-15",
+                  "endsOn": "2030-01-18",
+                  "days": 3,
+                  "dailyRateMinor": 5000000,
+                  "totalMinor": 15000000,
+                  "currency": "ARS"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/ReservationNotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "description": "INVALID_STATE: solo se devuelve una reserva ACTIVE o se repite una devolución COMPLETED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "INVALID_STATE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/maintenance": {
+      "post": {
+        "tags": [
+          "Operación"
+        ],
+        "operationId": "createRentalMaintenance",
+        "summary": "Bloquear un período por mantenimiento",
+        "description": "Solo admin y service. Verifica existencia del vehículo mediante Flota y reserva un rango de agenda de 1 a 30 días desde hoy o después; permite un vehículo administrativamente inactivo. Comparte la restricción de exclusión con reservas y otros mantenimientos, sin cancelar ocupaciones previas. No ofrece Idempotency-Key: repetir el mismo cuerpo puede producir 409 por solapamiento. Este backend admite el objeto JSON sin validar explícitamente su encabezado Content-Type; application/json es la representación documentada. No hay ruta implementada de consulta, modificación o eliminación de mantenimiento.",
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Objeto JSON único de hasta 1 MiB. Los nombres de campos son exactos; no se admiten null, propiedades desconocidas o duplicadas, otro valor JSON ni datos posteriores.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMaintenance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bloqueo de mantenimiento registrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maintenance"
+                },
+                "example": {
+                  "id": "43d6417c-583d-4ca8-bf21-d41e8a621122",
+                  "vehicleId": "auto-001",
+                  "startsOn": "2030-01-20",
+                  "endsOn": "2030-01-22"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidInput"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "NOT_FOUND: vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "NOT_FOUND"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VEHICLE_UNAVAILABLE: el mantenimiento se solapa con una ocupación existente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "VEHICLE_UNAVAILABLE"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Credencial opaca de aplicación enviada como Authorization: Bearer <token>. La configuración local resuelve aplicación, rol y CustomerID; no se aceptan estos atributos desde el cuerpo ni se presupone JWT. Todas las operaciones requieren autenticación. gym no está autorizado a Alquileres."
+      }
+    },
+    "parameters": {
+      "VehicleIdQuery": {
+        "name": "vehicleId",
+        "in": "query",
+        "required": true,
+        "description": "Identificador del vehículo; exactamente una aparición.",
+        "schema": {
+          "$ref": "#/components/schemas/Identifier"
+        },
+        "example": "auto-001"
+      },
+      "StartsOnQuery": {
+        "name": "startsOn",
+        "in": "query",
+        "required": true,
+        "description": "Inicio incluido, igual o posterior a hoy en America/Buenos_Aires; exactamente una aparición.",
+        "schema": {
+          "$ref": "#/components/schemas/Date"
+        },
+        "example": "2030-01-15"
+      },
+      "EndsOnQuery": {
+        "name": "endsOn",
+        "in": "query",
+        "required": true,
+        "description": "Fin excluido; duración de 1 a 30 días calendario; exactamente una aparición.",
+        "schema": {
+          "$ref": "#/components/schemas/Date"
+        },
+        "example": "2030-01-18"
+      },
+      "ReservationId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador de reserva. Un identificador mal formado se responde con NOT_FOUND.",
+        "schema": {
+          "$ref": "#/components/schemas/Identifier"
+        },
+        "example": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f"
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Una sola aparición; de 1 a 128 caracteres ASCII visibles, sin espacios. Delimita la intención dentro de la aplicación y la operación de creación.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[!-~]{1,128}$"
+        },
+        "example": "reserva-cli-001-2030-01-15-01"
+      }
+    },
+    "schemas": {
+      "Identifier": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+        "description": "Identificador sensible a mayúsculas y minúsculas."
+      },
+      "Date": {
+        "type": "string",
+        "format": "date",
+        "minLength": 10,
+        "maxLength": 10,
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Fecha calendario válida YYYY-MM-DD, sin hora ni desplazamiento. Los períodos se interpretan en America/Buenos_Aires."
+      },
+      "CreateReservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "customerId",
+          "startsOn",
+          "endsOn",
+          "expectedTotalMinor"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "customerId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              }
+            ],
+            "description": "Inicio incluido. En una solicitud nueva debe ser igual o posterior a la fecha actual de America/Buenos_Aires."
+          },
+          "endsOn": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              }
+            ],
+            "description": "Fin excluido. La diferencia de días calendario respecto de startsOn debe estar entre 1 y 30."
+          },
+          "expectedTotalMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Total esperado en centavos de ARS; entero de 64 bits. Debe coincidir con la tarifa autoritativa multiplicada por los días."
+          }
+        },
+        "example": {
+          "vehicleId": "auto-001",
+          "customerId": "cli-001",
+          "startsOn": "2030-01-15",
+          "endsOn": "2030-01-18",
+          "expectedTotalMinor": 15000000
+        }
+      },
+      "Reservation": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "vehicleId",
+          "customerId",
+          "startsOn",
+          "endsOn",
+          "days",
+          "dailyRateMinor",
+          "totalMinor",
+          "currency"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESERVED",
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "description": "Transiciones: RESERVED → ACTIVE → COMPLETED; RESERVED → CANCELLED. COMPLETED y CANCELLED son finales."
+          },
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "customerId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "Días calendario del período semiabierto [startsOn, endsOn)."
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "Tarifa diaria congelada al confirmar; entero de 64 bits expresado en centavos de ARS."
+          },
+          "totalMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "dailyRateMinor × days; entero de 64 bits expresado en centavos de ARS."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "ARS"
+            ]
+          }
+        },
+        "description": "Precio congelado al confirmar. El cliente y vehículo son referencias a servicios propios; la aplicación propietaria no se expone. El objeto puede incorporar campos adicionales compatibles."
+      },
+      "Availability": {
+        "type": "object",
+        "required": [
+          "vehicleId",
+          "startsOn",
+          "endsOn",
+          "available",
+          "days",
+          "dailyRateMinor",
+          "totalMinor",
+          "currency"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "Días calendario del período semiabierto [startsOn, endsOn)."
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "Tarifa diaria congelada al confirmar; entero de 64 bits expresado en centavos de ARS."
+          },
+          "totalMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "dailyRateMinor × days; entero de 64 bits expresado en centavos de ARS."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "ARS"
+            ]
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "VEHICLE_INACTIVE",
+              "OVERLAPPING_RESERVATION"
+            ],
+            "description": "Solo se devuelve cuando available=false. OVERLAPPING_RESERVATION incluye ocupación por reserva o mantenimiento."
+          }
+        },
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              }
+            },
+            "not": {
+              "required": [
+                "unavailableReason"
+              ]
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "unavailableReason"
+            ],
+            "properties": {
+              "available": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Consulta informativa: puede informar indisponibilidad con precio válido; una dependencia fallida devuelve 503 en lugar de available=false."
+      },
+      "CreateMaintenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "startsOn",
+          "endsOn"
+        ],
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              }
+            ],
+            "description": "Inicio incluido. En una solicitud nueva debe ser igual o posterior a la fecha actual de America/Buenos_Aires."
+          },
+          "endsOn": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Date"
+              }
+            ],
+            "description": "Fin excluido. La diferencia de días calendario respecto de startsOn debe estar entre 1 y 30."
+          }
+        },
+        "example": {
+          "vehicleId": "auto-001",
+          "startsOn": "2030-01-20",
+          "endsOn": "2030-01-22"
+        }
+      },
+      "Maintenance": {
+        "type": "object",
+        "required": [
+          "id",
+          "vehicleId",
+          "startsOn",
+          "endsOn"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "startsOn": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "endsOn": {
+            "$ref": "#/components/schemas/Date"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "INVALID_INPUT",
+              "NOT_FOUND",
+              "PRICE_CHANGED",
+              "VEHICLE_UNAVAILABLE",
+              "IDEMPOTENCY_KEY_REUSED",
+              "INVALID_STATE",
+              "CUSTOMER_NOT_ELIGIBLE",
+              "DEPENDENCY_UNAVAILABLE",
+              "SERVICE_UNAVAILABLE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "METHOD_NOT_ALLOWED"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Descripción legible del error. El consumidor debe decidir por code y estado HTTP; el texto puede cambiar."
+          }
+        }
+      }
+    },
+    "responses": {
+      "InvalidInput": {
+        "description": "INVALID_INPUT: identificador, fecha, período, importe, parámetros, clave o cuerpo JSON inválidos. Un cuerpo admite exactamente un objeto, sin campos desconocidos ni duplicados y hasta 1 MiB.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "INVALID_INPUT"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "UNAUTHORIZED: falta una credencial Bearer válida de aplicación.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAUTHORIZED"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "FORBIDDEN: el rol no está autorizado o la aplicación no puede operar para ese cliente.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "FORBIDDEN"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "DependencyUnavailable": {
+        "description": "DEPENDENCY_UNAVAILABLE: almacenamiento o dependencia interna no disponible o respuesta inválida. SERVICE_UNAVAILABLE: el gateway no puede atender o alcanzar el servicio. El resultado de un comando puede ser indeterminado para el solicitante; recuperar mediante la clave idempotente cuando corresponda.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "DEPENDENCY_UNAVAILABLE",
+                        "SERVICE_UNAVAILABLE"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ReservationNotFound": {
+        "description": "NOT_FOUND: recurso inexistente. La lectura de una reserva ajena por el rol client también devuelve 404.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "NOT_FOUND"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "METHOD_NOT_ALLOWED: método u operación no admitidos para una ruta de reserva.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "METHOD_NOT_ALLOWED"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

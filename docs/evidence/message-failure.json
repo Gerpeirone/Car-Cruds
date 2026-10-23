@@ -1,0 +1,14 @@
+{
+  "beforeMessages": 0,
+  "deadLetterQueue": "customers.rental-history.failed",
+  "malformedFixtureAcknowledgedAfterInspection": true,
+  "messageId": "smoke-malformed-cb359db9-3653-4e6d-9edd-115bcdcb572d",
+  "reason": "rejected",
+  "result": "PASS",
+  "routingKey": "RentalCompleted.v1",
+  "scope": "Publicación real autenticada a broker local y rechazo por consumidor Clientes operativo",
+  "sourceQueue": "customers.rental-history",
+  "unrelatedMessagesTouched": false,
+  "verifiedAtUtc": "2026-10-14T03:22:03Z",
+  "command": "go run ./cmd/messagecheck"
+}

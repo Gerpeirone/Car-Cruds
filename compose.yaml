@@ -1,0 +1,149 @@
+name: car-cruds
+
+x-auth: &auth
+  AUTH_ADMIN_TOKEN: ${AUTH_ADMIN_TOKEN:?Ejecutar go run ./cmd/devsetup}
+  AUTH_CLIENT_TOKEN: ${AUTH_CLIENT_TOKEN:?Ejecutar go run ./cmd/devsetup}
+  AUTH_GYM_TOKEN: ${AUTH_GYM_TOKEN:?Ejecutar go run ./cmd/devsetup}
+  AUTH_SERVICE_TOKEN: ${AUTH_SERVICE_TOKEN:?Ejecutar go run ./cmd/devsetup}
+  SERVICE_TOKEN: ${AUTH_SERVICE_TOKEN}
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  SEED_DEMO: ${SEED_DEMO:-false}
+  PORT: "8080"
+
+x-app: &app
+  restart: unless-stopped
+  healthcheck:
+    test: [CMD, /healthcheck]
+    interval: 10s
+    timeout: 3s
+    start_period: 20s
+    retries: 6
+
+x-fleet-env: &fleet-env
+  <<: *auth
+  MONGODB_URI: mongodb://fleet:${MONGO_FLEET_PASSWORD}@mongo:27017/fleet?authSource=fleet
+  MONGODB_DATABASE: fleet
+  REDIS_ADDR: redis:6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  RABBITMQ_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+  SOLR_URL: http://solr:8983/solr/vehicles
+
+services:
+  postgres:
+    image: postgres:17@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecutar devsetup}
+      CUSTOMERS_DB_PASSWORD: ${CUSTOMERS_DB_PASSWORD:?Ejecutar devsetup}
+      RENTALS_DB_PASSWORD: ${RENTALS_DB_PASSWORD:?Ejecutar devsetup}
+      EMPLOYEES_DB_PASSWORD: ${EMPLOYEES_DB_PASSWORD:?Ejecutar devsetup}
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data", "./infra/postgres/init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro"]
+    healthcheck: {test: [CMD-SHELL, "pg_isready -U postgres"], interval: 5s, timeout: 3s, retries: 12}
+  mongo:
+    image: mongo:8@sha256:d731d77bfd7afd66bd487bdf627b5bf7ce4c3602ec461d635977021db529ebbc
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Ejecutar devsetup}
+      MONGO_FLEET_PASSWORD: ${MONGO_FLEET_PASSWORD:?Ejecutar devsetup}
+    ports: ["127.0.0.1:57017:27017"]
+    volumes: ["mongo-data:/data/db", "./infra/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro"]
+    healthcheck: {test: [CMD, mongosh, --quiet, --eval, "quit(db.adminCommand('ping').ok ? 0 : 1)"], interval: 5s, timeout: 5s, retries: 12}
+  redis:
+    image: redis:7@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85
+    command: [redis-server, --requirepass, "${REDIS_PASSWORD:?Ejecutar devsetup}", --maxmemory, 64mb, --maxmemory-policy, volatile-lru]
+    environment: {REDIS_PASSWORD: "${REDIS_PASSWORD}"}
+    ports: ["127.0.0.1:56379:6379"]
+    healthcheck: {test: [CMD-SHELL, 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep PONG'], interval: 5s, timeout: 3s, retries: 12}
+  rabbit-init:
+    image: rabbitmq:4-management@sha256:8dd6e3570ddaa2ef82a6c3a8950e79c1f73893adfbdddbc374fc1f1ac8a0f5dd
+    user: "0"
+    entrypoint: [sh, -c]
+    command: ['chown rabbitmq:rabbitmq /var/lib/rabbitmq; if [ -f /var/lib/rabbitmq/.erlang.cookie ]; then chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie; chmod 600 /var/lib/rabbitmq/.erlang.cookie; fi']
+    volumes: ["rabbit-data:/var/lib/rabbitmq"]
+  rabbitmq:
+    image: rabbitmq:4-management@sha256:8dd6e3570ddaa2ef82a6c3a8950e79c1f73893adfbdddbc374fc1f1ac8a0f5dd
+    environment: {RABBITMQ_DEFAULT_USER: carcruds, RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:?Ejecutar devsetup}"}
+    ports: ["127.0.0.1:55672:5672"]
+    volumes: ["rabbit-data:/var/lib/rabbitmq"]
+    depends_on: {rabbit-init: {condition: service_completed_successfully}}
+    healthcheck: {test: [CMD, rabbitmq-diagnostics, -q, ping], interval: 5s, timeout: 5s, retries: 20}
+  solr:
+    image: solr:9@sha256:f6ce577e98cadd0a4b302e157e67c5e145c0e9715bbce03e63c334edb664f69d
+    command: [solr-precreate, vehicles]
+    environment: {SOLR_JAVA_MEM: "-Xms256m -Xmx512m"}
+    ports: ["127.0.0.1:58983:8983"]
+    volumes: ["solr-data:/var/solr"]
+    healthcheck: {test: [CMD-SHELL, "curl -fsS http://localhost:8983/solr/admin/info/system >/dev/null"], interval: 5s, timeout: 5s, retries: 20}
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17
+    ports: ["127.0.0.1:${JAEGER_PORT:-16686}:16686"]
+  customers:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: customers}}
+    environment:
+      <<: *auth
+      DATABASE_URL: postgres://customers:${CUSTOMERS_DB_PASSWORD}@postgres:5432/customers?sslmode=disable
+      RABBITMQ_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      AMQP_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    depends_on: {postgres: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  employees:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: employees}}
+    environment:
+      <<: *auth
+      DATABASE_URL: postgres://employees:${EMPLOYEES_DB_PASSWORD}@postgres:5432/employees?sslmode=disable
+      CLINIC_BASE_URL: ${CLINIC_BASE_URL:-}
+      CLINIC_ALLOW_HTTP: ${CLINIC_ALLOW_HTTP:-false}
+      CLINIC_TIMEOUT: ${CLINIC_TIMEOUT:-2s}
+    depends_on: {postgres: {condition: service_healthy}}
+  fleet-a:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: fleet}}
+    environment: {<<: *fleet-env, INSTANCE_ID: fleet-a}
+    depends_on: {mongo: {condition: service_healthy}, redis: {condition: service_healthy}}
+  fleet-b:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: fleet}}
+    environment: {<<: *fleet-env, INSTANCE_ID: fleet-b}
+    depends_on: {mongo: {condition: service_healthy}, redis: {condition: service_healthy}}
+  fleet-lb:
+    image: nginx:stable-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
+    volumes: ["./load-balancer/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    depends_on: {fleet-a: {condition: service_healthy, restart: true}, fleet-b: {condition: service_healthy, restart: true}}
+  indexer:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: indexer}}
+    environment: *fleet-env
+    depends_on: {mongo: {condition: service_healthy}, rabbitmq: {condition: service_healthy}, solr: {condition: service_healthy}}
+  rentals:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: rentals}}
+    environment:
+      <<: *auth
+      DATABASE_URL: postgres://rentals:${RENTALS_DB_PASSWORD}@postgres:5432/rentals?sslmode=disable
+      CUSTOMERS_URL: http://customers:8080
+      FLEET_URL: http://fleet-lb:8080
+      RABBITMQ_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      AMQP_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    depends_on: {postgres: {condition: service_healthy}, customers: {condition: service_healthy}, fleet-lb: {condition: service_started}}
+  gateway:
+    <<: *app
+    build: {context: ., dockerfile: infra/Dockerfile, args: {SERVICE: gateway}}
+    environment:
+      <<: *auth
+      CUSTOMERS_URL: http://customers:8080
+      FLEET_URL: http://fleet-lb:8080
+      RENTALS_URL: http://rentals:8080
+      EMPLOYEES_URL: http://employees:8080
+      GATEWAY_MAX_IN_FLIGHT: ${GATEWAY_MAX_IN_FLIGHT:-64}
+    ports: ["127.0.0.1:${APP_PORT:-8080}:8080"]
+    depends_on: {customers: {condition: service_healthy}, rentals: {condition: service_healthy}, employees: {condition: service_healthy}, fleet-lb: {condition: service_started}}
+
+volumes:
+  postgres-data:
+  mongo-data:
+  rabbit-data:
+  solr-data:

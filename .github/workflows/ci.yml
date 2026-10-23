@@ -1,0 +1,156 @@
+name: Verificación del backend propio
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+  CGO_ENABLED: "1"
+
+jobs:
+  pruebas:
+    name: Pruebas y análisis estático
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Preparar Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26.1"
+          cache-dependency-path: go.sum
+      - name: Verificar dependencias
+        run: go mod verify
+      - name: Probar preparación de VM sin instalaciones ni acceso externo
+        run: bash scripts/test-deploy-vm.sh
+      - name: Probar código propio con detector de carreras
+        run: go test -race -count=1 -v ./...
+      - name: Analizar código propio
+        run: go vet ./...
+      - name: Probar y analizar mock histórico
+        working-directory: mocks/rentals
+        run: |
+          go test -race -count=1 ./...
+          go vet ./...
+
+  conjunto:
+    name: Docker Compose y recorrido persistente
+    needs: pruebas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Preparar Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26.1"
+          cache-dependency-path: go.sum
+      - name: Generar configuración de laboratorio
+        shell: bash
+        run: |
+          go run ./cmd/devsetup
+          while IFS='=' read -r key value; do
+            case "$key" in
+              *_TOKEN|*_PASSWORD) printf '::add-mask::%s\n' "$value" ;;
+            esac
+          done < .env
+      - name: Construir y esperar componentes saludables
+        # La superposición cloud se valida sin publicar puertos en el runner.
+        run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Validar preparación del despliegue
+        env:
+          PUBLIC_HOST: ci.example.invalid
+        run: |
+          bash -n scripts/deploy-vm.sh
+          docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py
+          docker compose -f compose.yaml -f compose.deploy.yaml run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
+      - name: Probar persistencia real por servicio
+        shell: bash
+        run: |
+          while IFS='=' read -r key value; do
+            case "$key" in
+              CUSTOMERS_DB_PASSWORD|RENTALS_DB_PASSWORD|EMPLOYEES_DB_PASSWORD|MONGO_ROOT_PASSWORD|REDIS_PASSWORD)
+                export "$key=$value"
+                ;;
+            esac
+          done < .env
+          export TEST_CUSTOMERS_DATABASE_URL="postgres://customers:$CUSTOMERS_DB_PASSWORD@127.0.0.1:55432/customers?sslmode=disable"
+          export TEST_RENTALS_DATABASE_URL="postgres://rentals:$RENTALS_DB_PASSWORD@127.0.0.1:55432/rentals?sslmode=disable"
+          export TEST_DATABASE_URL="postgres://employees:$EMPLOYEES_DB_PASSWORD@127.0.0.1:55432/employees?sslmode=disable"
+          export TEST_MONGODB_URI="mongodb://root:$MONGO_ROOT_PASSWORD@127.0.0.1:57017/?authSource=admin"
+          export TEST_REDIS_ADDR="127.0.0.1:56379"
+          export TEST_REDIS_PASSWORD="$REDIS_PASSWORD"
+          export TEST_SOLR_URL="http://127.0.0.1:58983/solr/vehicles"
+          export TEST_REDIS_EVICTION_ADDR="127.0.0.1:56380"
+          export TEST_REDIS_EVICTION_PASSWORD="$REDIS_PASSWORD"
+          docker run --detach --name car-cruds-ci-redis-pressure \
+            --publish 127.0.0.1:56380:6379 --env REDIS_PASSWORD \
+            --health-cmd 'redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping' \
+            --health-interval 1s --health-timeout 2s --health-retries 20 \
+            redis:7@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85 \
+            redis-server --requirepass "$REDIS_PASSWORD" --maxmemory 2mb --maxmemory-policy volatile-lru
+          ready=false
+          for attempt in {1..25}; do
+            if [ "$(docker inspect --format '{{.State.Health.Status}}' car-cruds-ci-redis-pressure)" = healthy ]; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          [ "$ready" = true ]
+          go test -race -count=1 -v ./cmd/... ./internal/... ./services/... | tee "$RUNNER_TEMP/integration-go.txt"
+          if grep -q '^--- SKIP:' "$RUNNER_TEMP/integration-go.txt"; then
+            echo "La suite real omitió pruebas: falta una dependencia o configuración."
+            exit 1
+          fi
+      - name: Verificar API y publicación de historial
+        run: |
+          go run ./cmd/smoke -history
+          go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
+      - name: Probar contrato contra Turnos original del hospital
+        shell: bash
+        run: |
+          export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
+          git init "$CLINIC_PROVIDER_CHECKOUT"
+          git -C "$CLINIC_PROVIDER_CHECKOUT" fetch --depth=1 https://github.com/OctiDelFabro/portal-paciente-clinica.git 5e4c2103e8c3b0ffaccd1e02a94d1dcf98f2f96d
+          git -C "$CLINIC_PROVIDER_CHECKOUT" checkout --detach FETCH_HEAD
+          while IFS='=' read -r key value; do
+            case "$key" in
+              EMPLOYEES_DB_PASSWORD) export "$key=$value" ;;
+            esac
+          done < .env
+          export CLINIC_TEST_DB_PASSWORD="$EMPLOYEES_DB_PASSWORD"
+          export TEST_DATABASE_URL="postgres://employees:$EMPLOYEES_DB_PASSWORD@127.0.0.1:55432/employees?sslmode=disable"
+          export CLINIC_TEST_BASE_URL=http://127.0.0.1:58081
+          docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml up -d --build --wait --wait-timeout 240
+          go test -race -count=1 -timeout 120s -v ./integration/cliniccontract
+          test -z "$(git -C "$CLINIC_PROVIDER_CHECKOUT" status --porcelain)"
+      - name: Detener entorno de laboratorio
+        if: always()
+        shell: bash
+        run: |
+          export CLINIC_PROVIDER_CHECKOUT="$RUNNER_TEMP/clinic-provider"
+          export CLINIC_TEST_DB_PASSWORD=unused-cleanup-placeholder
+          docker compose -p car-cruds-clinic-contract -f integration/cliniccontract/compose.yaml down -v --remove-orphans
+          if docker container inspect car-cruds-ci-redis-pressure >/dev/null 2>&1; then
+            docker rm -f car-cruds-ci-redis-pressure
+          fi
+          if [ -f .env ]; then
+            docker compose ps
+            docker compose down --remove-orphans
+          fi

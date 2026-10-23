@@ -1,0 +1,1101 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds: consultas al hospital",
+    "version": "0.1.0",
+    "description": "API administrativa propia. Cada 200 devuelve el estado administrativo, no necesariamente un turno confirmado. Aceptación bilateral, acceso externo y pacientes reales pendientes."
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/employees/clinic/patient-links": {
+      "post": {
+        "summary": "Vincular persona y paciente verificado",
+        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "responses": {
+          "204": {
+            "description": "Consultar estado y documentación de la operación."
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientLink"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/clinic/requests": {
+      "post": {
+        "summary": "Guardar intención durable y referencia local estable",
+        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReview"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/clinic/requests/{requestId}": {
+      "parameters": [
+        {
+          "name": "requestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      ],
+      "get": {
+        "summary": "Leer intención local",
+        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/clinic/requests/{requestId}/submit": {
+      "parameters": [
+        {
+          "name": "requestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      ],
+      "post": {
+        "summary": "Enviar una única vez: sin cuerpo; no repite creaciones inciertas",
+        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/clinic/requests/{requestId}/refresh": {
+      "parameters": [
+        {
+          "name": "requestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      ],
+      "post": {
+        "summary": "Consultar turno conocido o conciliar un ID verificado del hospital",
+        "description": "Solo admin; sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Recovery"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/reports/clinic": {
+      "get": {
+        "summary": "Informe de última intención por persona",
+        "description": "admin o service. Toda la población del tipo solicitado; faltantes pendientes. Lectura local; no certifica todos los turnos externos de una persona.",
+        "responses": {
+          "200": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consultar estado y documentación de la operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "personKind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "employee",
+                "candidate"
+              ],
+              "default": "employee"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ClinicRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "localReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "personKind": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "candidate"
+            ]
+          },
+          "personId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "patientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "doctorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "requestedStartAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attemptedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "unknown",
+              "rejected",
+              "booked",
+              "cancelled"
+            ]
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "without_confirmed_appointment",
+              "pending_verification"
+            ]
+          },
+          "lastKnownAppointment": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "patientId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "doctorId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "startAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "booked",
+                  "cancelled"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "id",
+              "patientId",
+              "doctorId",
+              "startAt",
+              "endAt",
+              "status",
+              "version"
+            ],
+            "nullable": true
+          },
+          "failureCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "localReference",
+          "personKind",
+          "personId",
+          "patientId",
+          "doctorId",
+          "requestedStartAt",
+          "createdAt",
+          "attemptedAt",
+          "observedAt",
+          "state",
+          "classification",
+          "lastKnownAppointment"
+        ]
+      },
+      "PatientLink": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "personKind": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "candidate"
+            ]
+          },
+          "personId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "patientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "personKind",
+          "personId",
+          "patientId"
+        ]
+      },
+      "CreateReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "personKind": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "candidate"
+            ]
+          },
+          "personId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "localReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "doctorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Precisión de segundos, sin fracciones. No confirma una reserva."
+          }
+        },
+        "required": [
+          "personKind",
+          "personId",
+          "localReference",
+          "doctorId",
+          "startAt"
+        ]
+      },
+      "Recovery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "appointmentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": []
+      },
+      "ReportItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "personKind": {
+            "type": "string",
+            "enum": [
+              "employee",
+              "candidate"
+            ]
+          },
+          "personId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "without_confirmed_appointment",
+              "pending_verification"
+            ]
+          },
+          "request": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "localReference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "personKind": {
+                "type": "string",
+                "enum": [
+                  "employee",
+                  "candidate"
+                ]
+              },
+              "personId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "patientId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "doctorId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "requestedStartAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "attemptedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "observedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "unknown",
+                  "rejected",
+                  "booked",
+                  "cancelled"
+                ]
+              },
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "confirmed",
+                  "without_confirmed_appointment",
+                  "pending_verification"
+                ]
+              },
+              "lastKnownAppointment": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "patientId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "doctorId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "startAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "booked",
+                      "cancelled"
+                    ]
+                  },
+                  "version": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "id",
+                  "patientId",
+                  "doctorId",
+                  "startAt",
+                  "endAt",
+                  "status",
+                  "version"
+                ],
+                "nullable": true
+              },
+              "failureCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "requestId",
+              "localReference",
+              "personKind",
+              "personId",
+              "patientId",
+              "doctorId",
+              "requestedStartAt",
+              "createdAt",
+              "attemptedAt",
+              "observedAt",
+              "state",
+              "classification",
+              "lastKnownAppointment"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "personKind",
+          "personId",
+          "displayName",
+          "active",
+          "classification",
+          "request"
+        ]
+      },
+      "Report": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    }
+  }
+}

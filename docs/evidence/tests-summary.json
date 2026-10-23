@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-14",
+  "goVersion": "go1.26.1 windows/amd64",
+  "suiteCommand": "go test -race -count=1 -v ./cmd/... ./internal/... ./services/...",
+  "suiteExitCode": 0,
+  "integrationEnvs": [
+    "TEST_RENTALS_DATABASE_URL",
+    "TEST_CUSTOMERS_DATABASE_URL",
+    "TEST_DATABASE_URL",
+    "TEST_MONGODB_URI",
+    "TEST_REDIS_ADDR",
+    "TEST_REDIS_PASSWORD",
+    "TEST_SOLR_URL",
+    "TEST_REDIS_EVICTION_ADDR",
+    "TEST_REDIS_EVICTION_PASSWORD"
+  ],
+  "passedTests": 60,
+  "skippedTests": 0,
+  "vetCommand": "go vet ./cmd/... ./internal/... ./services/...",
+  "vetExitCode": 0,
+  "additionalEvictionTest": {
+    "exitCode": 0,
+    "scope": "Redis dedicado aislado, sin modificar Redis compartido",
+    "command": "go test -race -run ^TestRedisEvictionPreservesVersionFenceForDelayedFill$ -count=1 -v ./services/fleet",
+    "evictedKeys": 69,
+    "result": "watermark V2 sin TTL conservado; fill V1 rechazado; caché V2 utilizable",
+    "maxmemoryBytes": 2097152,
+    "policy": "volatile-lru"
+  },
+  "revision": "8327268",
+  "cacheCorrectionVerified": {
+    "noCachePutAfterReadFailure": true,
+    "driverErrorsDistinctFromMiss": true,
+    "normalMissStillPopulates": true,
+    "observedSilentServerMs": 76.0772,
+    "contextTimeoutEnabled": true,
+    "silentServerCallerBudgetMs": 75,
+    "realSocketRespectsCallerDeadline": true
+  },
+  "mockHistorical": {
+    "exitCode": 0,
+    "command": "cd mocks/rentals; go test -race -count=1 ./...; go vet ./..."
+  }
+}

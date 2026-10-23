@@ -1,32 +1,29 @@
 # API Gateway
 
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
-
-| Aspecto | Diseño propuesto de entrega 2 |
+| Campo | Valor |
 | --- | --- |
-| Estado | Estructura de directorios y responsabilidades; implementación pendiente |
-| Responsabilidad | Entrada pública, autenticación, direccionamiento y control de tráfico |
-| Destinos | Clientes, Flota a través del Load Balancer, Alquileres y Empleados |
-| Tecnología | Pendiente de selección |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Implementado; recorrido propio verificado localmente |
+| Ejecutable | `cmd/gateway`, Go con `net/http` |
+| Entrada local | `http://127.0.0.1:8080`, configurable mediante `APP_PORT` |
 
-El gateway concentra el acceso del frontend y las aplicaciones consumidoras. Propaga identidad y correlación hacia los servicios. Las reglas de reservas y el acceso a datos de negocio corresponden al servicio propietario.
+## Responsabilidad
 
-El gimnasio accede a la lista autorizada de Empleados por este punto de entrada. La devolución del uso tendrá el mecanismo acordado con ese equipo; si utiliza HTTP entrante se aplicarán las mismas políticas de identidad y permisos. El balanceador interno selecciona réplicas de Flota; no reemplaza estas políticas del gateway.
+El gateway autentica aplicaciones mediante Bearer tokens configurados, encamina las rutas de Clientes, Flota, Alquileres y Empleados y propaga correlación HTTP. Flota se alcanza mediante el balanceador interno; los demás destinos son servicios propios. La autorización del recurso y las reglas de negocio se verifican en cada servicio.
 
-## Organización prevista
+Su máximo de solicitudes simultáneas funciona como límite de concurrencia; al excederlo responde `503`. Se configura con `GATEWAY_MAX_IN_FLIGHT` (entero entre 1 y 4096, por defecto 64); un valor inválido impide el arranque. No implementa una cuota por usuario ni un limitador de tasa con respuesta `429`. Los errores de proxy `502/504` se traducen a indisponibilidad controlada `503`.
 
-| Directorio | Responsabilidad |
-| --- | --- |
-| `src/routes/` | Definición de rutas y destinos |
-| `src/middleware/` | Autenticación, permisos de entrada, correlación y límites de tráfico |
+La verificación de disponibilidad consulta en paralelo a los cuatro servicios con identidad interna. La autenticación, registros JSON, request ID, trazas y métricas proceden de `internal/platform`. Las rutas usan etiquetas estables para evitar que los identificadores de negocio multipliquen las series de métricas.
 
-La clínica se consume directamente desde Empleados; el gateway propio no realiza ni canaliza esa llamada saliente. La demostración histórica de reservas utiliza un [mock HTTP local](../mocks/rentals/README.md) accesible directamente. Este directorio no implementa todavía un gateway operativo.
+## Alcance de acceso
 
-## Referencias
+El gimnasio puede leer la lista mínima de empleados activos. Las operaciones administrativas, candidatos y datos de clientes no forman parte de ese permiso. Los acuerdos externos y el entorno público permanecen pendientes; los tokens identifican aplicaciones del laboratorio, no cuentas personales.
 
-- [SPEC.md — actores y permisos](../SPEC.md).
-- [Arquitectura del sistema](../docs/ARCHITECTURE.md).
-- [D1 vigente — límites](../docs/adr/ADR-014-limites-servicios-v2.md).
-- [D5 vigente — comunicación](../docs/adr/ADR-016-comunicacion-v2.md).
-- [D8 vigente — capacidad de empleados](../docs/adr/ADR-017-contrato-empleados.md).
-- [Load Balancer previsto](../load-balancer/README.md).
+La futura llamada al hospital saldrá directamente de Empleados mediante su adaptador. El gateway propio no actúa como proxy saliente al proveedor. No se implementó una interfaz HTML ni terminación TLS pública.
+
+## Ejecución y evidencia
+
+`compose.yaml` configura los destinos en red privada y publica la entrada únicamente en loopback. [cmd/smoke](../cmd/smoke/README.md) ejercita el conjunto desde este punto de entrada. El recorrido, los roles y una traza real se registran en [ESTADO-IMPLEMENTACION](../docs/ESTADO-IMPLEMENTACION.md).
+
+Consultar [arquitectura](../docs/ARCHITECTURE.md), [D5](../docs/adr/ADR-016-comunicacion-v2.md), [D8](../docs/adr/ADR-017-contrato-empleados.md) y [balanceador](../load-balancer/README.md). Los directorios `src/` conservan la estructura documental inicial; el código operativo está en `cmd/gateway`.

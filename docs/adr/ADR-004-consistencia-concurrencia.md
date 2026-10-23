@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D4: consistencia y concurrencia |
-| Versión | 0.1 |
-| Fecha | 11 de octubre de 2026 |
-| Estado | Propuesto — no validado |
-| Hito | Preparación documental de la Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Garantías implementadas y probadas en PostgreSQL |
+| Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto
 
@@ -53,7 +53,7 @@ Las validaciones de Clientes (habilitación) y Flota (tarifa) son lecturas HTTP 
 
 ## 4. Consecuencias y validación
 
-Se acepta la dependencia de una característica concreta de PostgreSQL (restricciones de exclusión sobre rangos); un cambio de motor reabriría esta decisión. La restricción no reemplaza las validaciones de negocio ni la clasificación de errores. Flota requiere una decisión adicional sobre la atomicidad de ficha y evento pendiente, registrada como pendiente en D3.
+Se acepta la dependencia de una característica concreta de PostgreSQL (restricciones de exclusión sobre rangos); un cambio de motor reabriría esta decisión. La restricción no reemplaza las validaciones de negocio ni la clasificación de errores. Flota utiliza un outbox embebido acotado, según D3.
 
 Validar contra una base real y no un mock:
 - N solicitudes concurrentes válidas por el mismo vehículo y período producen una sola reserva y N−1 conflictos, también con dos instancias del servicio.
@@ -62,10 +62,19 @@ Validar contra una base real y no un mock:
 - Mensajes duplicados y fuera de orden no duplican historial ni retroceden el índice.
 - La prueba de integración usa una dependencia real, según el enunciado 2.11.
 
+## Avance de implementación — 14 de octubre de 2026
+
+La agenda utiliza exclusión de rangos, el retiro un índice único parcial y la idempotencia un registro durable con huella/respuesta. El flujo real produjo una ganadora 201 y un conflicto 409 ante dos reservas concurrentes; cancelación, retiro y devolución fueron repetibles. La devolución COMPLETED y RentalCompleted se guardan en una transacción: no se emite un evento de reserva sin consumidor. Clientes escribe inbox e historial juntos. Una reserva completada sobrevivió al reinicio. La evidencia externa de Empleados sigue pendiente; la tabla describe su garantía requerida, sin atribuir una implementación clínica. Ver [evidencia](../ESTADO-IMPLEMENTACION.md).
+
 ## 5. Referencias e historial
+
+### Revisión del 15 de octubre de 2026
+
+La validación HTTP se ejecuta ahora después de una consulta breve de idempotencia y antes de abrir la transacción. La escritura vuelve a consultar la clave bajo bloqueo; se conservan respuesta original, huella, exclusión y atomicidad de agenda/reserva/respuesta. Se añaden regresiones de misma clave concurrente y de validación con el único recurso del pool disponible. La evidencia de ejecución se distingue de los antecedentes en [REVISION-E2-2026-10-15](../REVISION-E2-2026-10-15.md). No se introduce una transacción distribuida ni se modifica el contrato HTTP.
 
 Material en `clases.zip`: `teoria/02-datos-en-microservicios.md`, `teoria/04-comunicacion-asincrona.md` y `practica/clase-6-concurrencia-go.md`. [D3](ADR-015-persistencia-v2.md), [D5](ADR-016-comunicacion-v2.md), [D10](ADR-010-resiliencia.md).
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
 | 0.1 | 11 de octubre de 2026 | Primera propuesta de garantías de consistencia y concurrencia |
+| 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |

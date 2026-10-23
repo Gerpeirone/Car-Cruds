@@ -1,0 +1,95 @@
+{
+  "startedAt": "2026-10-14T03:06:47Z",
+  "revision": "7f5c52b02d1418d7ac37d26644fe237115f079b2",
+  "workingTreeDirty": true,
+  "goVersion": "go1.26.1",
+  "generatorOS": "windows",
+  "generatorLogicalCPUs": 12,
+  "route": "/v1/availability?vehicleId=auto-001\u0026startsOn=2026-10-15\u0026endsOn=2026-10-16",
+  "role": "client",
+  "model": "closed-loop GET, sin espera entre solicitudes; duración incluye finalización de solicitudes en vuelo; percentiles incluyen todos los resultados",
+  "requestedStageSeconds": 5,
+  "stages": [
+    {
+      "concurrency": 1,
+      "elapsedSeconds": 5.0064201,
+      "requests": 757,
+      "requestsPerSecond": 151.20584866619564,
+      "p50Ms": 6.233,
+      "p95Ms": 9.926,
+      "p99Ms": 18.551,
+      "successfulRequestsPerSecond": 151.20584866619564,
+      "successfulP95Ms": 9.926,
+      "httpStatuses": {
+        "200": 757
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    },
+    {
+      "concurrency": 8,
+      "elapsedSeconds": 5.0105207,
+      "requests": 4205,
+      "requestsPerSecond": 839.2341338895177,
+      "p50Ms": 8.302,
+      "p95Ms": 16.963,
+      "p99Ms": 27.224,
+      "successfulRequestsPerSecond": 839.2341338895177,
+      "successfulP95Ms": 16.963,
+      "httpStatuses": {
+        "200": 4205
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    },
+    {
+      "concurrency": 32,
+      "elapsedSeconds": 5.0141307,
+      "requests": 4502,
+      "requestsPerSecond": 897.8625148323317,
+      "p50Ms": 29.511,
+      "p95Ms": 76.127,
+      "p99Ms": 113.758,
+      "successfulRequestsPerSecond": 897.8625148323317,
+      "successfulP95Ms": 76.127,
+      "httpStatuses": {
+        "200": 4502
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    },
+    {
+      "concurrency": 64,
+      "elapsedSeconds": 5.0422784,
+      "requests": 7418,
+      "requestsPerSecond": 1471.160338945188,
+      "p50Ms": 39.557,
+      "p95Ms": 80.522,
+      "p99Ms": 108.387,
+      "successfulRequestsPerSecond": 1471.160338945188,
+      "successfulP95Ms": 80.522,
+      "httpStatuses": {
+        "200": 7418
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    },
+    {
+      "concurrency": 128,
+      "elapsedSeconds": 5.075439,
+      "requests": 14636,
+      "requestsPerSecond": 2883.691440287234,
+      "p50Ms": 24.622,
+      "p95Ms": 137.901,
+      "p99Ms": 182.901,
+      "successfulRequestsPerSecond": 916.9650152430164,
+      "successfulP95Ms": 171.408,
+      "httpStatuses": {
+        "200": 4654,
+        "503": 9982
+      },
+      "transportErrors": 0,
+      "invalidJSON": 0
+    }
+  ]
+}

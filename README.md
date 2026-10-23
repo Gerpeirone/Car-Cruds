@@ -1,157 +1,124 @@
 # Car Cruds
 
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
-
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
 Universidad Católica de Córdoba · Facultad de Ingeniería
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.2 |
-| Fecha | 12 de octubre de 2026 |
-| Estado | Preparación documental; implementación de entrega 2 pendiente |
-| Hito | Entrega 2: dominio propio de punta a punta |
-| Fecha de entrega | Viernes 23 de octubre de 2026 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Backend propio implementado y verificado localmente; integración externa pendiente |
+| Hito | Entrega 2 — viernes 23 de octubre de 2026 |
+| Equipo | Alterman, Ivo · Peirone, German · Grbavac, Darko |
+| Repositorio | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
 
-## Presentación del proyecto
+## Presentación
 
-Car Cruds es un sistema diseñado para administrar el alquiler de vehículos de una concesionaria. Su objetivo es gestionar la selección de un auto, la consulta de disponibilidad, la reserva por un período y el registro de retiro y devolución, conservando las condiciones económicas acordadas.
+Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsqueda, disponibilidad, reserva, retiro y devolución. Alquileres controla la agenda, congela el precio acordado y evita asignaciones superpuestas. Un vehículo todavía no devuelto impide otro retiro, incluso después del fin planificado.
 
-La operación central consiste en asignar un vehículo a un cliente durante un período. Esta asignación requiere validar al conductor, calcular el importe y resolver solicitudes concurrentes: un mismo auto no puede reservarse para períodos superpuestos. Además, una devolución tardía debe impedir su entrega física a otro cliente.
+La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
 
-La revisión de diseño añade Empleados y un Load Balancer según el feedback docente. La gestión de personal publicará una lista al gimnasio, registrará el uso de membresías comunicado por ese sistema y consumirá turnos de una clínica para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Los informes apoyarán el control administrativo de beneficios y el seguimiento de turnos. Los acuerdos externos se mantienen explícitamente pendientes.
+## Estado disponible
 
-## Estado del proyecto
-
-| Componente | Resultado disponible |
+| Componente | Implementación y alcance |
 | --- | --- |
-| Especificación y planificación | Alcance, 9 épicas, 28 historias, 22 requerimientos funcionales y 12 no funcionales trazables; criterios de aceptación diseñados |
-| Arquitectura | Cuatro servicios, gateway y Load Balancer explícitos; diagramas y propiedad de datos |
-| Decisiones arquitectónicas | Propuestas para entrega 2 e historial de D1/D3/D5/D8 reemplazados; validación operativa pendiente |
-| Integraciones de personal | Gimnasio y clínica identificados; borrador propio de empleados y acuerdos externos pendientes |
-| Ejecutable disponible | Mock histórico de reservas en memoria, con contrato 1.0.0 y pruebas de entrega 1 |
-| Servicios, infraestructura y frontend reales | Diseño y estructura documental; implementación pendiente |
+| Clientes | Servicio Go por capas; perfiles, habilitación e historial derivado en PostgreSQL propio |
+| Flota | Servicio Go por capas; catálogo versionado en MongoDB, caché Redis, eventos e índice Solr |
+| Alquileres | Servicio Go hexagonal; agenda, reservas, idempotencia durable, mantenimiento, retiro y devolución en PostgreSQL propio |
+| Empleados | Servicio Go hexagonal; empleados y candidatos separados, PostgreSQL propio y lista mínima de empleados activos |
+| Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
+| Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
+| Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
+| Integraciones externas | Gimnasio: lista y recepción de evidencia. Hospital: solicitud y seguimiento de turnos desde Empleados, con intención durable e informe; acuerdos y despliegue pendientes |
+| Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
-Esta revisión prepara documentación antes de programar. No acredita la entrega 2: el 23 de octubre se requiere un servicio operativo además de la capacidad compartida, almacenamiento real, logs correlacionados y una primera traza, junto con las decisiones y evidencias correspondientes. Ver [el control de entrega 2](docs/ENTREGA-2.md).
+El conjunto propio fue construido y ejecutado con Docker. Las pruebas reales, el recorrido HTTP, la persistencia tras reinicio y una traza distribuida están registrados en [el estado de implementación](docs/ESTADO-IMPLEMENTACION.md). El funcionamiento local de la lista no acredita su publicación ni la aceptación del gimnasio. [ENTREGA-2.md](docs/ENTREGA-2.md) distingue cobertura obtenida y pendientes académicos.
 
-## Flujo principal
+## Ejecución local
 
-1. Buscar autos por marca, categoría, transmisión, plazas y tarifa.
-2. Consultar disponibilidad y precio para un período.
-3. Crear una reserva con un cliente habilitado y un importe esperado.
-4. Registrar el retiro y comenzar el alquiler.
-5. Registrar la devolución y finalizar el alquiler.
-
-La consulta de disponibilidad es informativa y no bloquea el vehículo. La creación de la reserva vuelve a validar el período y el importe esperado; los reintentos con la misma clave de idempotencia recuperan el resultado original.
-
-## Servicios de negocio
-
-| Servicio | Responsabilidad principal |
-| --- | --- |
-| **Clientes** | Administrar perfiles y verificar la habilitación del conductor |
-| **Flota** | Administrar el catálogo de autos, sus características y la tarifa diaria vigente |
-| **Alquileres** | Controlar reservas, períodos ocupados, precios acordados, retiro y devolución |
-| **Empleados** | Gestionar candidatos y empleados, la lista para el gimnasio y los informes administrativos de membresías y turnos de clínica |
-
-Alquileres es la autoridad sobre la disponibilidad temporal. Empleados concentra las integraciones de personal; la clínica se consume directamente desde ese servicio. El API Gateway centraliza acceso y autenticación. El Load Balancer previsto distribuye llamadas a Flota entre dos réplicas; su puesta en marcha y verificación siguen pendientes. La distribución se detalla en [la arquitectura](docs/ARCHITECTURE.md).
-
-## Flujos de personal previstos
-
-1. Mantener empleados; publicar la población autorizada al gimnasio; registrar su devolución de uso/no uso e informar uso, no uso o datos faltantes por período.
-2. Registrar posibles incorporaciones; solicitar revisiones conforme al contrato de la clínica; conciliar turnos e informar quién tiene turno confirmado, quién no y qué información falta verificar.
-
-Un candidato no es automáticamente un empleado. Un timeout no confirma “sin turno”; un dato faltante no confirma “no usa la membresía”. No hay tarifas acordadas para calcular gastos monetarios, ni se incorporan diagnósticos, aptitud o contratación automática. Ver [integraciones y acuerdos pendientes](docs/INTEGRACIONES.md).
-
-## Ejecución local del mock histórico
-
-**Requisito:** Go 1.22 o posterior. El mock utiliza la biblioteca estándar y no requiere bases de datos ni servicios externos.
-
-Desde la raíz del proyecto:
+Se requiere Go **1.26.1** y Docker con Compose. Desde la raíz:
 
 ```powershell
-go -C mocks/rentals run .
+go run ./cmd/devsetup
+docker compose up -d --build --wait --wait-timeout 300
+go run ./cmd/smoke -history
 ```
 
-El mock escucha por defecto en `http://127.0.0.1:8080`. En otra terminal:
+`devsetup` genera credenciales locales aleatorias en `.env`, que no se versiona. El generador no reemplaza una configuración existente. La entrada predeterminada es [http://127.0.0.1:8080](http://127.0.0.1:8080), y Jaeger está en [http://127.0.0.1:16686](http://127.0.0.1:16686). Las API requieren los tokens de aplicación configurados; las credenciales no se incluyen en la documentación.
+
+La [herramienta de verificación](cmd/smoke/README.md) comprueba permisos, lista de empleados, dos réplicas, catálogo/caché/búsqueda, reservas concurrentes, retiro/devolución y publicación de historial. Utiliza registros ficticios identificables y realiza limpieza limitada a sus propios datos. No llama a los proveedores externos.
+
+`docker compose down` conserva los volúmenes. No utilizar `down -v` para una detención habitual, porque elimina los datos locales.
+
+## Pruebas y automatización
 
 ```powershell
-$headers = @{ Authorization = 'Bearer demo-token' }
-Invoke-RestMethod -Headers $headers -Uri 'http://127.0.0.1:8080/v1/availability?vehicleId=auto-001&startsOn=2026-10-15&endsOn=2026-10-18'
+go test -race -count=1 -v ./cmd/... ./internal/... ./services/...
+go vet ./cmd/... ./internal/... ./services/...
+go -C mocks/rentals test -race -count=1 ./...
 ```
 
-### Verificación automatizada
+Las pruebas de integración requieren variables `TEST_*` explícitas y dependencias reales, descritas en los README de cada servicio. Sin ellas, los casos correspondientes se omiten; una omisión no demuestra persistencia ni integración. El 14 de octubre la suite final de componentes sobre el backend corregido aprobó 60 pruebas con todas las dependencias configuradas, sin omisiones; vet y el nuevo recorrido de 78 solicitudes también finalizaron satisfactoriamente.
 
-```powershell
-go -C mocks/rentals test -race ./...
-```
+El [workflow de CI](.github/workflows/ci.yml) ejecuta pruebas y análisis estático; otro trabajo construye el entorno, ejecuta las pruebas con dependencias reales sin omisiones y realiza `cmd/smoke -history`. Ambos trabajos aprobaron en GitHub Actions sobre la revisión `11d475c` el 14 de octubre de 2026 ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244)).
 
-Las pruebas verifican concurrencia, repetición idempotente, cancelación, validaciones y respuestas del contrato. Los requisitos adicionales de `-race` en Windows se describen en [la guía del mock](mocks/rentals/README.md).
+El despliegue público con HTTPS para la capacidad compartida se describe en [DESPLIEGUE](docs/DESPLIEGUE.md).
 
-El servidor conserva datos de demostración en memoria; reiniciarlo restablece su estado. El token local es ficticio. El recorrido completo está en [la guía de demostración](mocks/rentals/README.md), y sus formatos y errores en [el contrato histórico de reservas](docs/contracts/RESERVAS.md). Este mock no implementa Empleados ni las integraciones nuevas.
+La [revisión de cierre de E2 del 15 de octubre](docs/REVISION-E2-2026-10-15.md) registra las correcciones de despliegue y de retención de conexiones en reservas. `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env` verifica por lecturas la autenticación, proyección mínima, paginación y permisos de la capacidad compartida. Para una URL externa exige HTTPS y un destino explícito; no sigue redirecciones ni acredita aceptación del gimnasio.
+
+Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/verify-resilience.ps1` verifican cola de fallidos y recuperación de componentes propios. `go run ./cmd/load` realiza carga GET local; `pwsh -File ./scripts/measure-cache.ps1 -DurationSeconds 5` compara caché caliente y fallback, restaurando Redis. Sus resultados y condiciones están en [EVIDENCIA-E2](docs/EVIDENCIA-E2.md).
+
+## Servicios y propiedad de datos
+
+| Servicio | Responsabilidad | Guía |
+| --- | --- | --- |
+| Clientes | Perfil y habilitación de conductor; historial de alquileres completados | [README](services/customers/README.md) |
+| Flota | Características, tarifa vigente y proyecciones de lectura | [README](services/fleet/README.md) |
+| Alquileres | Disponibilidad temporal, agenda y ciclo de vida | [README](services/rentals/README.md) |
+| Empleados | Personal y candidatos; integración administrativa prevista | [README](services/employees/README.md) |
+
+Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
+
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar candidatos o informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.2.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
 
 ## Documentación
 
 | Archivo | Contenido |
 | --- | --- |
-| [Enunciado TP Final.md](Enunciado%20TP%20Final.md) | Requisitos académicos en Markdown compacto, con hitos y decisiones obligatorias |
-| [clases.zip](clases.zip) | Material de cátedra: 17 documentos Markdown de teoría y práctica |
-| [SPEC.md](SPEC.md) | Alcance, reglas de negocio, estados y criterios de aceptación |
-| [docs/BACKLOG.md](docs/BACKLOG.md) | Épicas e historias con prioridades, dependencias y criterios Dado/Cuando/Entonces |
-| [docs/REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | Requerimientos funcionales y de calidad con trazabilidad |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Contexto, contenedores, servicios, datos y comunicaciones |
-| [docs/ENTREGA-2.md](docs/ENTREGA-2.md) | Preparación y evidencia pendiente para el 23 de octubre |
-| [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md) | Gimnasio, clínica y acuerdos pendientes EXT-01 a EXT-15 |
-| [docs/ENTREGA-1.md](docs/ENTREGA-1.md) | Control y evidencia históricos de la primera entrega |
-| [docs/adr/README.md](docs/adr/README.md) | Decisiones propuestas vigentes, patrones e historia de reemplazos |
-| [docs/contracts/README.md](docs/contracts/README.md) | Índice de contratos, borradores y estado real |
-| [docs/contracts/EMPLOYEES.md](docs/contracts/EMPLOYEES.md) | Propuesta propia de lista de empleados, todavía no acordada |
-| [docs/contracts/CLINIC.md](docs/contracts/CLINIC.md) | Condiciones para consumir el contrato real de la clínica |
-| [docs/contracts/openapi-v1.json](docs/contracts/openapi-v1.json) | Contrato histórico de reservas 1.0.0, utilizado por el mock |
-| [mocks/rentals/README.md](mocks/rentals/README.md) | Ejecución y recorrido de demostración del mock |
+| [Enunciado TP Final.md](Enunciado%20TP%20Final.md) y [clases.zip](clases.zip) | Requisitos y material de cátedra |
+| [SPEC.md](SPEC.md) | Alcance, reglas RN-01 a RN-22 y estados |
+| [BACKLOG.md](docs/BACKLOG.md) | 9 épicas y 28 historias, prioridades y cobertura |
+| [REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | 22 RF y 12 RNF con trazabilidad |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Servicios, estilos, datos y comunicaciones |
+| [Índice ADR](docs/adr/README.md) | D1 a D13, decisiones actuales e historial |
+| [ESTADO-IMPLEMENTACION.md](docs/ESTADO-IMPLEMENTACION.md) | Código disponible, pruebas y límites de la evidencia |
+| [EVIDENCIA-E2.md](docs/EVIDENCIA-E2.md) y [POSTMORTEM.md](docs/POSTMORTEM.md) | Informes, reproducción y fallas controladas |
+| [ENTREGA-2.md](docs/ENTREGA-2.md) | Matriz de cumplimiento para el 23 de octubre |
+| [INTEGRACIONES.md](docs/INTEGRACIONES.md) | Acuerdos externos EXT-01 a EXT-15 |
+| [Contratos](docs/contracts/README.md) | API propias actuales y artefactos históricos |
+| [ENTREGA-1.md](docs/ENTREGA-1.md) | Evidencia histórica de la primera entrega |
 
-## Organización inicial
+## Organización
 
 ```text
-services/
-  customers/     # Clientes y habilitación del conductor
-  fleet/         # Catálogo, características y tarifas
-  rentals/       # Reservas, agenda, retiro y devolución
-  employees/     # Gestión administrativa de personal e integraciones previstas
-gateway/         # Entrada única, autenticación y direccionamiento previstos
-load-balancer/   # Distribución prevista entre dos réplicas de Flota
-frontend/        # Interfaz web prevista
-mocks/rentals/   # Mock histórico de reservas; no implementa Empleados
-docs/            # Arquitectura, decisiones, contrato y control de entrega
+cmd/             Ejecutables, preparación local y verificaciones
+internal/        Autenticación, HTTP, observabilidad y configuración compartida
+services/        Clientes, Flota, Alquileres y Empleados
+gateway/         Documentación del gateway implementado
+load-balancer/   Configuración NGINX y documentación
+infra/           Configuración de infraestructura e imágenes
+frontend/        Estructura de interfaz prevista
+mocks/rentals/   Mock histórico de la entrega 1
+docs/            Especificación, ADR, contratos y evidencia
 ```
 
-Los directorios describen responsabilidades y estructura prevista. Empleados y Load Balancer contienen documentación, sin implementación ejecutable. El código existente sigue en `mocks/rentals/`; Go se utiliza allí para la simulación del contrato. Las tecnologías y versiones definitivas se registrarán antes de implementar los servicios.
+Los cambios se presentan en ramas de trabajo y mediante pull request. Su integración en `main` requiere aprobación del equipo. Los archivos de entorno, temporales, ejecutables y logs permanecen fuera de Git.
 
-## Organización del trabajo
+## Alcance externo pendiente
 
-La modalidad prevista utiliza un tablero Kanban, ramas `feature/<tarea>` o `docs/<tarea>` y revisión por otro integrante antes de integrar cambios mediante pull request a `main`. Las modificaciones de comportamiento deben actualizar la especificación, el contrato y los ADR correspondientes. La versión final evaluable se mantendrá en la rama principal.
+El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero.
 
-## Información administrativa y acceso
+La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) implementa vínculo con paciente, intención durable, solicitud de turno y conciliación por la API observada en su rama `feature/entrega-2`. `GET /v1/employees/reports/clinic` muestra la última intención administrativa por persona. Configurar `CLINIC_BASE_URL` según la guía; sin URL, el envío permanece deshabilitado. Un timeout no prueba ausencia de turno y no genera otro POST. La API externa de Turnos todavía necesita contrato formal, autenticación y aceptación de Octi; su capacidad pública de Notificaciones es distinta.
 
-| Dato | Estado |
-| --- | --- |
-| Integrantes | Alterman, Ivo · Peirone, German · Grbavac, Darko |
-| Repositorio público | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
-| Feedback de entrega 1 | Incorporado al diseño: Empleados y Load Balancer; documentación antes de código |
-| Dominio y alcance de entrega 1 | Confirmados por el grupo en [el control histórico de entrega 1](docs/ENTREGA-1.md) |
-| Validación del alcance ampliado y acuerdos externos | Pendiente de registro con cátedra y equipos externos |
-| Ejecutable disponible | Mock histórico local en `http://127.0.0.1:8080` |
-| Capacidad nueva para el gimnasio | Borrador de lista de empleados; sin servidor ni URL pública |
-
-Una vez publicada, la capacidad real deberá permanecer accesible al consumidor hasta finalizar la evaluación. El avance y las evidencias pendientes se registran en [el control de entrega 2](docs/ENTREGA-2.md).
-
-
-## Aclaración de alcance — 11 de octubre de 2026
-
-El gimnasio de Pablo consume nuestra lista de empleados y administra membresías y costos. Empleados deberá recibir o consultar afiliación, costo por membresía, gastos por empleado y costos totales por período/moneda; el informe de uso es complementario y no reemplaza el económico. Se conservarán origen, referencias y correcciones, sin duplicar gastos ni asumir cero ante datos faltantes. El borrador de lista no define todavía el intercambio económico.
-
-Car Cruds consume el hospital de Octi para empleados registrados: identificar quién necesita consulta mediante información recibida/consultada al hospital, solicitar el turno desde Empleados, conservar referencias y resultado, y reflejar cambios de estado, cancelaciones y reprogramaciones administrados por el hospital. La gestión de candidatos existente se mantiene como flujo adicional y separado. No se infieren diagnósticos ni asistencia a partir del turno.
-
-Contratos, operaciones externas, mecanismos de actualización, identificadores y configuración operativa siguen pendientes. No se inventan endpoints externos ni valores de tarifas/timeouts. El gateway encamina el acceso entrante a Empleados; el adaptador saliente llama al hospital directamente. PostgreSQL propio, Docker Compose, configuración y pruebas de estos componentes aún no existen. El balanceador y las dos réplicas de Flota siguen como diseño pendiente de implementación y demostración.
-
-La trazabilidad detallada está en SPEC (RN-16, RN-21 y RN-22), REQUERIMIENTOS (RF-13 a RF-17 y RF-19), BACKLOG (HU-13 a HU-17 y HU-23) e INTEGRACIONES (EXT-02, EXT-04 a EXT-10 y EXT-15). Esta aclaración registra el alcance solicitado por el grupo; no acredita aprobación externa ni implementación.
+Estas funciones corresponden a RN-15 a RN-22, RF-13 a RF-17/RF-19 y HU-13 a HU-17/HU-23. No se han implementado endpoints de otros grupos ni se han asignado tarifas o resultados médicos. La lista propia y los puertos permiten avanzar sin presentar acuerdos inexistentes.

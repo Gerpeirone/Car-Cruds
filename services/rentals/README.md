@@ -1,45 +1,60 @@
 # Servicio Alquileres
 
-| Aspecto | Diseño inicial |
+| Aspecto | Implementación |
 | --- | --- |
-| Estado | Estructura de directorios y responsabilidades; implementación pendiente |
-| Responsabilidad | Reservas, precio acordado, agenda, bloqueos, retiro y devolución |
-| Persistencia | PostgreSQL propio |
-| Arquitectura interna | Hexagonal: dominio, aplicación y adaptadores |
-| Tecnologías de aplicación | Lenguaje y framework pendientes de selección |
+| Fecha | 13 de octubre de 2026 |
+| Ejecutable | `go run ./cmd/rentals` |
+| Persistencia | PostgreSQL propio; migración embebida en startup |
+| Arquitectura | Hexagonal: dominio, aplicación, puertos y adaptadores |
+| Garantías | Exclusión de rangos en agenda, idempotencia durable y un alquiler ACTIVE por vehículo |
 
-Alquileres es la autoridad de disponibilidad temporal y exclusión por vehículo y período. Preserva la tarifa acordada al reservar y administra las transiciones de reserva y alquiler. El [mock local](../../mocks/rentals/README.md) demuestra el contrato de la primera entrega; la implementación del servicio conserva el estado de diseño.
+El dominio en `domain/` no importa HTTP, PostgreSQL ni plataforma. `application/` define los casos de uso y sus puertos; `adapters/` integra HTTP, Clientes, Flota, PostgreSQL y RabbitMQ. El mock histórico de `mocks/rentals/` sigue siendo independiente.
 
-## Organización prevista
+## Operaciones
 
-| Directorio | Responsabilidad |
+| Método y ruta | Propósito | Permisos |
+| --- | --- | --- |
+| `GET /v1/availability` | Cotización y agenda por vehicleId, startsOn, endsOn | admin, service, client |
+| `POST /v1/reservations` | Crear con Idempotency-Key y precio esperado | admin, service; client para su CustomerID |
+| `GET /v1/reservations/{id}` | Consultar el estado actual | admin/service; client dentro de su aplicación y perfil |
+| `DELETE /v1/reservations/{id}` | Cancelar RESERVED; repetir CANCELLED | Igual que consulta |
+| `POST /v1/reservations/{id}/pickup` | Revalidar conductor y registrar retiro vigente | admin, service |
+| `POST /v1/reservations/{id}/return` | Registrar devolución; repetir COMPLETED | admin, service |
+| `POST /v1/maintenance` | Bloquear vehicleId, startsOn y endsOn contra la agenda | admin, service |
+
+Los períodos son [inicio, fin), de 1 a 30 días calendario. El inicio debe ser igual o posterior al día actual en America/Buenos_Aires. Se cobra en centavos ARS; la licencia debe cubrir hasta el último día ocupado. La consulta de disponibilidad no retiene un vehículo.
+
+Clientes responde `GET /v1/customers/{id}`; la tarifa se obtiene por `GET /v1/vehicles/{id}/quote`, mediante el balanceador y sin caché de Flota. Cada llamada tiene un límite de 1 segundo, dentro del presupuesto total de 5 segundos. Una dependencia inválida o indisponible produce 503 sin confirmar ni consumir la clave.
+
+## Consistencia y mensajería
+
+La creación serializa una misma aplicación/operación/clave en PostgreSQL, recupera su respuesta antes de revalidar fechas o dependencias y compara la huella de la solicitud. Reserva, agenda y respuesta se confirman en una transacción. Un rechazo de negocio queda asociado a esa clave; para corregirlo se utiliza otra. Un fallo técnico revierte la transacción y permite repetir.
+
+Desde la revisión del 15 de octubre se consulta primero la respuesta guardada mediante una lectura breve. Si no existe, Clientes y Flota se validan sin conexión ni transacción retenidas. Al escribir, se toma el bloqueo de la clave y se comprueba nuevamente la respuesta antes de insertar: una solicitud competidora nunca sobrescribe la primera respuesta confirmada. El precio leído se congela como antes. Las pruebas de regresión incluyen un pool de una conexión disponible durante la validación y doce confirmaciones simultáneas con la misma clave. No se declara una mejora de capacidad sin una medición de carga nueva.
+
+La cancelación conserva el registro y libera la agenda una sola vez. Una creación repetida devuelve su respuesta original, aunque luego se haya cancelado; GET muestra el estado actual. El retiro exclusivo se protege por índice único parcial incluso si otro alquiler ACTIVE venció su fecha prevista.
+
+La devolución registra `RentalCompleted.v1` y su outbox en la misma transacción. El relay usa confirmaciones del publicador y una cola durable del intercambio `carcruds.events`; Clientes aplica el historial con inbox idempotente. Se publican únicamente eventos con consumidor definido. Las integraciones de gimnasio y clínica corresponden a Empleados.
+
+## Configuración
+
+Requiere DATABASE_URL, credenciales AUTH_ADMIN_TOKEN/AUTH_SERVICE_TOKEN y SERVICE_TOKEN para las llamadas internas; SERVICE_TOKEN puede tomar AUTH_SERVICE_TOKEN. Las credenciales se suministran fuera de Git.
+
+| Variable | Propósito |
 | --- | --- |
-| `src/domain/` | Períodos, dinero, estados y reglas de negocio |
-| `src/application/` | Casos de uso y puertos de dependencias |
-| `src/adapters/` | HTTP, PostgreSQL, Clientes, Flota mediante el balanceador y mensajería |
+| DATABASE_URL | Base propia de Alquileres |
+| CUSTOMERS_URL | URL interna de Clientes |
+| FLEET_URL | URL del balanceador de Flota |
+| AMQP_URL | Activa el relay de eventos cuando está configurada |
+| HTTP_ADDR o PORT | Dirección de escucha |
+| OTEL_EXPORTER_OTLP_ENDPOINT | Exportación de trazas |
 
-## Interfaces y dependencias
+La disponibilidad técnica y las métricas usan `/internal/ready` y `/internal/metrics`, protegidas para admin/service.
 
-| Relación | Propósito |
-| --- | --- |
-| Gateway → Alquileres, HTTP | Consultar disponibilidad y gestionar reservas y alquileres |
-| Alquileres → Clientes, HTTP | Validar habilitación del conductor |
-| Alquileres → Load Balancer → Flota, HTTP | Obtener ficha y tarifa autoritativa |
-| Alquileres → PostgreSQL | Mantener agenda, estados, importes e idempotencia |
-| Alquileres → mensajería | Publicar eventos mediante outbox |
+## Verificación
 
-La reserva, la respuesta idempotente y el evento de outbox se almacenarán en una transacción local. La exclusión de rangos debe conservarse con múltiples instancias; un mutex de proceso es suficiente únicamente para la demostración del mock.
+`go test -race ./services/rentals/...` ejecuta reglas de calendario, dinero, permisos y comportamiento de dependencias. TEST_RENTALS_DATABASE_URL, o TEST_DATABASE_URL, habilita integración contra PostgreSQL real en esquemas temporales aislados. Si falta la variable, esos tests se identifican como omitidos; no acreditan integración.
 
-El retiro comprueba que el vehículo no tenga otro alquiler activo, incluso si terminó su período previsto. La devolución es una operación explícita; el calendario no finaliza automáticamente un alquiler. D2 propone el patrón interno y D4 debe cerrar las garantías de consistencia reales.
+Las pruebas reales cubren migración idempotente, dos instancias lógicas concurrentes con una sola reserva ganadora, reintento durable tras cancelación, caída de dependencias, ownership, mantenimiento y devolución transaccional. El ensayo completo del relay y consumidor requiere RabbitMQ y ambos servicios operativos.
 
-Gimnasio y clínica pertenecen al flujo de Empleados. Alquileres conserva sus dependencias de Clientes y Flota; su confirmación no depende del estado de esas integraciones externas.
-
-## Referencias
-
-- [SPEC.md — alcance, estados y reglas](../../SPEC.md).
-- [Arquitectura del sistema](../../docs/ARCHITECTURE.md).
-- [D1 vigente — límites](../../docs/adr/ADR-014-limites-servicios-v2.md).
-- [D2 — arquitectura interna](../../docs/adr/ADR-002-arquitectura-interna.md).
-- [D3 vigente — persistencia](../../docs/adr/ADR-015-persistencia-v2.md).
-- [D5 vigente — comunicación](../../docs/adr/ADR-016-comunicacion-v2.md).
-- [Contrato histórico de reservas](../../docs/contracts/RESERVAS.md).
+Referencias: [SPEC](../../SPEC.md), [D2](../../docs/adr/ADR-002-arquitectura-interna.md), [D4](../../docs/adr/ADR-004-consistencia-concurrencia.md), [D5 vigente](../../docs/adr/ADR-016-comunicacion-v2.md).

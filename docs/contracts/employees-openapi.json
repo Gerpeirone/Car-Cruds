@@ -1,0 +1,1605 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — Empleados: API propia implementada",
+    "version": "0.2.0",
+    "description": "API propia provisional de Car Cruds, ampliada el 22 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación."
+  },
+  "x-contract-status": "implemented-own-api-not-externally-agreed",
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/employees": {
+      "get": {
+        "operationId": "listActiveEmployees",
+        "summary": "Lista compartida de empleados activos",
+        "description": "Roles admin, gym o service. Solo employeeId y displayName de empleados activos; candidatos e información clínica excluidos. ORDER BY employee_id estable. Total e items pertenecen al mismo snapshot READ ONLY REPEATABLE READ de una página; no se garantiza una fotografía común entre solicitudes de páginas diferentes ni debe inferirse baja por ausencia en una página.",
+        "responses": {
+          "200": {
+            "description": "Roles admin, gym o service. Solo employeeId y displayName de empleados activos; candidatos e información clínica excluidos. ORDER BY employee_id estable. Total e items pertenecen al mismo snapshot READ ONLY REPEATABLE READ de una página; no se garantiza una fotografía común entre solicitudes de páginas diferentes ni debe inferirse baja por ausencia en una página.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Página desde 1. Su desplazamiento debe caber en un entero de 64 bits; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Registros por página; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createEmployee",
+        "summary": "Alta administrativa explícita",
+        "description": "Solo admin. displayName normalizado sin controles; active es obligatorio y explícito. Crear candidatos no ejecuta esta operación ni los incorpora automáticamente.",
+        "responses": {
+          "201": {
+            "description": "Solo admin. displayName normalizado sin controles; active es obligatorio y explícito. Crear candidatos no ejecuta esta operación ni los incorpora automáticamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere Content-Type application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/employees": {
+      "get": {
+        "operationId": "listAllEmployees",
+        "summary": "Lista administrativa con altas y bajas",
+        "description": "Solo admin. Incluye empleados activos e inactivos. Misma consistencia por página y orden de la lista compartida.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. Incluye empleados activos e inactivos. Misma consistencia por página y orden de la lista compartida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminEmployeePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Página desde 1. Su desplazamiento debe caber en un entero de 64 bits; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Registros por página; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/v1/employees/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Identificador opaco propio."
+        }
+      ],
+      "get": {
+        "operationId": "getEmployee",
+        "summary": "Consultar registro administrativo",
+        "description": "Solo admin. El gimnasio obtiene únicamente la lista compartida.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. El gimnasio obtiene únicamente la lista compartida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateEmployee",
+        "summary": "Actualizar nombre y estado administrativo",
+        "description": "Solo admin. Sustitución de displayName y active; ambos obligatorios. No vincula ni promociona un candidato.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. Sustitución de displayName y active; ambos obligatorios. No vincula ni promociona un candidato.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere Content-Type application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deactivateEmployee",
+        "summary": "Dar de baja lógica un empleado",
+        "description": "Solo admin. Conserva el registro y establece active=false; repetir devuelve el mismo registro inactivo y no duplica efectos.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. Conserva el registro y establece active=false; repetir devuelve el mismo registro inactivo y no duplica efectos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Employee"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates": {
+      "get": {
+        "operationId": "listCandidates",
+        "summary": "Lista administrativa de candidatos",
+        "description": "Solo admin. Tabla, identificadores y población separados de empleados. Orden estable por candidate_id; conteo e items del mismo snapshot por página.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. Tabla, identificadores y población separados de empleados. Orden estable por candidate_id; conteo e items del mismo snapshot por página.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Página desde 1. Su desplazamiento debe caber en un entero de 64 bits; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Registros por página; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createCandidate",
+        "summary": "Registrar candidato",
+        "description": "Solo admin. No crea un empleado ni acredita contratación, turno, asistencia o aptitud.",
+        "responses": {
+          "201": {
+            "description": "Solo admin. No crea un empleado ni acredita contratación, turno, asistencia o aptitud.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candidate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere Content-Type application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Identificador opaco propio."
+        }
+      ],
+      "get": {
+        "operationId": "getCandidate",
+        "summary": "Consultar candidato",
+        "description": "Solo admin.",
+        "responses": {
+          "200": {
+            "description": "Solo admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candidate"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCandidate",
+        "summary": "Actualizar nombre administrativo de candidato",
+        "description": "Solo admin. No modifica su condición ni lo añade a la lista del gimnasio.",
+        "responses": {
+          "200": {
+            "description": "Solo admin. No modifica su condición ni lo añade a la lista del gimnasio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candidate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida, nombre vacío/demasiado largo o paginación fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere Content-Type application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCandidate",
+        "summary": "Eliminar candidato administrativo",
+        "description": "Solo admin. Eliminación del registro local, sin turno externo que cancelar; repetición sobre registro ausente produce 404.",
+        "responses": {
+          "204": {
+            "description": "Solo admin. Eliminación del registro local, sin turno externo que cancelar; repetición sobre registro ausente produce 404."
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/integrations": {
+      "get": {
+        "operationId": "getPendingIntegrationState",
+        "summary": "Informar integraciones todavía no configuradas",
+        "description": "Solo admin o service. En esta versión siempre responde 503 NOT_CONFIGURED. No retorna turnos vacíos, afiliación negativa ni costo cero; ningún adaptador externo está configurado.",
+        "responses": {
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Estado pendiente: NOT_CONFIGURED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/membership-evidence": {
+      "post": {
+        "operationId": "receiveGymMembershipEvidence",
+        "summary": "Recibir evidencia del gimnasio en Car Cruds",
+        "description": "Solo rol gym. Emisor obtenido del token, no del cuerpo. Sin parámetros de consulta. Reenvío seguro con misma identidad, versión y contenido. Corrección: incrementar versión y enviar instantánea completa. Pendiente de aceptación externa.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipEvidence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evidencia almacenada o repetición/atraso reconocido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada o consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El employeeId no corresponde a un empleado registrado; candidatos excluidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Misma versión con contenido diferente, cambio de referencia o de emisor. Revisar antes de reintentar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/reports/memberships": {
+      "get": {
+        "operationId": "getMembershipReport",
+        "summary": "Informe interno de membresías, uso y gastos",
+        "description": "Solo admin o service. period obligatorio, opaco y exacto. Consulta estricta sin parámetros repetidos ni desconocidos. Una consulta SQL produce la instantánea coherente del informe.",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Identificador opaco sin espacios exteriores ni controles."
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Página desde 1. Su desplazamiento debe caber en un entero de 64 bits; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Registros por página; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Informe con evidencia, faltantes y totales por moneda.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada o consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Identidad de aplicación configurada fuera de Git. Autorización por rol en Empleados. Credenciales propias provisionales; no se utiliza demo-token del mock ni se afirma un acuerdo con equipos externos."
+      }
+    },
+    "schemas": {
+      "EmployeeSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "example": {
+          "employeeId": "employee-001",
+          "displayName": "Persona ficticia de demostración Uno"
+        },
+        "required": [
+          "employeeId",
+          "displayName"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          }
+        }
+      },
+      "Employee": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "displayName",
+          "active"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidateId",
+          "displayName"
+        ],
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          }
+        }
+      },
+      "EmployeeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "example": {
+          "displayName": "Nueva persona ficticia",
+          "active": true
+        },
+        "required": [
+          "displayName",
+          "active"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CandidateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "displayName"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          }
+        }
+      },
+      "EmployeePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "example": {
+          "items": [
+            {
+              "employeeId": "employee-001",
+              "displayName": "Persona ficticia de demostración Uno"
+            },
+            {
+              "employeeId": "employee-002",
+              "displayName": "Persona ficticia de demostración Dos"
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 2
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmployeeSummary"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "AdminEmployeePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Employee"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "CandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Candidate"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_INPUT",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "METHOD_NOT_ALLOWED",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "SERVICE_UNAVAILABLE",
+              "NOT_CONFIGURED",
+              "EVIDENCE_CONFLICT"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MembershipEvidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "period",
+          "sourceReference",
+          "version",
+          "observedAt"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "period": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "sourceReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "member": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "used": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "costMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "spendingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^([A-Z]{3})?$",
+            "description": "Tres letras mayúsculas obligatorias si algún importe es conocido. Unidad menor acordada con el productor."
+          }
+        },
+        "description": "Instantánea completa, no un incremento. Omitir/null en hechos indica desconocido y reemplaza el dato anterior. Una moneda por empleado y período. sourceReference estable dentro de ese par. Mayor version prevalece; observedAt informa procedencia, no precedencia. Se normaliza observedAt a UTC con precisión de microsegundos. No se deducen afiliación, uso ni gasto entre sí."
+      },
+      "MembershipReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "applied"
+        ],
+        "properties": {
+          "applied": {
+            "type": "boolean",
+            "description": "false si la misma versión ya fue recibida o llegó una versión atrasada; nunca duplica gastos."
+          }
+        }
+      },
+      "MembershipReportItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "displayName",
+          "active",
+          "evidence"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "sourceApp": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "employeeId",
+              "period",
+              "sourceReference",
+              "version",
+              "observedAt"
+            ],
+            "properties": {
+              "employeeId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "period": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "sourceReference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "version": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "observedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "member": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "used": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "costMinor": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "maximum": 9223372036854775807,
+                "nullable": true
+              },
+              "spendingMinor": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "maximum": 9223372036854775807,
+                "nullable": true
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^([A-Z]{3})?$",
+                "description": "Tres letras mayúsculas obligatorias si algún importe es conocido. Unidad menor acordada con el productor."
+              }
+            },
+            "description": "Instantánea completa, no un incremento. Omitir/null en hechos indica desconocido y reemplaza el dato anterior. Una moneda por empleado y período. sourceReference estable dentro de ese par. Mayor version prevalece; observedAt informa procedencia, no precedencia. Se normaliza observedAt a UTC con precisión de microsegundos. No se deducen afiliación, uso ni gasto entre sí.",
+            "nullable": true
+          }
+        }
+      },
+      "MembershipCurrencyTotal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "costMinor",
+          "spendingMinor",
+          "costRecords",
+          "spendingRecords"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "costMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "spendingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "costRecords": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "spendingRecords": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "MembershipReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "page",
+          "pageSize",
+          "total",
+          "missingEvidence",
+          "incompleteEvidence",
+          "items",
+          "totals"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "missingEvidence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "incompleteEvidence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipReportItem"
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCurrencyTotal"
+            }
+          }
+        },
+        "description": "Todos los empleados del registro actual, incluidos inactivos; nunca candidatos. Totales y contadores abarcan todo el registro para el período solicitado, no solo la página. missingEvidence cuenta ausencia de instantánea; incompleteEvidence incluye ausencia o cualquier hecho desconocido. Las cantidades conocidas se suman por moneda sin conversión. Un total nulo no equivale a cero. No existe historia de períodos laborales: no acredita la población facturable del proveedor."
+      }
+    }
+  }
+}

@@ -1,16 +1,18 @@
 # Especificación de alcance y requisitos
 
+**Actualización de implementación — 22/10/2026:** la recepción e informe del gimnasio se describen en [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md). La solicitud y consulta de turnos del hospital, con vínculo de pacientes, intención persistente e informe, se implementan según [COMUNICACION-HOSPITAL](docs/COMUNICACION-HOSPITAL.md). Se conserva el alcance de las reglas originales; aceptación externa, autenticación del hospital, pacientes reales e indicaciones provenientes del hospital siguen pendientes. Los estados históricos de cobertura de las secciones siguientes deben leerse con esta actualización.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
-| Versión documental | 0.2 |
-| Fecha | 10 de octubre de 2026 |
-| Estado | Diseño propuesto; preparación documental de la entrega 2 |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Especificación vigente con cobertura parcial verificada del backend |
 | Hito | Entrega 2: 23 de octubre de 2026 |
 
-Este documento establece el alcance funcional y las reglas del sistema de alquiler de vehículos. La revisión incorpora el feedback docente comunicado por el grupo: Load Balancer, microservicio de Empleados y definición de épicas, historias, requerimientos y patrones antes de programar. La documentación prepara la entrega 2; no acredita su implementación.
+Este documento establece el alcance funcional y las reglas del sistema de alquiler de vehículos. La revisión incorpora el feedback docente comunicado por el grupo: Load Balancer, microservicio de Empleados y definición de épicas, historias, requerimientos y patrones antes de programar. El backend propio se implementó y se verificó localmente; esta especificación mantiene el alcance completo y distingue los acuerdos externos pendientes. La evidencia y sus límites se registran en [ESTADO-IMPLEMENTACION](docs/ESTADO-IMPLEMENTACION.md).
 
 ## 1. Problema y objetivo
 
@@ -54,12 +56,12 @@ La gestión de personal no incluye nómina, diagnóstico médico, determinación
 
 1. Una sucursal opera en `America/Buenos_Aires` y los alquileres se planifican por días calendario completos.
 2. El período es `[startsOn, endsOn)`: incluye el día inicial y excluye el final. Del 15 al 18 son tres días. Dos períodos que terminan y comienzan el mismo día no se superponen en la agenda.
-3. La duración válida es de 1 a 30 días. El sistema real rechazará un inicio anterior a la fecha actual de la sucursal. El mock omite la restricción de fecha actual para que los ejemplos sean reproducibles.
+3. La duración válida es de 1 a 30 días. El servicio real rechaza un inicio anterior a la fecha actual de la sucursal. El mock omite la restricción de fecha actual para que los ejemplos sean reproducibles.
 4. Moneda inicial: ARS. Los importes se expresan en centavos enteros (`*Minor`); no se utiliza coma flotante para dinero.
 5. Precio base = días × tarifa diaria. La tarifa y el total se congelan al reservar. Un cambio de tarifa posterior no modifica una reserva ya creada.
 6. Consultar disponibilidad no garantiza una reserva. Al confirmar se vuelve a comprobar el período y el importe esperado.
 
-Estas convenciones corresponden al diseño preliminar del proyecto y se utilizarán como referencia para la implementación y sus pruebas.
+Estas convenciones se aplican en Alquileres y sus pruebas; la aprobación académica y cualquier ampliación del alcance se registran por separado.
 
 ## 5. Reglas de negocio y criterios de aceptación
 
@@ -86,14 +88,14 @@ Estas convenciones corresponden al diseño preliminar del proyecto y se utilizar
 | RN-19 | Repetición y orden | Repetir la misma comunicación no duplica efectos; la regla para mensajes atrasados y modificaciones se acordará y probará antes de integrar |
 | RN-20 | Aislamiento de funcionalidades | Una falla del gimnasio o la clínica afecta el flujo de personal correspondiente y no bloquea una reserva de vehículos ni cambia su agenda |
 
-La cobertura ejecutable actual continúa limitada al mock de consulta de disponibilidad, validación de período e importe, reserva, idempotencia y cancelación. La habilitación del cliente se representa mediante datos de demostración. RN-13 a RN-20 son propuestas para la ampliación y no tienen implementación todavía. Las pruebas y criterios por funcionalidad se definen en [las historias de usuario](docs/BACKLOG.md) y [los requerimientos](docs/REQUERIMIENTOS.md).
+El backend propio implementa las reglas de alquiler RN-01 a RN-12 y su persistencia. RN-13 se aplica mediante registros separados de candidatos y empleados. RN-14 tiene una proyección mínima propia implementada y probada; población y campos externos siguen sujetos a acuerdo. RN-15 a RN-19 y los informes económicos/médicos permanecen pendientes de contratos. RN-20 se conserva como separación de dependencias: Alquileres no consulta gimnasio ni hospital; una falla real de esos proveedores todavía no se ensayó. La cobertura de criterios y las limitaciones están en [BACKLOG](docs/BACKLOG.md), [REQUERIMIENTOS](docs/REQUERIMIENTOS.md) y [ESTADO-IMPLEMENTACION](docs/ESTADO-IMPLEMENTACION.md).
 
 ### Ampliación de reglas de personal
 
 - **RN-21:** La indicación de consulta médica se vincula al empleado mediante identidad acordada y evidencia vigente; falta de información no equivale a ausencia de necesidad.
 - **RN-22:** El hospital administra el turno. Empleados conserva referencia de solicitud, referencia externa, empleado, estado y evidencia de cambios; cancelaciones y reprogramaciones no borran el historial ni provocan automáticamente otra reserva.
 
-Estas reglas y RN-13 a RN-20 permanecen sin implementación. RF-19/HU-23 cubren la identificación; RF-15 a RF-17/HU-15 a HU-17 cubren solicitud, seguimiento e informe.
+RN-21 y RN-22 permanecen sin implementación externa. RF-19/HU-23 cubren la identificación; RF-15 a RF-17/HU-15 a HU-17 cubren solicitud, seguimiento e informe.
 
 ## 6. Ciclo de vida de la reserva
 
@@ -124,20 +126,20 @@ stateDiagram-v2
 | --- | --- | --- |
 | F-01 | Definir dominio, alcance y arquitectura | Entrega 1 |
 | F-02 | Contrato y mock de disponibilidad/reservas conservados como evidencia | Entrega 1 |
-| F-03 | Implementar flujo de alquiler propio con persistencia y sus dependencias necesarias | Entrega 2, pendiente |
-| F-04 | Implementar Empleados y la capacidad de lista operativa para el gimnasio; acordar contratos y registrar las decisiones del hito | Entrega 2, pendiente |
-| F-05 | Completar frontend, cuatro servicios, retiro/devolución e integraciones de personal reales | Presentación grupal, pendiente |
-| F-06 | Demostrar concurrencia, carga, balanceo, fallas y observabilidad | Defensa individual, con ensayos previos |
+| F-03 | Flujo de alquiler propio con persistencia y dependencias necesarias | Backend local implementado y verificado; revisión E2 pendiente |
+| F-04 | Empleados y lista propia operativa; acuerdos y publicación para el gimnasio | API local implementada; acuerdo, acceso y prueba conjunta pendientes en E2 |
+| F-05 | Completar frontend e integraciones de personal reales | Presentación grupal, pendiente; servicios y retiro/devolución propios ya implementados |
+| F-06 | Ampliar ensayos de concurrencia, carga, balanceo, fallas y observabilidad | Evidencia inicial en E2; ampliación en defensa individual |
 
 La entrega 2 requiere al menos un servicio operativo además de la funcionalidad compartida funcionando, almacenamiento real, logs correlacionados y una primera traza distribuida. Incluye D2, D6, D7, D9, D10, D12 y D13, validación de D1/D3/D5 y primera versión de D11, además de actualizar D8 por el cambio de capacidad. El [control de entrega 2](docs/ENTREGA-2.md) identifica qué está diseñado y qué sigue pendiente de implementación y evidencia.
 
 ## 8. Integración entre grupos
 
-**Capacidad ofrecida al gimnasio:** lista de empleados de la empresa. El gimnasio administra las membresías y sus costos. Car Cruds recibe o consulta empleados con membresía, costo por membresía, gastos por empleado y totales por período; uso y afiliación se distinguen. Empleados vincula esos datos y el responsable de personal obtiene un informe de uso para controlar beneficios y apoyar el análisis de gastos. La población, los campos, el período, la devolución de información y las condiciones de uso requieren acuerdo. El borrador de la API propia se identifica como propuesta en [la documentación de contratos](docs/contracts/README.md).
+**Capacidad ofrecida al gimnasio:** lista de empleados de la empresa. El gimnasio administra las membresías y sus costos. Car Cruds recibe o consulta empleados con membresía, costo por membresía, gastos por empleado y totales por período; uso y afiliación se distinguen. Empleados vincula esos datos y el responsable de personal obtiene un informe de uso para controlar beneficios y apoyar el análisis de gastos. La población, los campos, el período, la devolución de información y las condiciones de uso requieren acuerdo. La API propia implementada se identifica como provisional en [la documentación de contratos](docs/contracts/README.md).
 
 **Capacidad consumida de la clínica:** turnos para consultas médicas de empleados registrados y revisiones de posibles incorporaciones. Empleados conserva la intención local, solicita o gestiona el turno conforme al contrato externo y concilia su estado para producir un informe administrativo. Car Cruds debe solicitar el turno para el empleado mediante la API del hospital. El contrato deberá definir cómo se confirma y qué pasos adicionales exige al empleado; esa incertidumbre técnica no sustituye el requisito de solicitud desde nuestro sistema. La llamada sale de Empleados; el frontend y el gateway propio no realizan la llamada al proveedor.
 
-Los acuerdos, los estados de información y los escenarios de falla se detallan en [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md). La API de reservas de la entrega 1 continúa disponible solo en su mock local; no constituye la integración actual acordada con el gimnasio.
+Los acuerdos, los estados de información y los escenarios de falla se detallan en [docs/INTEGRACIONES.md](docs/INTEGRACIONES.md). La API de reservas de entrega 1 conserva su mock local. La API real de Alquileres es un artefacto separado y ninguna de ellas constituye la capacidad compartida actual para el gimnasio.
 
 ## 9. Referencia histórica de la primera entrega
 
@@ -155,8 +157,8 @@ Estos criterios describen el alcance original de la entrega 1, de tres servicios
 
 ## 10. Aspectos por resolver
 
-- Integrantes y responsables de los componentes; confirmación docente de la ampliación y su relevancia como integración de negocio.
-- Tecnologías y versiones definitivas; llevar a código y verificar los patrones documentados en D2.
+- Asignación de responsables de componentes y confirmación docente de la ampliación y su relevancia como integración de negocio.
+- Revisar con el grupo las tecnologías implementadas y su operación; ampliar las verificaciones exigidas por los ADR.
 - Aceptación de las reglas propuestas: días completos, tope de 30 días, moneda y cancelación.
 - Condiciones operativas de retiro/devolución y coordinación de cambios administrativos.
 - Contratos formales de gimnasio y clínica, identificadores, población compartida, semántica de estados y períodos, credenciales y entornos accesibles: [pendientes de integración](docs/INTEGRACIONES.md).
