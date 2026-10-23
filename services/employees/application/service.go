@@ -10,6 +10,8 @@ import (
 type Service struct {
 	repository Repository
 	newID      func() string
+	gymStore   GymStore
+	gym        Gym
 }
 
 func New(repository Repository, newID func() string) *Service {
@@ -98,6 +100,6 @@ func (s *Service) DeleteCandidate(ctx context.Context, id string) error {
 	return s.repository.DeleteCandidate(ctx, id)
 }
 
-// No hospital or gym adapter is wired: missing contracts are an unknown state,
-// never an empty appointments list, zero expenditure or a negative decision.
+// Clinical and gym usage/cost reports remain unconfigured. The separate gym
+// intake operation does not imply an enabled membership or known expenditure.
 func (s *Service) IntegrationStatus(context.Context) error { return domain.ErrNotConfigured }

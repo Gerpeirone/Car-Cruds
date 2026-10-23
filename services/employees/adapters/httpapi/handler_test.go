@@ -96,6 +96,29 @@ func TestSharedListProjectsActiveEmployeesAndNeverCandidates(t *testing.T) {
 	}
 }
 
+func TestGymEnrollmentRoutesRemainAdministrativeAndFailClosed(t *testing.T) {
+	handler := testHandler()
+	for _, method := range []string{"GET", "POST"} {
+		for _, path := range []string{"/v1/employees/person/gym-enrollments", "/v1/employees/person/gym-enrollments/request"} {
+			for _, token := range []string{"test-gym", "test-client"} {
+				w := request(handler, method, path, `{"dni":"99900001","email":"person@example.invalid"}`, token)
+				if w.Code != 403 {
+					t.Fatalf("method=%s path=%s status=%d", method, path, w.Code)
+				}
+			}
+		}
+	}
+	r := httptest.NewRequest("POST", "/v1/employees/person/gym-enrollments", strings.NewReader(`{"dni":"99900001","email":"person@example.invalid"}`))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Authorization", "Bearer test-admin")
+	r.Header.Set("Idempotency-Key", "fixture-key")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	if w.Code != 503 || !strings.Contains(w.Body.String(), "NOT_CONFIGURED") {
+		t.Fatal("unconfigured provider did not fail closed")
+	}
+}
+
 func TestRoleIsolationAndUnconfiguredIntegrations(t *testing.T) {
 	handler := testHandler()
 	for _, entry := range []struct {

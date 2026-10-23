@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Gerpeirone/Car-Cruds/internal/platform"
+	"github.com/Gerpeirone/Car-Cruds/services/employees/adapters/gym"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/adapters/httpapi"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/adapters/postgres"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/application"
@@ -51,6 +52,21 @@ func main() {
 	}
 	startupCancel()
 	service := application.New(repository, platform.UUID)
+	var gymClient application.Gym
+	if os.Getenv("GYM_BASE_URL") != "" || os.Getenv("GYM_API_KEY") != "" {
+		allowHTTP, configErr := strconv.ParseBool(platform.Env("GYM_ALLOW_HTTP", "false"))
+		if configErr != nil {
+			slog.Error("GYM_ALLOW_HTTP debe ser booleano")
+			os.Exit(1)
+		}
+		client, configErr := gym.New(os.Getenv("GYM_BASE_URL"), os.Getenv("GYM_API_KEY"), allowHTTP)
+		if configErr != nil {
+			slog.Error("configuración del gimnasio inválida")
+			os.Exit(1)
+		}
+		gymClient = client
+	}
+	service.WithGym(repository, gymClient)
 	if err = platform.Run(ctx, "employees", httpapi.New(service), pool.Ping); err != nil {
 		slog.Error("Empleados finalizó con error", "cause", err)
 		os.Exit(1)

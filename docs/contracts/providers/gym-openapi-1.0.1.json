@@ -1,0 +1,376 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Recepción de empleados de un grupo externo",
+    "version": "1.0.1",
+    "description": "Nueva capacidad de integración de Socios y Membresías. Recibe un empleado, crea un socio y registra una solicitud PENDIENTE. No selecciona un plan, confirma pagos, habilita membresías ni crea credenciales de acceso. El administrador elegirá el plan y confirmará el pago en el flujo posterior. La implementación operativa conserva el alta y la idempotencia de forma transaccional en PostgreSQL, entre reinicios e instancias. Existe además un mock aislado en memoria que no ofrece esas garantías. El contrato anterior de consultas de clases se conserva por separado."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway del entorno local operativo; puerto configurable mediante GATEWAY_PORT. No es una URL pública acordada con el consumidor."
+    },
+    {
+      "url": "http://127.0.0.1:3005",
+      "description": "Mock local aislado; puerto configurable mediante MOCK_EMPLEADOS_PORT."
+    }
+  ],
+  "security": [
+    {
+      "ClaveConsumidor": []
+    }
+  ],
+  "paths": {
+    "/api/v1/integraciones/empleados": {
+      "post": {
+        "operationId": "recibirEmpleadoExterno",
+        "summary": "Registrar un socio y una solicitud pendiente desde un empleado externo",
+        "description": "El origen se obtiene de la credencial X-API-Key, no del cuerpo. Se recortan espacios de los extremos de los cuatro campos y el email se convierte a minúsculas; después se validan formato y longitudes. Los identificadores de empleado y los DNI son cadenas y conservan mayúsculas, ceros iniciales y caracteres interiores. Se requiere Idempotency-Key, opaca y diferenciada por origen. Con la misma clave y el mismo contenido normalizado se devuelve el mismo 201 y cuerpo original, antes de comprobar los duplicados de negocio. Reutilizarla con otro contenido devuelve 409. Una solicitud nueva con DNI o email existentes devuelve 409 sin modificar al socio previo, incluso si utiliza otra clave. Un empleado externo previamente asociado al mismo origen y otro DNI también devuelve 409. La identidad externa es el par origen/empleadoExternoId; DNI y email son únicos entre todos los orígenes. El mock conserva los resultados exitosos únicamente durante la vida de su proceso. No guarda los errores como altas idempotentes.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Clave opaca de esta operación, de 1 a 128 caracteres y no vacía de espacios. Se conserva exactamente como llega. Reutilizar la misma clave para reintentar la misma solicitud y el mismo origen.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "\\S"
+            },
+            "example": "alta-ficticia-001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos del empleado. No se admiten campos adicionales, incluidos origen, plan, rol, contraseña, pago o estado de membresía.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpleadoExterno"
+              },
+              "examples": {
+                "empleadoFicticio": {
+                  "value": {
+                    "empleadoExternoId": "empleado-ficticio-001",
+                    "dni": "99900001",
+                    "nombre": "Persona Ficticia",
+                    "email": "persona.ficticia@example.invalid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Socio y solicitud pendiente registrados, o repetición idempotente de esa misma alta. No representa una membresía habilitada.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/SinCache"
+              },
+              "X-Mock": {
+                "$ref": "#/components/headers/ModoMock"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AltaPendiente"
+                },
+                "examples": {
+                  "altaFicticia": {
+                    "value": {
+                      "socioId": "socio-ficticio-001",
+                      "solicitudId": "solicitud-ficticia-001",
+                      "estadoSolicitud": "PENDIENTE",
+                      "membresiaHabilitada": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ParametrosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NoAutenticado"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflicto"
+          },
+          "415": {
+            "$ref": "#/components/responses/TipoContenidoNoAdmitido"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorInterno"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ClaveConsumidor": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Credencial externa que identifica el origen. Su ausencia o invalidez devuelve 401 antes de validar cuerpo o idempotencia. En el entorno operativo se transmitirá mediante HTTPS y se configurará como secreto. Las credenciales predeterminadas del mock son exclusivamente ficticias."
+      }
+    },
+    "headers": {
+      "SinCache": {
+        "required": true,
+        "description": "No almacenar estas respuestas.",
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      },
+      "ModoMock": {
+        "required": false,
+        "description": "Presente con valor true en esta demostración en memoria. La implementación operativa omitirá este encabezado.",
+        "schema": {
+          "type": "string",
+          "const": "true"
+        }
+      }
+    },
+    "schemas": {
+      "EmpleadoExterno": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "empleadoExternoId",
+          "dni",
+          "nombre",
+          "email"
+        ],
+        "description": "Formato y longitudes evaluados después de la normalización indicada.",
+        "properties": {
+          "empleadoExternoId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco del empleado dentro del origen autenticado."
+          },
+          "dni": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "format": "email"
+          }
+        }
+      },
+      "AltaPendiente": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "socioId",
+          "solicitudId",
+          "estadoSolicitud",
+          "membresiaHabilitada"
+        ],
+        "properties": {
+          "socioId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "solicitudId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "estadoSolicitud": {
+            "type": "string",
+            "const": "PENDIENTE",
+            "description": "Estado de la solicitud, separado del estado persistido de una membresía."
+          },
+          "membresiaHabilitada": {
+            "type": "boolean",
+            "const": false
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "mensaje"
+        ],
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "enum": [
+              "PARAMETROS_INVALIDOS",
+              "NO_AUTENTICADO",
+              "IDEMPOTENCIA_EN_CONFLICTO",
+              "EMPLEADO_EXTERNO_EN_CONFLICTO",
+              "DNI_EXISTENTE",
+              "EMAIL_EXISTENTE",
+              "TIPO_CONTENIDO_NO_ADMITIDO",
+              "ERROR_INTERNO"
+            ]
+          },
+          "mensaje": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "responses": {
+      "ParametrosInvalidos": {
+        "description": "JSON, campos o Idempotency-Key inválidos. Corregir la solicitud.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/SinCache"
+          },
+          "X-Mock": {
+            "$ref": "#/components/headers/ModoMock"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "codigo": "PARAMETROS_INVALIDOS",
+              "mensaje": "Los datos del empleado no cumplen el contrato."
+            }
+          }
+        }
+      },
+      "NoAutenticado": {
+        "description": "Credencial externa ausente o inválida. No se registra ningún alta.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/SinCache"
+          },
+          "X-Mock": {
+            "$ref": "#/components/headers/ModoMock"
+          },
+          "WWW-Authenticate": {
+            "required": true,
+            "description": "Desafío de autenticación mediante X-API-Key.",
+            "schema": {
+              "type": "string",
+              "const": "ApiKey realm=\"empleados\""
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "codigo": "NO_AUTENTICADO",
+              "mensaje": "Credencial externa ausente o inválida."
+            }
+          }
+        }
+      },
+      "Conflicto": {
+        "description": "Conflicto de idempotencia, identidad externa, DNI o email. No se sobrescribe el alta original ni el socio existente. Interpretar codigo.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/SinCache"
+          },
+          "X-Mock": {
+            "$ref": "#/components/headers/ModoMock"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "claveConOtroContenido": {
+                "value": {
+                  "codigo": "IDEMPOTENCIA_EN_CONFLICTO",
+                  "mensaje": "La clave de idempotencia ya se utilizó con otro contenido."
+                }
+              },
+              "empleadoConOtroDni": {
+                "value": {
+                  "codigo": "EMPLEADO_EXTERNO_EN_CONFLICTO",
+                  "mensaje": "El empleado externo ya está asociado a otro DNI."
+                }
+              },
+              "dniExistente": {
+                "value": {
+                  "codigo": "DNI_EXISTENTE",
+                  "mensaje": "El DNI ya pertenece a un socio."
+                }
+              },
+              "emailExistente": {
+                "value": {
+                  "codigo": "EMAIL_EXISTENTE",
+                  "mensaje": "El email ya pertenece a un socio."
+                }
+              }
+            }
+          }
+        }
+      },
+      "TipoContenidoNoAdmitido": {
+        "description": "Se requiere Content-Type application/json.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/SinCache"
+          },
+          "X-Mock": {
+            "$ref": "#/components/headers/ModoMock"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "codigo": "TIPO_CONTENIDO_NO_ADMITIDO",
+              "mensaje": "Se requiere Content-Type application/json."
+            }
+          }
+        }
+      },
+      "ErrorInterno": {
+        "description": "Error inesperado del mock. No representa un rechazo de negocio.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/SinCache"
+          },
+          "X-Mock": {
+            "$ref": "#/components/headers/ModoMock"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "codigo": "ERROR_INTERNO",
+              "mensaje": "No se pudo procesar la solicitud."
+            }
+          }
+        }
+      }
+    }
+  }
+}

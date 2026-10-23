@@ -95,6 +95,9 @@ services:
     environment:
       <<: *auth
       DATABASE_URL: postgres://employees:${EMPLOYEES_DB_PASSWORD}@postgres:5432/employees?sslmode=disable
+      GYM_BASE_URL: ${GYM_BASE_URL:-}
+      GYM_API_KEY: ${GYM_API_KEY:-}
+      GYM_ALLOW_HTTP: ${GYM_ALLOW_HTTP:-false}
     depends_on: {postgres: {condition: service_healthy}}
   fleet-a:
     <<: *app
