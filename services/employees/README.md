@@ -2,13 +2,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| Fecha | 13 de octubre de 2026 |
-| Estado | Implementación propia con PostgreSQL; integración externa pendiente |
+| Fecha | 23 de octubre de 2026 |
+| Estado | Lista, estado laboral, recepción e informes implementados; aceptación y acceso externos pendientes |
 | Entrada ejecutable | [cmd/employees](../../cmd/employees/main.go) |
-| Contrato implementado | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.1.0 |
+| Contrato implementado | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.3.0; lista y evidencia compatibles con 0.2.0 |
 | Acuerdo con el consumidor | Pendiente; población activa y operaciones son decisiones propias provisionales |
 
-Empleados administra empleados y candidatos en poblaciones separadas. La capacidad compartida permite consultar **solo empleados activos**, mediante `employeeId` y `displayName`. Excluye candidatos, clientes, credenciales, costos e información clínica. Registrar un candidato no crea un empleado: el alta administrativa es explícita.
+Empleados administra empleados y candidatos en poblaciones separadas. La lista compartida devuelve **solo empleados activos**, mediante `employeeId` y `displayName`; la consulta puntual `/status` también permite verificar inactivos conocidos. Ambas excluyen candidatos, clientes, credenciales, costos e información clínica. Registrar un candidato no crea un empleado: el alta administrativa es explícita.
 
 ## Arquitectura y persistencia
 
@@ -31,6 +31,11 @@ Todas las operaciones usan autenticación Bearer de aplicación. La identidad y 
 | Ruta | Métodos | Roles y comportamiento |
 | --- | --- | --- |
 | `/v1/employees` | GET | `gym`, `service`, `admin`: lista de activos con dos campos mínimos |
+| `/v1/employees/{id}/status` | GET | `gym`, `service`, `admin`: solo ID y estado laboral, incluidos inactivos |
+| `/v1/employees/membership-evidence` | POST | `gym`: fotografía de membresía, uso y gastos con referencia/versión |
+| `/v1/employees/reports/memberships` | GET | `admin`, `service`: informe por período, faltantes y monedas |
+| `/v1/employees/clinic/*` | Según operación | `admin`: vínculo de paciente, intención, solicitud y conciliación de turno; ver contrato específico |
+| `/v1/employees/reports/clinic` | GET | `admin`, `service`: última intención administrativa por persona |
 | `/v1/employees` | POST | `admin`: alta con `displayName` y `active` |
 | `/v1/admin/employees` | GET | `admin`: lista con activos e inactivos |
 | `/v1/employees/{id}` | GET / PUT / DELETE | `admin`: consulta, reemplazo y baja lógica |
@@ -38,7 +43,7 @@ Todas las operaciones usan autenticación Bearer de aplicación. La identidad y 
 | `/v1/candidates/{id}` | GET / PUT / DELETE | `admin`: consulta, actualización y eliminación |
 | `/v1/employees/integrations` | GET | `admin`, `service`: `503 NOT_CONFIGURED` |
 
-El rol `client` no accede a personal. El gimnasio no escribe registros ni consulta candidatos, detalles administrativos o integración clínica. Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, múltiples objetos y cuerpos de más de 1 MiB se rechazan. El contrato describe la API propia implementada, sin afirmar un acuerdo externo ni una URL pública desplegada.
+El rol `client` no accede a personal. El gimnasio escribe exclusivamente evidencia mediante su entrada autorizada; no administra empleados ni consulta candidatos, informes o integración clínica. Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, múltiples objetos y cuerpos de más de 1 MiB se rechazan. La lista conserva únicamente `employeeId` y `displayName`. El ID no se reasigna al modificar, desactivar o reactivar; la baja es lógica. Su consulta `/status` no cancela una membresía. El contrato no acredita URL pública ni aceptación bilateral.
 
 ## Configuración y arranque
 
@@ -47,7 +52,7 @@ El rol `client` no accede a personal. El gimnasio no escribe registros ni consul
 | `DATABASE_URL` | Base exclusiva de Empleados; obligatoria |
 | `AUTH_ADMIN_TOKEN` | Aplicación administrativa; obligatoria |
 | `AUTH_SERVICE_TOKEN` | Aplicación interna; obligatoria |
-| `AUTH_GYM_TOKEN` | Aplicación lectora del gimnasio; obligatoria para este servicio |
+| `AUTH_GYM_TOKEN` | Aplicación del gimnasio: lista, estado laboral y envío de evidencia; obligatoria |
 | `AUTH_CLIENT_TOKEN` | Identidad de cliente optativa; sin permisos sobre personal |
 | `HTTP_ADDR` | Dirección de escucha; predeterminado `:8080` |
 | `SEED_DEMO` | `true` carga datos ficticios; predeterminado `false` |
@@ -75,9 +80,11 @@ El contrato contiene ejemplos ficticios de solicitud y respuesta. En la distribu
 
 ## Contratos externos y límites
 
-El gimnasio del grupo de Pablo debe acordar población, vinculación, campos, paginación y devolución de membresías/costos. El hospital del grupo de Octi debe publicar su contrato de consultas y turnos. Los puertos externos expresan necesidades propias y permiten distinguir evidencia desconocida de un valor confirmado, sin definir formatos externos ni elegir consulta, notificación o eventos. **No existe adaptador HTTP externo ni llamada a esos proveedores**.
+El flujo comunicado por el gimnasio es lista → vinculación manual → evidencia. [ACUERDO-GIMNASIO](../../docs/ACUERDO-GIMNASIO.md) responde sus preguntas y define el perfil mensual propuesto: ingresos efectivos, pagos del mes y costo neto por meses iguales; meses parciales pendientes, con `null` hasta acordarlos. [COMUNICACION-GIMNASIO](../../docs/COMUNICACION-GIMNASIO.md) documenta transporte, reintentos e informes. No se crea un socio ni se envían DNI/email desde Car Cruds.
 
-`GET /v1/employees/integrations` informa que ambas integraciones siguen pendientes. No fabrica turnos, afiliación negativa, importes cero ni diagnósticos. Los acuerdos se siguen en [INTEGRACIONES.md](../../docs/INTEGRACIONES.md). El [borrador anterior](../../docs/contracts/employees-openapi-draft.json) se conserva como antecedente; el contrato de reservas sigue separado.
+El adaptador HTTP del hospital consume las operaciones observadas de Turnos en `feature/entrega-2`, con intención durable y conciliación; no es una operación del gimnasio. Contrato, configuración y límites: [COMUNICACION-HOSPITAL](../../docs/COMUNICACION-HOSPITAL.md). Su API administrativa tiene versión propia 0.1.0, independiente del contrato de empleados 0.3.0.
+
+`GET /v1/employees/integrations` conserva el estado general de acuerdos externos pendientes y no es una comprobación de conectividad. Cada flujo dispone de sus propias rutas. Los acuerdos se siguen en [INTEGRACIONES](../../docs/INTEGRACIONES.md). El [borrador anterior](../../docs/contracts/employees-openapi-draft.json) es histórico, no el contrato que debe implementar el gimnasio.
 
 ## Verificación
 

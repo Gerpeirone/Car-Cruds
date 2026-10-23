@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Empleados: API propia implementada",
-    "version": "0.2.0",
-    "description": "API propia provisional de Car Cruds, ampliada el 22 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación."
+    "version": "0.3.0",
+    "description": "API propia de Car Cruds. 0.3.0 agrega consulta mínima de estado laboral por ID; conserva lista y cuerpo de evidencia 0.2.0. Flujo confirmado por el profesor según el gimnasio; perfil mensual/económico propuesto pendiente de confirmación bilateral, URL y prueba conjunta. No acredita conexión entre despliegues."
   },
   "x-contract-status": "implemented-own-api-not-externally-agreed",
   "security": [
@@ -1069,6 +1069,95 @@
           }
         }
       }
+    },
+    "/v1/employees/{id}/status": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getEmployeeEmploymentStatus",
+        "summary": "Estado laboral de un empleado conocido",
+        "description": "gym/admin/service; sin parámetros de consulta. Incluye inactivos. Solo employeeId y active. 404 o error técnico no prueban una baja. Ausencia en una página no sustituye esta consulta.",
+        "responses": {
+          "200": {
+            "description": "Estado explícito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No es un empleado conocido; candidatos excluidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Solo GET.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; conservar incertidumbre.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1094,7 +1183,8 @@
         "properties": {
           "employeeId": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Identificador estable; la API no lo reasigna a otra persona. Nombre y estado pueden cambiar sin cambiarlo."
           },
           "displayName": {
             "type": "string",
@@ -1340,7 +1430,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
-            "description": "Identificador opaco sin espacios exteriores ni controles."
+            "description": "Identificador opaco. Perfil propuesto para Pablo: mes calendario AAAA-MM en America/Argentina/Buenos_Aires; no restringe la API genérica."
           },
           "sourceReference": {
             "type": "string",
@@ -1360,30 +1450,34 @@
           },
           "member": {
             "type": "boolean",
-            "nullable": true
+            "nullable": true,
+            "description": "Perfil propuesto: membresía vigente en algún tramo del mes hasta observedAt; null si desconocido. Vinculación no habilita membresía."
           },
           "used": {
             "type": "boolean",
-            "nullable": true
+            "nullable": true,
+            "description": "Perfil propuesto: al menos un ingreso efectivo registrado hasta el corte; reservar una clase no prueba asistencia."
           },
           "costMinor": {
             "type": "integer",
             "format": "int64",
             "minimum": 0,
             "maximum": 9223372036854775807,
-            "nullable": true
+            "nullable": true,
+            "description": "Perfil propuesto: costo neto por mes completo, importe neto dividido por meses contratados; meses parciales null hasta acuerdo. No es el pago cobrado ni se calcula en Car Cruds."
           },
           "spendingMinor": {
             "type": "integer",
             "format": "int64",
             "minimum": 0,
             "maximum": 9223372036854775807,
-            "nullable": true
+            "nullable": true,
+            "description": "Perfil propuesto: pagos efectivos del mes hasta el corte, separados del costo imputado; ajustes negativos requieren acuerdo y no se convierten a cero."
           },
           "currency": {
             "type": "string",
             "pattern": "^([A-Z]{3})?$",
-            "description": "Tres letras mayúsculas obligatorias si algún importe es conocido. Unidad menor acordada con el productor."
+            "description": "Moneda obligatoria si hay importes. Perfil propuesto ARS en centavos; otras monedas siguen admitidas y separadas por compatibilidad."
           }
         },
         "description": "Instantánea completa, no un incremento. Omitir/null en hechos indica desconocido y reemplaza el dato anterior. Una moneda por empleado y período. sourceReference estable dentro de ese par. Mayor version prevalece; observedAt informa procedencia, no precedencia. Se normaliza observedAt a UTC con precisión de microsegundos. No se deducen afiliación, uso ni gasto entre sí."
@@ -1599,7 +1693,26 @@
           }
         },
         "description": "Todos los empleados del registro actual, incluidos inactivos; nunca candidatos. Totales y contadores abarcan todo el registro para el período solicitado, no solo la página. missingEvidence cuenta ausencia de instantánea; incompleteEvidence incluye ausencia o cualquier hecho desconocido. Las cantidades conocidas se suman por moneda sin conversión. Un total nulo no equivale a cero. No existe historia de períodos laborales: no acredita la población facturable del proveedor."
+      },
+      "EmployeeStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "active"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "description": "Identificador estable, no reasignado por la API a otra persona; se conserva al cambiar nombre, dar de baja o reactivar."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Estado laboral de Car Cruds; false no cancela una membresía automáticamente."
+          }
+        }
       }
     }
-  }
+  },
+  "x-interoperability-profile": "docs/ACUERDO-GIMNASIO.md: propuesta pendiente de confirmación; meses iguales elegidos por Car Cruds, meses parciales pendientes."
 }

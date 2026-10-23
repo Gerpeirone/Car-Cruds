@@ -19,6 +19,7 @@ func New(service *application.Service) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/employees", h.employees)
 	mux.HandleFunc("/v1/employees/{id}", h.employee)
+	mux.HandleFunc("/v1/employees/{id}/status", h.employeeStatus)
 	mux.HandleFunc("/v1/admin/employees", h.adminEmployees)
 	mux.HandleFunc("/v1/candidates", h.candidates)
 	mux.HandleFunc("/v1/candidates/{id}", h.candidate)
@@ -37,6 +38,31 @@ func New(service *application.Service) http.Handler {
 type employeeSummary struct {
 	ID          string `json:"employeeId"`
 	DisplayName string `json:"displayName"`
+}
+
+// This projection lets the gym verify an employment change without access to
+// administrative details, candidates or another system's membership rules.
+func (h *Handler) employeeStatus(w http.ResponseWriter, r *http.Request) {
+	if !platform.RequireRole(w, r, "gym", "admin", "service") {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
+		return
+	}
+	if r.URL.RawQuery != "" {
+		writeError(w, domain.ErrInvalidInput)
+		return
+	}
+	item, err := h.service.GetEmployee(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	platform.WriteJSON(w, 200, struct {
+		ID     string `json:"employeeId"`
+		Active bool   `json:"active"`
+	}{item.ID, item.Active})
 }
 
 type employeeRecord struct {

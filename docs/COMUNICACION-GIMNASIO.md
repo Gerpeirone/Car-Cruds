@@ -1,6 +1,6 @@
 # Comunicación con el gimnasio de Pablo
 
-Estado al 22 de octubre de 2026: implementado del lado de Car Cruds en `entrega-2/cierre`. La lista y la recepción están disponibles al ejecutar el conjunto propio. El gimnasio todavía debe aceptar la devolución propuesta e implementar su consumidor y productor. No se acredita una conexión real entre ambos despliegues.
+Actualización del 23 de octubre de 2026: el grupo del gimnasio comunicó que el profesor confirmó el flujo lista → vinculación manual → devolución de evidencia. La implementación anterior está integrada a `main`; los ajustes de interoperabilidad se revisan en `entrega-2/cierre`. [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md) responde punto por punto: identidad estable, semántica mensual propuesta, datos parciales, costos por meses iguales elegidos por Car Cruds, consulta explícita de bajas y prueba conjunta. Definiciones y acceso aún requieren confirmación del gimnasio; no se acredita conexión real entre despliegues.
 
 ## Dirección y alcance
 
@@ -12,7 +12,7 @@ Se retiró el envío desde Car Cruds a `POST /api/v1/integraciones/empleados` de
 
 ## Contrato propio de devolución — pendiente de aceptación
 
-El diseño original exige recibir evidencia y evitar duplicados, pero deja abierto el transporte. Se ofrece una entrada HTTP **de Car Cruds**; no se atribuye este endpoint al gimnasio ni se presenta como acuerdo bilateral. OpenAPI 3.0.3, versión 0.2.0: [employees-openapi.json](contracts/employees-openapi.json). La operación de lista mantiene su formato anterior.
+El transporte de tres pasos coincide con lo confirmado por el profesor según el mensaje del gimnasio. OpenAPI 3.0.3, versión 0.3.0: [employees-openapi.json](contracts/employees-openapi.json). Agrega `GET /v1/employees/{id}/status`; la lista y el POST de evidencia 0.2.0 conservan sus campos y comportamiento. La semántica detallada propuesta está en [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md), pendiente de confirmación bilateral.
 
 Ejemplo exclusivamente ficticio de cuerpo:
 
@@ -32,9 +32,9 @@ Ejemplo exclusivamente ficticio de cuerpo:
 ```
 
 - `employeeId` debe existir como empleado. Se admite evidencia tardía de inactivos para conservar gastos históricos. Un candidato o identificador desconocido obtiene 404; no crea personas ni asociaciones automáticamente.
-- `period` y `sourceReference` son identificadores opacos de 1–100 caracteres, sin controles ni espacios exteriores. `2026-10` es solo un ejemplo; la delimitación y vigencia del período deben acordarse con Pablo. La referencia permanece estable para ese empleado y período.
+- `period` y `sourceReference` admiten 1–100 caracteres sin controles ni espacios exteriores. El perfil propuesto para Pablo utiliza mes calendario `AAAA-MM` en `America/Argentina/Buenos_Aires`; la API genérica conserva períodos opacos por compatibilidad. La referencia permanece estable para ese empleado y período.
 - `member`, `used`, `costMinor` y `spendingMinor` son independientes. Ausencia o `null` significa desconocido; `false` y `0` son hechos explícitos. Un afiliado puede no haber usado el gimnasio y tener costo. No se inventan tarifas, asistencia, compras, pagos ni facturas.
-- Los importes son enteros no negativos en unidades menores de la moneda acordada, hasta el máximo `int64`. Se exige moneda de tres letras mayúsculas cuando hay importes. Este contrato admite una moneda por empleado y período; no convierte monedas. `costMinor` es el costo de membresía y `spendingMinor` el gasto individual del período: se muestran y suman por separado, nunca se suman uno al otro.
+- Los importes son enteros no negativos hasta el máximo `int64`, con moneda obligatoria cuando hay importes. Para Pablo se propone ARS en centavos: `costMinor` corresponde al costo neto imputable al mes completo, por meses iguales; meses parciales quedan en `null` hasta acordar la regla. `spendingMinor` corresponde a pagos efectivos del mes. Se muestran por separado y no se suman entre sí. La API genérica conserva monedas separadas por compatibilidad.
 - `version` es entero positivo creciente por empleado/período. Se envía una instantánea completa; omitir un hecho en una corrección vuelve a dejarlo desconocido. `observedAt` es fecha RFC3339, normalizada a UTC y microsegundos; no determina precedencia. La versión mayor reemplaza a la anterior.
 - El origen proviene del token (`gimnasio-pablo`), no de datos elegidos por el emisor en el cuerpo.
 
@@ -50,7 +50,7 @@ Los contadores y `totals` abarcan todo el registro, independientemente de la pá
 
 ## Qué falta para la prueba entre equipos
 
-Pablo debe confirmar la lista mínima, el identificador compartido y este contrato de devolución; implementar en su proyecto la consulta y el envío de datos reales. Deben acordarse significado de uso, períodos, referencias, correcciones, moneda/unidad, imputación de gastos y bajas. Ambos equipos deben disponer de URL accesible y compartir el token por privado. Despliegue público y hospital quedan pendientes conforme a lo solicitado.
+Pablo debe confirmar las definiciones propuestas en [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md) e implementar consulta, vinculación manual y envío. `used` se propone como ingreso efectivo, no reserva de clase; `member`, vigencia en algún tramo del mes hasta el corte. Se aceptan `null`, meses en curso y correcciones históricas. Para bajas se ofrece `/status`; no se cancela automáticamente la membresía. Falta host accesible, token por privado y prueba conjunta. El hospital tiene su guía independiente.
 
 La prueba conjunta debe mostrar: consulta autenticada, correspondencia de un empleado, envío y reintento idéntico, corrección, evidencia faltante y lectura del informe administrativo. Las pruebas propias con datos ficticios no sustituyen esa aceptación.
 

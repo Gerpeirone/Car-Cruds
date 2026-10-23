@@ -1,5 +1,7 @@
 # Integraciones de personal — Car Cruds
 
+**Revisión del 23/10/2026:** según el mensaje recibido del gimnasio, el profesor confirmó lista → vinculación manual → evidencia. [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md) responde sus preguntas, registra la elección de Car Cruds de costos por meses iguales y mantiene meses parciales pendientes. OpenAPI 0.3.0 agrega consulta mínima de estado laboral; conserva lista/POST 0.2.0. Perfil semántico, host y prueba conjunta siguen pendientes de confirmación bilateral.
+
 **Actualización — 22/10/2026:** se conserva el alcance original. Gimnasio: lista, recepción propuesta, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md); aceptación de Pablo pendiente. Hospital: vínculo de paciente, intención persistente, solicitud y consulta de turnos mediante operaciones reales observadas en `feature/entrega-2`, con informe y recuperación en [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se modifica ninguno de los proyectos externos ni se reemplazan turnos por correos. Acuerdos y acceso externo siguen pendientes.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
