@@ -2,15 +2,15 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
-| Estado | Backend propio implementado; diseño externo y frontend pendientes |
+| Versión documental | 0.4 |
+| Fecha | 22 de octubre de 2026 |
+| Estado | Backend propio y adaptador de alta al gimnasio implementados; acceso externo, hospital y frontend pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos y adaptadores externos siguen pendientes.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados y puede enviar altas al gimnasio del grupo de Pablo por su contrato POST 1.0.1. La consulta mínima propia se conserva compatible, sin atribuirle un consumidor externo real. La URL/credencial y aceptación conjunta del gimnasio, sus informes de uso/gastos y el contrato/adaptador del hospital de Octi siguen pendientes.
 
 Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 

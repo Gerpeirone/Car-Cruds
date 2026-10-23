@@ -33,7 +33,20 @@
     "renderedCompose": "PASS",
     "provider": "simulated HTTP only"
   },
-  "realPostgresTests": "Pending CI; no local TEST_DATABASE_URL",
+  "realPostgresTests": {
+    "result": "PASS",
+    "revision": "aae1f8e9806358075191f1db1bba4395f7330c11",
+    "run": "https://github.com/Gerpeirone/Car-Cruds/actions/runs/39879790835",
+    "passedTestsAndSubtests": 114,
+    "skipped": 0,
+    "newGymPostgresTests": [
+      "TestPostgresGymLostResponseDurableReplayAndPrivateHTTPProjection",
+      "TestPostgresGymSerializesKeysLeasesAndEmployeeIntentions"
+    ],
+    "smokeRequests": 76,
+    "smokeRun": "ef255325b3704cc7978979449d802ad3",
+    "provider": "simulated HTTP; actual gym URL/credential untested"
+  },
   "realGymConnection": "Pending actual URL, API key and joint acceptance",
   "limitations": [
     "No gym payments or enabled membership",

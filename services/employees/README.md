@@ -77,7 +77,7 @@ El contrato contiene ejemplos ficticios de solicitud y respuesta. En la distribu
 
 ## Contratos externos y límites
 
-El gimnasio del grupo de Pablo debe acordar población, vinculación, campos, paginación y devolución de membresías/costos. El hospital del grupo de Octi debe publicar su contrato de consultas y turnos. Los puertos externos expresan necesidades propias y permiten distinguir evidencia desconocida de un valor confirmado, sin definir formatos externos ni elegir consulta, notificación o eventos. **No existe adaptador HTTP externo ni llamada a esos proveedores**.
+El gimnasio del grupo de Pablo publicó su contrato POST 1.0.1 de recepción de empleados, ya implementado por el adaptador `adapters/gym`. Faltan URL/credencial y prueba conjunta; no se conoce el contrato de devolución de membresías/uso/costos. El hospital de Octi debe publicar su contrato de consultas y turnos. **No existen adaptadores del hospital ni de los informes de uso/gastos**. Sus puertos conservan la distinción entre evidencia desconocida y valores confirmados.
 
 `GET /v1/employees/integrations` informa que ambas integraciones siguen pendientes. No fabrica turnos, afiliación negativa, importes cero ni diagnósticos. Los acuerdos se siguen en [INTEGRACIONES.md](../../docs/INTEGRACIONES.md). El [borrador anterior](../../docs/contracts/employees-openapi-draft.json) se conserva como antecedente; el contrato de reservas sigue separado.
 

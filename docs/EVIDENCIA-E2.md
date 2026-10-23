@@ -11,6 +11,7 @@
 
 | Artefacto | Operación o ensayo | Resultado acreditado |
 | --- | --- | --- |
+| [Integración gimnasio](INTEGRACION-GIMNASIO.md) y [resumen del 22 de octubre](evidence/gym-integration-2026-10-22.json) | Alta administrativa, intención durable, pérdida de respuesta/replay, claves y leases | CI `39879790835` sobre `aae1f8e`: 114 pruebas/subpruebas reales, cero omitidas, smoke de 76 solicitudes; PostgreSQL real y proveedor HTTP simulado, sin prueba conjunta |
 | [Revisión del 15 de octubre](REVISION-E2-2026-10-15.md) y [resumen](evidence/revision-e2-2026-10-15.json) | Correcciones de reservas, despliegue y verificación de capacidad compartida | CI sobre `a94fb36`: 91 pruebas/subpruebas reales, cero omitidas; smoke de 77 solicitudes, checkshared y validación Caddy aprobados; seis escenarios de script aprobados localmente |
 | [tests-summary.json](evidence/tests-summary.json) | Suite real de componentes con `TEST_*` y detector de carreras; vet | 60 pruebas aprobadas, ninguna omitida; salidas 0; presión Redis aislada aprobada |
 | [integration-summary.json](evidence/integration-summary.json) | `go run ./cmd/smoke -history`, 13 de octubre | 75 solicitudes; roles, ambas réplicas, lista mínima, reservas y evento único |

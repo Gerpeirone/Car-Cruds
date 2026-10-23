@@ -50,6 +50,21 @@ Solo `admin` y `service` pueden ejecutar o consultar estos trámites. `gym` y `c
 
 Reutilizar una clave local con otro empleado/DNI/email devuelve 409. Una intención nueva para un empleado con trámite pendiente, desconocido o aceptado también devuelve 409. No se intenta eludir conflictos del proveedor con claves nuevas.
 
+Ejemplo desde PowerShell 7, con nuestro entorno iniciado y la conexión al gimnasio configurada para una prueba acordada con datos ficticios:
+
+```powershell
+$admin = (Select-String -LiteralPath .env -Pattern '^AUTH_ADMIN_TOKEN=').Line.Split('=', 2)[1]
+$headers = @{ Authorization = "Bearer $admin"; 'Idempotency-Key' = 'gym-alta-demo-001' }
+$body = @{ dni = '99900001'; email = 'persona.ficticia@example.invalid' } | ConvertTo-Json -Compress
+$response = Invoke-WebRequest -Method Post `
+  -Uri 'http://127.0.0.1:8080/v1/employees/employee-001/gym-enrollments' `
+  -Headers $headers -ContentType 'application/json' -Body $body -SkipHttpErrorCheck
+$response.StatusCode
+$response.Content
+```
+
+`employee-001` es el empleado ficticio que genera `SEED_DEMO`; usar el identificador real autorizado cuando corresponda y el puerto propio configurado. Con `UNKNOWN`, conservar cuerpo y clave del ejemplo para repetir la misma intención; el GET de la dirección `Location` permite consultar sin enviar nuevamente. El token del ejemplo se captura en memoria y no se muestra; no compartir `.env` con el gimnasio.
+
 ## Persistencia, reintentos y límites
 
 La migración `002_gym.sql` conserva clave local por aplicación, huella, snapshot de datos, estado y referencias externas. El nombre queda congelado al crear el trámite: cambios de perfil o una baja posterior no alteran un reintento. Nuevas intenciones solo admiten empleados activos; los candidatos no se envían.
@@ -70,3 +85,9 @@ go vet ./services/employees/... ./cmd/employees
 ```
 
 Las pruebas PostgreSQL necesitan `TEST_DATABASE_URL`; una omisión no acredita integración. La CI existente configura la dependencia real. Para cerrar la comunicación entre grupos faltan URL accesible, credencial/identidad asignadas por el gimnasio y prueba conjunta de alta/repetición/conflicto. El código implementado permite realizarla sin modificar el sistema del otro grupo.
+
+### Resultado ejecutado el 22 de octubre
+
+La [CI 39879790835](https://github.com/Gerpeirone/Car-Cruds/actions/runs/39879790835), sobre `aae1f8e9806358075191f1db1bba4395f7330c11`, aprobó ambos trabajos: **114 pruebas/subpruebas con dependencias reales, cero omitidas**, análisis estático, validación de configuración/Caddy y verificador de la lista. Las nuevas regresiones `TestPostgresGymLostResponseDurableReplayAndPrivateHTTPProjection` y `TestPostgresGymSerializesKeysLeasesAndEmployeeIntentions` aprobaron contra PostgreSQL. El recorrido `smoke -history` aprobó 76 solicitudes y su limpieza (`ef255325b3704cc7978979449d802ad3`).
+
+La ejecución local previa con detector de carreras aprobó 99 pruebas/subpruebas y omitió 15 integraciones por ausencia de `TEST_*`; esos resultados se conservan separados de la CI. Los tests del gimnasio simulan HTTP y verifican el contrato fijado: **no se realizó un alta en el servidor del otro grupo ni se validaron credenciales reales**. [Resumen reproducible](evidence/gym-integration-2026-10-22.json).

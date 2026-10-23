@@ -11,7 +11,7 @@
 | Estado | Alcance comunicado por el grupo; diseño propuesto y acuerdos pendientes |
 | Responsable funcional | Servicio Empleados |
 
-Este documento distingue lo comunicado por el grupo de las propuestas de Car Cruds. No sustituye un contrato del gimnasio o de la clínica. No se recibieron contratos externos, URLs, credenciales, tarifas ni resultados de pruebas de integración.
+Este documento distingue lo comunicado por el grupo de las propuestas de Car Cruds. La propuesta inicial conservada abajo precede al contrato POST 1.0.1 del gimnasio consultado el 22 de octubre. Esa alta ya tiene adaptador propio, según la actualización inicial y su guía. No se recibieron URL/credencial reales, tarifas, contrato del hospital ni resultados de una prueba conjunta entre grupos.
 
 ## 1. Capacidades y consecuencia de negocio
 
