@@ -16,7 +16,9 @@ El gateway autentica aplicaciones, encamina llamadas y limita concurrencia. NGIN
 
 Empleados implementa administración de personal y candidatos independientes. La lista activa pública para consumidores autorizados contiene exclusivamente `employeeId` y `displayName`, con paginación y conteo dentro de la misma instantánea de PostgreSQL. Es una API propia provisional, todavía sin aceptación ni acceso público acordados con el gimnasio.
 
-La interfaz web y los adaptadores de gimnasio y hospital permanecen pendientes. El endpoint administrativo de estado de integraciones informa `503 NOT_CONFIGURED`; no inventa turnos, costos o datos del proveedor. El mock histórico de alquileres continúa en su módulo independiente.
+Actualización del 22 de octubre: Car Cruds dispone de recepción HTTP propia de membresías, uso y gastos del gimnasio, persistencia con historia y deduplicación e informe administrativo por período y moneda. [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md) describe el contrato provisional 0.2.0 y sus límites. Se retiró el alta saliente al gimnasio por no corresponder al diseño original. La aceptación bilateral, el consumo real y el despliegue público permanecen pendientes; no se modificó el proyecto del gimnasio.
+
+La interfaz web y el adaptador del hospital permanecen pendientes. El endpoint general de estado de integraciones conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; los informes del gimnasio muestran únicamente evidencia recibida y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
 
 ## 2. Evidencia local registrada
 

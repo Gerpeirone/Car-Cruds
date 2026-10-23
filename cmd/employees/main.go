@@ -50,7 +50,7 @@ func main() {
 		}
 	}
 	startupCancel()
-	service := application.New(repository, platform.UUID)
+	service := application.New(repository, platform.UUID).WithMembershipInbox(repository)
 	if err = platform.Run(ctx, "employees", httpapi.New(service), pool.Ping); err != nil {
 		slog.Error("Empleados finalizó con error", "cause", err)
 		os.Exit(1)

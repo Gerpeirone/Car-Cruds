@@ -30,7 +30,7 @@ La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El 
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
 | Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
-| Integraciones externas | Puertos definidos en Empleados; sin adaptadores ni contratos ficticios de gimnasio u hospital |
+| Integraciones externas | Lista para gimnasio y recepción propia de evidencia con informe; acuerdo bilateral, despliegue y hospital pendientes |
 | Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
 El conjunto propio fue construido y ejecutado con Docker. Las pruebas reales, el recorrido HTTP, la persistencia tras reinicio y una traza distribuida están registrados en [el estado de implementación](docs/ESTADO-IMPLEMENTACION.md). El funcionamiento local de la lista no acredita su publicación ni la aceptación del gimnasio. [ENTREGA-2.md](docs/ENTREGA-2.md) distingue cobertura obtenida y pendientes académicos.
@@ -80,7 +80,7 @@ Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/
 
 Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
 
-`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio dispone de lectura y no de operaciones administrativas ni candidatos. El [contrato implementado](docs/contracts/employees-openapi.json) es una propuesta propia provisional; el acuerdo de población, identificadores, acceso público y devolución económica sigue pendiente.
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar candidatos o informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.2.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
 
 ## Documentación
 
@@ -117,6 +117,6 @@ Los cambios se presentan en ramas de trabajo y mediante pull request. Su integra
 
 ## Alcance externo pendiente
 
-El informe del gimnasio deberá distinguir afiliación, uso, costo por membresía, gastos por empleado y total por período/moneda. Una respuesta faltante no significa “no uso” ni costo cero. El hospital deberá informar quién necesita consulta, permitir solicitar el turno y comunicar sus cambios; el flujo de candidatos se conserva separado. Un timeout no prueba ausencia de turno.
+El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero. El hospital deberá informar quién necesita consulta, permitir solicitar el turno y comunicar sus cambios; esa implementación queda para después. Un timeout no prueba ausencia de turno.
 
 Estas funciones corresponden a RN-15 a RN-22, RF-13 a RF-17/RF-19 y HU-13 a HU-17/HU-23. No se han implementado endpoints de otros grupos ni se han asignado tarifas o resultados médicos. La lista propia y los puertos permiten avanzar sin presentar acuerdos inexistentes.

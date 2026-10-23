@@ -42,21 +42,3 @@ type ReviewEvidence struct {
 	Known             bool
 	ObservedAt        time.Time
 }
-
-// Memberships expresses the evidence needed by our administrative report. It
-// does not choose polling, notifications or events for the gym integration.
-// No adapter is supplied until identity, period, use and costs are agreed.
-type Memberships interface {
-	EvidenceFor(context.Context, string, string) (MembershipEvidence, error)
-}
-
-type MembershipEvidence struct {
-	EmployeeID      string
-	Period          string
-	SourceReference string
-	ObservedAt      time.Time
-	Member          *bool
-	Used            *bool
-	CostMinor       *int64
-	Currency        string
-}

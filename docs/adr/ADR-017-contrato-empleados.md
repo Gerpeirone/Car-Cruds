@@ -1,5 +1,13 @@
 # ADR-017 — Capacidad compartida de Empleados
 
+## Actualización del 22 de octubre de 2026
+
+Se conserva el sentido original: gimnasio consume la lista de Car Cruds y proporciona membresías, uso y gastos. Se retiró el alta saliente al gimnasio agregada posteriormente, por solicitud del responsable del proyecto. No se modifica el repositorio del otro equipo ni se implementa el hospital en esta etapa.
+
+Se ofrece una devolución HTTP entrante propia y un informe privado, documentados en [COMUNICACION-GIMNASIO](../COMUNICACION-GIMNASIO.md) y OpenAPI propio 0.2.0. Es una implementación local propuesta, no un contrato aceptado por Pablo. `MembershipInbox` sustituye el puerto de consulta de membresías sin adaptador: persiste instantáneas e historia en PostgreSQL, con transacción y bloqueo por empleado/período. Se autentica el origen, valida la existencia del empleado y conserva hechos desconocidos. Una versión mayor reemplaza, una repetición no suma y un atraso no retrocede; un conflicto devuelve 409. La historia y la evidencia vigente se confirman juntas. Los totales distinguen moneda, costo y gasto, con faltantes y control de desbordamiento.
+
+No se agregan tarifas, facturación, asistencia inferida ni operaciones del proveedor. Persisten los acuerdos pendientes sobre semántica económica, identidad, períodos, aceptación de la devolución, despliegue y prueba conjunta. Las secciones siguientes conservan el contexto histórico de la decisión.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D8: contrato propio |

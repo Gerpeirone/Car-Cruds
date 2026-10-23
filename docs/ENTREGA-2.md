@@ -11,7 +11,7 @@
 
 ## 1. Alcance y evolución
 
-Se conserva el alquiler de autos y se incorpora Empleados para la administración de personal. El gimnasio del grupo de Pablo consumirá la lista y aportará membresías, uso y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá información y turnos. Los contratos, entornos y credenciales externos permanecen pendientes.
+Se conserva el alquiler de autos y se incorpora Empleados para la administración de personal. El gimnasio del grupo de Pablo consumirá la lista y aportará membresías, uso y gastos. Desde el 22 de octubre Car Cruds ofrece recepción propia, historia e informe de esa evidencia: [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md). La devolución sigue siendo una propuesta pendiente de aceptación e implementación del otro equipo. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá información y turnos en una etapa posterior. Los acuerdos, entornos y credenciales externos permanecen pendientes.
 
 La preparación documental consolidó **9 épicas, 28 historias, 22 RF, 12 RNF, 22 reglas y 15 acuerdos pendientes**. Sobre ese diseño se implementaron los cuatro servicios propios, gateway, balanceador con dos réplicas de Flota, persistencia, índice, caché, mensajería y observabilidad HTTP. El mock de la entrega 1 se conserva como antecedente, independiente del backend real.
 

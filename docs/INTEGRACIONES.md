@@ -1,5 +1,7 @@
 # Integraciones de personal — Car Cruds
 
+**Actualización — 22/10/2026:** se conserva este diseño como referencia del alcance original. Car Cruds implementa la recepción propuesta de membresías, uso y gastos, su historia y el informe administrativo, además de la lista activa. Se ofrece HTTP entrante en nuestra API; su aceptación por Pablo continúa pendiente. Contrato y límites actuales: [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md). El alta por POST al gimnasio fue retirada. El hospital queda para una etapa posterior.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |
@@ -38,7 +40,7 @@ El alquiler de autos conserva su flujo principal de clientes. El seguimiento de 
 4. Empleados verifica identidad del emisor, vínculo de la persona y consistencia de la información. Conserva evidencia y evita duplicar efectos.
 5. El responsable obtiene un informe con uso informado, no uso informado e información faltante; se registra fecha de actualización y origen.
 
-La devolución puede requerir una llamada entrante, consulta saliente o eventos. **No se eligió un mecanismo ni se inventó un endpoint del gimnasio.** El borrador de lista en [employees-openapi-draft.json](contracts/employees-openapi-draft.json) es una propuesta de API propia, pendiente de revisión conjunta. No cubre la devolución de uso.
+El diseño inicial dejaba abierto el transporte. La implementación actual ofrece una llamada entrante **a Car Cruds**, descrita en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), pendiente de aceptación bilateral; no se inventa un endpoint del gimnasio. El borrador [employees-openapi-draft.json](contracts/employees-openapi-draft.json) se conserva histórico. El contrato propio implementado es [employees-openapi.json](contracts/employees-openapi.json), versión 0.2.0.
 
 ### Semántica interna propuesta
 
@@ -110,6 +112,6 @@ Todos estos acuerdos están **pendientes**, sin fechas ni aprobaciones inventada
 - Ensayo de caída externa que preserve el flujo de alquiler y mantenga estados desconocidos honestos.
 - Revisión de informes con evidencias positivas, negativas y faltantes; sin tarifas ni resultados médicos sintéticos presentados como reales.
 
-No se ejecutaron esas pruebas: las integraciones todavía no están implementadas. Ver [entrega 2](ENTREGA-2.md), [requerimientos](REQUERIMIENTOS.md) y [ADR-017](adr/ADR-017-contrato-empleados.md).
+La recepción y el informe del gimnasio cuentan con pruebas propias; no equivalen a una prueba conjunta con su sistema. El hospital permanece sin implementar. Ver [comunicación del gimnasio](COMUNICACION-GIMNASIO.md), [entrega 2](ENTREGA-2.md) y [ADR-017](adr/ADR-017-contrato-empleados.md).
 
 Material de referencia en `clases.zip`: teoría 02 (datos y consistencia), 04 (idempotencia y mensajería), 06 (identidad y límites), 07 (resultado desconocido y recuperación) y 08 (puertos/adaptadores); práctica 01 (interfaces/mocks) y 02 (Repository).

@@ -8,8 +8,9 @@ import (
 )
 
 type Service struct {
-	repository Repository
-	newID      func() string
+	repository  Repository
+	newID       func() string
+	memberships MembershipInbox
 }
 
 func New(repository Repository, newID func() string) *Service {
@@ -98,6 +99,6 @@ func (s *Service) DeleteCandidate(ctx context.Context, id string) error {
 	return s.repository.DeleteCandidate(ctx, id)
 }
 
-// No hospital or gym adapter is wired: missing contracts are an unknown state,
-// never an empty appointments list, zero expenditure or a negative decision.
+// External acceptance and the hospital adapter are still pending. The gym
+// inbox reports only evidence actually received, never assumed supplier facts.
 func (s *Service) IntegrationStatus(context.Context) error { return domain.ErrNotConfigured }

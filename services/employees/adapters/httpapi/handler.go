@@ -23,6 +23,8 @@ func New(service *application.Service) http.Handler {
 	mux.HandleFunc("/v1/candidates", h.candidates)
 	mux.HandleFunc("/v1/candidates/{id}", h.candidate)
 	mux.HandleFunc("/v1/employees/integrations", h.integrations)
+	mux.HandleFunc("/v1/employees/membership-evidence", h.membershipEvidence)
+	mux.HandleFunc("/v1/employees/reports/memberships", h.membershipReport)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { platform.Error(w, 404, "NOT_FOUND", "Ruta inexistente") })
 	return mux
 }
@@ -294,8 +296,10 @@ func methodNotAllowed(w http.ResponseWriter, allowed string) {
 
 func writeError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, domain.ErrEvidenceConflict):
+		platform.Error(w, 409, "EVIDENCE_CONFLICT", "La referencia o versión contradice evidencia registrada")
 	case errors.Is(err, domain.ErrInvalidInput):
-		platform.Error(w, 400, "INVALID_INPUT", "Datos o paginación inválidos; nombre de 1 a 150 caracteres y active explícito para empleados")
+		platform.Error(w, 400, "INVALID_INPUT", "Datos o paginación inválidos; consultar el contrato de la operación")
 	case errors.Is(err, domain.ErrNotFound):
 		platform.Error(w, 404, "NOT_FOUND", "Registro inexistente")
 	case errors.Is(err, domain.ErrNotConfigured):

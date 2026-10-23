@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Empleados: API propia implementada",
-    "version": "0.1.0",
-    "description": "Implementación propia del 13 de octubre de 2026. API provisional de Car Cruds; población activa, operaciones administrativas y formatos son decisiones locales, todavía no acordadas con el gimnasio. No acredita consumo externo ni publicación en nube. Gimnasio/hospital no aportaron contratos; no se define devolución de membresías, tarifas, diagnósticos ni operaciones del hospital. No se incluyen URL ni credenciales reales."
+    "version": "0.2.0",
+    "description": "API propia provisional de Car Cruds, ampliada el 22 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación."
   },
   "x-contract-status": "implemented-own-api-not-externally-agreed",
   "security": [
@@ -876,6 +876,199 @@
           }
         }
       }
+    },
+    "/v1/employees/membership-evidence": {
+      "post": {
+        "operationId": "receiveGymMembershipEvidence",
+        "summary": "Recibir evidencia del gimnasio en Car Cruds",
+        "description": "Solo rol gym. Emisor obtenido del token, no del cuerpo. Sin parámetros de consulta. Reenvío seguro con misma identidad, versión y contenido. Corrección: incrementar versión y enviar instantánea completa. Pendiente de aceptación externa.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipEvidence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evidencia almacenada o repetición/atraso reconocido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada o consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El employeeId no corresponde a un empleado registrado; candidatos excluidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Misma versión con contenido diferente, cambio de referencia o de emisor. Revisar antes de reintentar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/reports/memberships": {
+      "get": {
+        "operationId": "getMembershipReport",
+        "summary": "Informe interno de membresías, uso y gastos",
+        "description": "Solo admin o service. period obligatorio, opaco y exacto. Consulta estricta sin parámetros repetidos ni desconocidos. Una consulta SQL produce la instantánea coherente del informe.",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Identificador opaco sin espacios exteriores ni controles."
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Página desde 1. Su desplazamiento debe caber en un entero de 64 bits; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Registros por página; parámetro no repetible.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Informe con evidencia, faltantes y totales por moneda.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada o consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1117,13 +1310,295 @@
               "METHOD_NOT_ALLOWED",
               "UNSUPPORTED_MEDIA_TYPE",
               "SERVICE_UNAVAILABLE",
-              "NOT_CONFIGURED"
+              "NOT_CONFIGURED",
+              "EVIDENCE_CONFLICT"
             ]
           },
           "message": {
             "type": "string"
           }
         }
+      },
+      "MembershipEvidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "period",
+          "sourceReference",
+          "version",
+          "observedAt"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "period": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "sourceReference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "member": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "used": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "costMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "spendingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^([A-Z]{3})?$",
+            "description": "Tres letras mayúsculas obligatorias si algún importe es conocido. Unidad menor acordada con el productor."
+          }
+        },
+        "description": "Instantánea completa, no un incremento. Omitir/null en hechos indica desconocido y reemplaza el dato anterior. Una moneda por empleado y período. sourceReference estable dentro de ese par. Mayor version prevalece; observedAt informa procedencia, no precedencia. Se normaliza observedAt a UTC con precisión de microsegundos. No se deducen afiliación, uso ni gasto entre sí."
+      },
+      "MembershipReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "applied"
+        ],
+        "properties": {
+          "applied": {
+            "type": "boolean",
+            "description": "false si la misma versión ya fue recibida o llegó una versión atrasada; nunca duplica gastos."
+          }
+        }
+      },
+      "MembershipReportItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "displayName",
+          "active",
+          "evidence"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "sourceApp": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "employeeId",
+              "period",
+              "sourceReference",
+              "version",
+              "observedAt"
+            ],
+            "properties": {
+              "employeeId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "period": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "sourceReference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Identificador opaco sin espacios exteriores ni controles."
+              },
+              "version": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "observedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "member": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "used": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "costMinor": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "maximum": 9223372036854775807,
+                "nullable": true
+              },
+              "spendingMinor": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "maximum": 9223372036854775807,
+                "nullable": true
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^([A-Z]{3})?$",
+                "description": "Tres letras mayúsculas obligatorias si algún importe es conocido. Unidad menor acordada con el productor."
+              }
+            },
+            "description": "Instantánea completa, no un incremento. Omitir/null en hechos indica desconocido y reemplaza el dato anterior. Una moneda por empleado y período. sourceReference estable dentro de ese par. Mayor version prevalece; observedAt informa procedencia, no precedencia. Se normaliza observedAt a UTC con precisión de microsegundos. No se deducen afiliación, uso ni gasto entre sí.",
+            "nullable": true
+          }
+        }
+      },
+      "MembershipCurrencyTotal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "costMinor",
+          "spendingMinor",
+          "costRecords",
+          "spendingRecords"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "costMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "spendingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+            "nullable": true
+          },
+          "costRecords": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "spendingRecords": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "MembershipReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "page",
+          "pageSize",
+          "total",
+          "missingEvidence",
+          "incompleteEvidence",
+          "items",
+          "totals"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Identificador opaco sin espacios exteriores ni controles."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "missingEvidence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "incompleteEvidence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipReportItem"
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCurrencyTotal"
+            }
+          }
+        },
+        "description": "Todos los empleados del registro actual, incluidos inactivos; nunca candidatos. Totales y contadores abarcan todo el registro para el período solicitado, no solo la página. missingEvidence cuenta ausencia de instantánea; incompleteEvidence incluye ausencia o cualquier hecho desconocido. Las cantidades conocidas se suman por moneda sin conversión. Un total nulo no equivale a cero. No existe historia de períodos laborales: no acredita la población facturable del proveedor."
       }
     }
   }
