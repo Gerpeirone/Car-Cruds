@@ -30,8 +30,6 @@ Los cuatro servicios propios, gateway, balanceador e infraestructura están impl
 
 ## 3. Cobertura de implementación — 14 de octubre
 
-**Avance del 22 de octubre, intercambio de personal:** se agrega la solicitud administrativa de alta en el gimnasio conforme al contrato POST 1.0.1. Dado un empleado activo y DNI/email válidos, cuando un administrador solicita el alta con una clave, se registra la intención antes de llamar; un reintento conserva datos y referencias, y un timeout queda desconocido. La lista de HU-12 mantiene su proyección mínima. La afiliación habilitada, uso/gastos de HU-13 a HU-17, contrato del hospital y aceptación de los grupos siguen pendientes. Ver [guía y pruebas](INTEGRACION-GIMNASIO.md).
-
 | Historias | Cobertura disponible | Validación o alcance pendiente |
 | --- | --- | --- |
 | HU-01 a HU-09 | Catálogo/búsqueda, perfil de conductor, disponibilidad, reserva, cancelación, retiro/devolución y mantenimiento propios | Revisión completa de criterios, interfaz web y operación definitiva; Clientes no implementa edición/baja de perfiles |

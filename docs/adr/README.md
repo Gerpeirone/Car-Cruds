@@ -21,7 +21,6 @@ El número ADR identifica el registro histórico; **D1–D13** identifica la dec
 | D7: caché | [ADR-007](ADR-007-cache.md) | Versiones/expulsión y reducción de lecturas medidas; latencia no uniforme, fría/baseline/retención pendientes |
 | D8: capacidad propia | [ADR-017](ADR-017-contrato-empleados.md) | API de empleados implementada provisionalmente; aceptación/publicación/consumo pendientes |
 | D9: consumo | [ADR-009](ADR-009-consumo-clinica.md) | Puertos definidos; contrato y adaptador proveedor pendientes |
-| D9: alta de gimnasio | [ADR-018](ADR-018-alta-gimnasio.md) | Adaptador POST 1.0.1 e intención durable implementados; URL/credencial/prueba conjunta pendientes; hospital sigue separado en ADR-009 |
 | D10: resiliencia | [ADR-010](ADR-010-resiliencia.md) | Protecciones parciales; Circuit Breaker y ampliación de ensayos pendientes |
 | D11: observabilidad | [ADR-011](ADR-011-observabilidad.md) | Logs y primera traza HTTP reales; AMQP/tablero/alertas pendientes |
 | D12: balanceo | [ADR-012](ADR-012-balanceo-carga.md) | NGINX, distribución, retirada/recuperación reales; LB y fuentes únicas siguen como límites |

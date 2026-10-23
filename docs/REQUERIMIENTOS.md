@@ -20,8 +20,6 @@ Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni
 
 ## 2. Cobertura de los requerimientos
 
-**22 de octubre:** el intercambio de personal se amplía con el alta administrativa hacia el POST 1.0.1 del gimnasio. RF-12 conserva la lista mínima propia; el nuevo trámite envía datos privados explícitos sin ampliar esa proyección, persiste intención/referencias y permite recuperación idempotente. No acredita RF-13 a RF-17/RF-19 de uso, gastos o turnos. Ver [INTEGRACION-GIMNASIO](INTEGRACION-GIMNASIO.md) y ADR-018; prueba conjunta/configuración real pendientes.
-
 | Identificadores | Estado al 14 de octubre | Evidencia o limitación |
 | --- | --- | --- |
 | RF-01 a RF-09 | Backend propio implementado | Pruebas reales y recorrido local; alcance de Clientes limitado a registro/consulta |

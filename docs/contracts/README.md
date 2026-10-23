@@ -27,8 +27,6 @@ Las operaciones administrativas y candidatos requieren `admin`; el gimnasio no p
 
 ## Validación y publicación
 
-**Consumo del gimnasio, 22 de octubre:** contrato externo 1.0.1 disponible en [providers/gym-openapi-1.0.1.json](providers/gym-openapi-1.0.1.json), fijado a su revisión `eb77f95`. Nuestra API 0.2.0 agrega el trámite privado de envío administrativo sin cambiar la lista mínima. El gimnasio recibe el POST; no se atribuye un consumo real de nuestro GET. Ver [configuración, estados y recuperación](../INTEGRACION-GIMNASIO.md). URL/API key reales y aceptación conjunta pendientes.
-
 La verificación reproducible propia es `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env`. En una máquina consumidora con `AUTH_GYM_TOKEN` se utiliza `-url https://<host>` sin el archivo de credenciales del servidor. Comprueba `401` sin token/con token inválido, lista mínima y paginación, entrada inválida y `403` para lecturas administrativas/candidatos/integraciones; realiza únicamente GET y no imprime nombres ni credenciales. No sustituye al test de contrato que deberá acordarse con el consumidor.
 
 Las pruebas locales de contrato y autorización verifican el servicio propio. La prueba conjunta con el gimnasio, su servidor consumidor y el intercambio económico continúan pendientes. También falta probar el contrato real del hospital; los puertos existentes no representan un adaptador operativo.

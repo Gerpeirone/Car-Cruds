@@ -73,8 +73,6 @@ La publicación de la lista para el gimnasio se prepara en [DESPLIEGUE](DESPLIEG
 
 ## 5. Pendientes de cierre
 
-El 22 de octubre se incorporó el [envío al gimnasio](INTEGRACION-GIMNASIO.md) conforme a su contrato publicado: endpoint administrativo, adaptador saliente y trámite PostgreSQL recuperable. La lista propia conserva compatibilidad. Las pruebas simulan únicamente el proveedor HTTP; no acreditan comunicación con la instalación del grupo. Faltan URL/API key y prueba conjunta; uso/gastos y hospital siguen pendientes.
-
 La [revisión de cierre del 15 de octubre](REVISION-E2-2026-10-15.md) registra los cambios posteriores a este corte: validación remota de reservas fuera de transacción, verificador de la lista propia y correcciones del despliegue. Sus pruebas y limitaciones se presentan por separado de la evidencia del 13/14 de octubre.
 
 1. Acordar población, identificadores, contrato, credenciales y acceso de la lista con el gimnasio; comprobar su consumo real y mantener la capacidad accesible durante la evaluación.

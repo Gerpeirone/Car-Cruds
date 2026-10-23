@@ -1,7 +1,5 @@
 # Servicio Empleados
 
-Desde el 22 de octubre, el servicio incorpora el [alta administrativa en el gimnasio](../../docs/INTEGRACION-GIMNASIO.md): `POST /v1/employees/{id}/gym-enrollments` con DNI/email y clave idempotente, y `GET /v1/employees/{id}/gym-enrollments/{enrollmentId}` para recuperar el estado. Solo admin/service; intención durable, snapshot privado y reintentos con la misma clave externa. Configurar `GYM_BASE_URL` y `GYM_API_KEY` para habilitarlo. Una aceptación significa solicitud pendiente, nunca membresía habilitada. La lista compartida mantiene sus dos campos originales. Las referencias posteriores a ausencia de adaptador de gimnasio describen el estado anterior; uso/gastos y hospital siguen pendientes.
-
 | Campo | Valor |
 | --- | --- |
 | Fecha | 13 de octubre de 2026 |
@@ -77,7 +75,7 @@ El contrato contiene ejemplos ficticios de solicitud y respuesta. En la distribu
 
 ## Contratos externos y límites
 
-El gimnasio del grupo de Pablo publicó su contrato POST 1.0.1 de recepción de empleados, ya implementado por el adaptador `adapters/gym`. Faltan URL/credencial y prueba conjunta; no se conoce el contrato de devolución de membresías/uso/costos. El hospital de Octi debe publicar su contrato de consultas y turnos. **No existen adaptadores del hospital ni de los informes de uso/gastos**. Sus puertos conservan la distinción entre evidencia desconocida y valores confirmados.
+El gimnasio del grupo de Pablo debe acordar población, vinculación, campos, paginación y devolución de membresías/costos. El hospital del grupo de Octi debe publicar su contrato de consultas y turnos. Los puertos externos expresan necesidades propias y permiten distinguir evidencia desconocida de un valor confirmado, sin definir formatos externos ni elegir consulta, notificación o eventos. **No existe adaptador HTTP externo ni llamada a esos proveedores**.
 
 `GET /v1/employees/integrations` informa que ambas integraciones siguen pendientes. No fabrica turnos, afiliación negativa, importes cero ni diagnósticos. Los acuerdos se siguen en [INTEGRACIONES.md](../../docs/INTEGRACIONES.md). El [borrador anterior](../../docs/contracts/employees-openapi-draft.json) se conserva como antecedente; el contrato de reservas sigue separado.
 

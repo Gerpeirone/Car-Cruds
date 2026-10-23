@@ -19,8 +19,6 @@ func New(service *application.Service) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/employees", h.employees)
 	mux.HandleFunc("/v1/employees/{id}", h.employee)
-	mux.HandleFunc("/v1/employees/{id}/gym-enrollments", h.gymEnrollments)
-	mux.HandleFunc("/v1/employees/{id}/gym-enrollments/{enrollment}", h.gymEnrollment)
 	mux.HandleFunc("/v1/admin/employees", h.adminEmployees)
 	mux.HandleFunc("/v1/candidates", h.candidates)
 	mux.HandleFunc("/v1/candidates/{id}", h.candidate)
@@ -296,14 +294,12 @@ func methodNotAllowed(w http.ResponseWriter, allowed string) {
 
 func writeError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain.ErrGymConflict):
-		platform.Error(w, 409, "GYM_ENROLLMENT_CONFLICT", "Clave reutilizada con otros datos o empleado con una solicitud pendiente o aceptada; recuperar el trámite original")
 	case errors.Is(err, domain.ErrInvalidInput):
 		platform.Error(w, 400, "INVALID_INPUT", "Datos o paginación inválidos; nombre de 1 a 150 caracteres y active explícito para empleados")
 	case errors.Is(err, domain.ErrNotFound):
 		platform.Error(w, 404, "NOT_FOUND", "Registro inexistente")
 	case errors.Is(err, domain.ErrNotConfigured):
-		platform.Error(w, 503, "NOT_CONFIGURED", "La integración solicitada no está configurada; no hay resultados externos confirmados")
+		platform.Error(w, 503, "NOT_CONFIGURED", "Gimnasio y hospital pendientes de contrato y configuración; no hay resultados confirmados")
 	default:
 		platform.Error(w, 503, "SERVICE_UNAVAILABLE", "Persistencia de personal no disponible")
 	}

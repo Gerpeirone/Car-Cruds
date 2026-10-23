@@ -2,15 +2,15 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.4 |
-| Fecha | 22 de octubre de 2026 |
-| Estado | Backend propio y adaptador de alta al gimnasio implementados; acceso externo, hospital y frontend pendientes |
+| Versión documental | 0.3 |
+| Fecha | 14 de octubre de 2026 |
+| Estado | Backend propio implementado; diseño externo y frontend pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados y puede enviar altas al gimnasio del grupo de Pablo por su contrato POST 1.0.1. La consulta mínima propia se conserva compatible, sin atribuirle un consumidor externo real. La URL/credencial y aceptación conjunta del gimnasio, sus informes de uso/gastos y el contrato/adaptador del hospital de Octi siguen pendientes.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra personal y candidatos separados. El gimnasio del grupo de Pablo consumirá su lista y aportará membresías/gastos; el hospital del grupo de Octi proveerá consultas y turnos. Los acuerdos y adaptadores externos siguen pendientes.
 
 Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
@@ -165,8 +165,6 @@ La revisión del 15 de octubre alinea la implementación con esa separación: le
 [D4](adr/ADR-004-consistencia-concurrencia.md) utiliza exclusión de rangos, índice único parcial de alquiler activo y transiciones condicionales. La suite y el recorrido sobre PostgreSQL verificaron una sola ganadora concurrente, repetición y persistencia. El alquiler activo impide otro retiro aunque haya vencido su fin previsto.
 
 ## 6. Personal e integración pendiente
-
-**Actualización del 22 de octubre:** el POST del gimnasio ya tiene un adaptador HTTP saliente en Empleados, separado de informes clínicos/uso/gastos. La operación administrativa guarda un trámite privado con DNI/email y nombre congelados antes de enviar, utiliza la clave externa estable y conserva estados PENDING/UNKNOWN/ACCEPTED/REJECTED con referencias. Las transacciones y leases son locales; no hay transacción abierta durante HTTP. La proyección GET de dos campos se conserva y no se afirma que el gimnasio la consuma. [ADR-018](adr/ADR-018-alta-gimnasio.md) y [la guía](INTEGRACION-GIMNASIO.md) actualizan las propuestas anteriores. No hay todavía prueba contra la instalación del grupo ni credenciales reales.
 
 La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. Gimnasio tiene lectura y no acceso a candidatos, escrituras o datos médicos.
 
