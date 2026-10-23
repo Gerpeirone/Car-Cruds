@@ -59,6 +59,8 @@ Los [ensayos de fallas](POSTMORTEM.md) verificaron detección pasiva, fallback y
 
 ## 5. Prioridades de cierre
 
+**22 de octubre:** se implementó el consumo del POST de empleados del gimnasio, con [contrato, configuración y recuperación documentados](INTEGRACION-GIMNASIO.md). Este intercambio invierte la dirección respecto del GET propuesto inicialmente; la lista propia sigue disponible, sin afirmar que el gimnasio la consuma. La instalación accesible, credencial/identidad y prueba conjunta permanecen pendientes. No se declara cerrada la integración externa por disponer del adaptador.
+
 La [revisión del 15 de octubre](REVISION-E2-2026-10-15.md) incorpora correcciones de recuperación del despliegue, verificación automática de la lista propia y transacciones cortas en reservas. El acceso público y los acuerdos externos se mantienen expresamente pendientes; estos cambios no declaran el hito completo.
 
 1. Publicar y validar la lista propia con el gimnasio (configuración de despliegue en [DESPLIEGUE](DESPLIEGUE.md); VM pendiente); cerrar los acuerdos que bloquean uso, costos e intercambio administrativo.

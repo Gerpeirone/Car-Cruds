@@ -65,6 +65,8 @@ El [workflow de CI](.github/workflows/ci.yml) ejecuta pruebas y análisis estát
 
 El despliegue público con HTTPS para la capacidad compartida se describe en [DESPLIEGUE](docs/DESPLIEGUE.md).
 
+El [envío de empleados al gimnasio](docs/INTEGRACION-GIMNASIO.md) está implementado en Empleados conforme al contrato 1.0.1 del proveedor: intención durable, API key separada y resultado pendiente sin habilitar membresía. La configuración real y la prueba conjunta siguen pendientes; no se modificó el repositorio del gimnasio.
+
 La [revisión de cierre de E2 del 15 de octubre](docs/REVISION-E2-2026-10-15.md) registra las correcciones de despliegue y de retención de conexiones en reservas. `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env` verifica por lecturas la autenticación, proyección mínima, paginación y permisos de la capacidad compartida. Para una URL externa exige HTTPS y un destino explícito; no sigue redirecciones ni acredita aceptación del gimnasio.
 
 Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/verify-resilience.ps1` verifican cola de fallidos y recuperación de componentes propios. `go run ./cmd/load` realiza carga GET local; `pwsh -File ./scripts/measure-cache.ps1 -DurationSeconds 5` compara caché caliente y fallback, restaurando Redis. Sus resultados y condiciones están en [EVIDENCIA-E2](docs/EVIDENCIA-E2.md).

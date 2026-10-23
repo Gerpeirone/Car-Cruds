@@ -1,5 +1,7 @@
 # Integraciones de personal — Car Cruds
 
+> **Actualización del 22 de octubre de 2026:** ya se recibió el contrato 1.0.1 del gimnasio y se implementó en Car Cruds el envío administrativo de empleados por POST. La dirección real de este intercambio difiere de la propuesta inicial de consulta de lista conservada abajo. Ver [INTEGRACION-GIMNASIO](INTEGRACION-GIMNASIO.md) y [ADR-018](adr/ADR-018-alta-gimnasio.md). URL, credencial, identidad y prueba conjunta permanecen pendientes; hospital, uso y gastos no tienen adaptadores operativos.
+
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
 
 | Campo | Valor |

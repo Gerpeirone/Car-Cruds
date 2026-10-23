@@ -166,6 +166,8 @@ La revisión del 15 de octubre alinea la implementación con esa separación: le
 
 ## 6. Personal e integración pendiente
 
+**Actualización del 22 de octubre:** el POST del gimnasio ya tiene un adaptador HTTP saliente en Empleados, separado de informes clínicos/uso/gastos. La operación administrativa guarda un trámite privado con DNI/email y nombre congelados antes de enviar, utiliza la clave externa estable y conserva estados PENDING/UNKNOWN/ACCEPTED/REJECTED con referencias. Las transacciones y leases son locales; no hay transacción abierta durante HTTP. La proyección GET de dos campos se conserva y no se afirma que el gimnasio la consuma. [ADR-018](adr/ADR-018-alta-gimnasio.md) y [la guía](INTEGRACION-GIMNASIO.md) actualizan las propuestas anteriores. No hay todavía prueba contra la instalación del grupo ni credenciales reales.
+
 La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. Gimnasio tiene lectura y no acceso a candidatos, escrituras o datos médicos.
 
 Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-22",
+  "branch": "entrega-2/cierre",
+  "codeRevision": "dc9e2d12a0d53f2efd3c7c346398eb5cac052f70",
+  "providerRepository": "https://github.com/PabloMarquezCapilla/Gestion-gimnasio-arquitectura-software",
+  "providerRevision": "eb77f9536c28fcef587ad0c83d84102cf485e1fc",
+  "providerContractVersion": "1.0.1",
+  "providerContractJSONSHA256": "3d824cf3ce9e0dd719af9ad73ad07d2bf8d41a931c07abb5aff0920266971b4e",
+  "changesRestrictedTo": "Car-Cruds",
+  "providerRepositoryModified": false,
+  "local": {
+    "command": "go test -race -count=1 -json -timeout 120s ./...",
+    "exitCode": 0,
+    "passedTestsAndSubtests": 99,
+    "skippedIntegrationTests": [
+      "TestRealPostgresCustomerPersistenceAndInbox",
+      "TestPostgresGymLostResponseDurableReplayAndPrivateHTTPProjection",
+      "TestPostgresGymSerializesKeysLeasesAndEmployeeIntentions",
+      "TestPostgresPersistsSeparatePopulationsAndSeedDoesNotOverwriteLeaves",
+      "TestPostgresPageAndCountUseSameSnapshotDuringConcurrentWrite",
+      "TestRealPostgresValidationReleasesSingleConnectionPool",
+      "TestRealPostgresConcurrentSameKeyReturnsOneDurableResponse",
+      "TestRealPostgresConcurrentExclusionAndDurableReplay",
+      "TestRealPostgresTransientFailureOwnershipAndMaintenance",
+      "TestRealPostgresOverduePickupAndCompletedOutbox",
+      "TestMongoAtomicVersionOutboxAndRestart",
+      "TestMongoBoundedOutboxRejectsWithoutLosingChange",
+      "TestRedisEvictionPreservesVersionFenceForDelayedFill",
+      "TestRedisRejectsDelayedFillAndOldInvalidation",
+      "TestSolrRealVersionFiltersAndVisibility"
+    ],
+    "goVetExitCode": 0,
+    "renderedCompose": "PASS",
+    "provider": "simulated HTTP only"
+  },
+  "realPostgresTests": "Pending CI; no local TEST_DATABASE_URL",
+  "realGymConnection": "Pending actual URL, API key and joint acceptance",
+  "limitations": [
+    "No gym payments or enabled membership",
+    "No gym usage/cost API invented",
+    "Hospital unchanged"
+  ]
+}
