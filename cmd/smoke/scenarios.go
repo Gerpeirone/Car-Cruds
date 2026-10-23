@@ -102,6 +102,9 @@ func (h *harness) personnel(ctx context.Context) error {
 		return errors.New("alta de empleado no coincide con la fixture")
 	}
 	h.employeeID = person.ID
+	if err := h.verifyGymEmployeeStatus(ctx, person.ID, true); err != nil {
+		return err
+	}
 	if !person.Active {
 		return errors.New("empleado creado no está activo")
 	}
@@ -136,6 +139,25 @@ func (h *harness) personnel(ctx context.Context) error {
 		}
 	}
 	h.log("PASS personal: proyección mínima y candidato excluido employeeID=%s candidateID=%s", person.ID, applicant.ID)
+	return nil
+}
+
+func (h *harness) verifyGymEmployeeStatus(ctx context.Context, id string, active bool) error {
+	var status map[string]json.RawMessage
+	if _, err := h.request(ctx, "estado_laboral_gimnasio", "GET", "/v1/employees/"+url.PathEscape(id)+"/status", h.gym, nil, "", 200, &status); err != nil {
+		return err
+	}
+	var returnedID string
+	var returnedActive bool
+	if err := json.Unmarshal(status["employeeId"], &returnedID); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(status["active"], &returnedActive); err != nil {
+		return err
+	}
+	if len(status) != 2 || returnedID != id || returnedActive != active {
+		return errors.New("estado laboral no conserva identidad/proyección mínima")
+	}
 	return nil
 }
 

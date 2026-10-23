@@ -1,5 +1,13 @@
 # ADR-017 — Capacidad compartida de Empleados
 
+## Revisión del 23 de octubre: vinculación y bajas
+
+El gimnasio comunicó el flujo confirmado por el profesor: consulta de empleados, vinculación manual con socio y envío de evidencia. Se conserva la proyección mínima de lista; no se agrega DNI/email ni un alta automática. El ID no cambia por edición, baja lógica o reactivación y no se reasigna por la API.
+
+Para evitar inferir bajas de un recorrido paginado se agrega GET `/v1/employees/{id}/status`, limitado a identidad y estado laboral, con acceso gym/admin/service. No concede acceso administrativo ni cancela una membresía. OpenAPI 0.3.0 es una extensión compatible de lista y POST 0.2.0. Se eligió esta consulta acotada antes que exponer toda la administración o exigir eventos externos aún no acordados.
+
+[ACUERDO-GIMNASIO](../ACUERDO-GIMNASIO.md) registra el perfil mensual propuesto y la elección del responsable de Car Cruds: costo neto repartido por meses contratados, con meses parciales pendientes. Car Cruds no calcula tarifas ni convierte desconocidos en cero; conserva fechas, historia y correcciones. Las definiciones semánticas y el acceso requieren confirmación del gimnasio, sin atribuir aprobación inexistente.
+
 ## Actualización del 22 de octubre de 2026
 
 Se conserva el sentido original: gimnasio consume la lista de Car Cruds y proporciona membresías, uso y gastos. Se retiró el alta saliente al gimnasio agregada posteriormente, por solicitud del responsable del proyecto. No se modifica el repositorio del otro equipo ni se implementa el hospital en esta etapa.

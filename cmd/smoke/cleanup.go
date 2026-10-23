@@ -71,6 +71,8 @@ func (h *harness) cleanup(ctx context.Context) error {
 			failures = append(failures, err)
 		} else if inactive.ID != h.employeeID || inactive.Active {
 			failures = append(failures, errors.New("empleado no quedó inactivo"))
+		} else if err := h.verifyGymEmployeeStatus(ctx, h.employeeID, false); err != nil {
+			failures = append(failures, err)
 		} else if found, err := h.gymListContains(ctx, h.employeeID); err != nil {
 			failures = append(failures, err)
 		} else if found {

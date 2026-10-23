@@ -12,7 +12,7 @@ Empleados concentra la integración con el gimnasio del grupo de Pablo y el hosp
 
 | Artefacto | Capacidad | Estado |
 | --- | --- | --- |
-| [employees-openapi.json](employees-openapi.json) | Lista de empleados activos y administración de empleados/candidatos | Contrato OpenAPI 3.0.3 de la API propia implementada, versión 0.1.0 provisional |
+| [employees-openapi.json](employees-openapi.json) | Lista, estado laboral, evidencia de membresías e informe, además de administración de personal | OpenAPI 3.0.3 versión 0.3.0; conserva lista y POST 0.2.0 y agrega lectura puntual de estado |
 | [employees-openapi-draft.json](employees-openapi-draft.json) y [EMPLOYEES.md](EMPLOYEES.md) | Propuesta inicial de lista compartida | Antecedente de diseño; no es un acuerdo externo ni la referencia completa del servicio actual |
 | [rentals-openapi.json](rentals-openapi.json) | Disponibilidad, reservas, mantenimiento, retiro y devolución | Contrato del backend propio implementado; revisar junto con [su guía](../../services/rentals/README.md) |
 | [openapi-v1.json](openapi-v1.json) y [RESERVAS.md](RESERVAS.md) | Disponibilidad/reservas de entrega 1 | Contrato histórico 1.0.0 del mock; conservado sin cambiar su significado |
@@ -31,6 +31,6 @@ Las operaciones administrativas y candidatos requieren `admin`; el gimnasio no p
 
 La verificación reproducible propia es `go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env`. En una máquina consumidora con `AUTH_GYM_TOKEN` se utiliza `-url https://<host>` sin el archivo de credenciales del servidor. Comprueba `401` sin token/con token inválido, lista mínima y paginación, entrada inválida y `403` para lecturas administrativas/candidatos/integraciones; realiza únicamente GET y no imprime nombres ni credenciales. No sustituye al test de contrato que deberá acordarse con el consumidor.
 
-Las pruebas locales de contrato y autorización verifican el servicio propio. La prueba conjunta con el gimnasio, su servidor consumidor y el intercambio económico continúan pendientes. También falta probar el contrato real del hospital; los puertos existentes no representan un adaptador operativo.
+Las pruebas propias no sustituyen la prueba conjunta con el gimnasio. [ACUERDO-GIMNASIO](../ACUERDO-GIMNASIO.md) contiene el perfil semántico propuesto y los acuerdos operativos pendientes. El hospital sí dispone de adaptador y prueba contra su código original fijado por commit, en un entorno aislado: ver [COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md); su aceptación y acceso compartido continúan pendientes.
 
 La capacidad compartida deberá permanecer accesible hasta finalizar la evaluación una vez publicada. La URL pública y fecha de publicación se registrarán al disponer de ellas; la forma de publicación (HTTPS mediante Caddy delante del gateway) está en [DESPLIEGUE](../DESPLIEGUE.md). La API de reservas del mock conserva su historial y no se utiliza como integración actual del gimnasio.
