@@ -53,6 +53,16 @@ La [herramienta de verificación](cmd/smoke/README.md) comprueba permisos, lista
 
 `docker compose down` conserva los volúmenes. No utilizar `down -v` para una detención habitual, porque elimina los datos locales.
 
+## Documentación de endpoints y Swagger
+
+La [referencia completa de API](docs/API.md) explica las **34 operaciones HTTP implementadas**, sus permisos, entradas, respuestas, errores y flujos. Para abrir Swagger UI sin bases de datos ni credenciales:
+
+```powershell
+go run ./cmd/apidocs
+```
+
+Abrir [http://127.0.0.1:8090/api/](http://127.0.0.1:8090/api/). El menú reúne Clientes, Flota, Alquileres, Empleados/gimnasio, integración clínica y rutas técnicas. Incluye recursos locales y funciona sin conexión una vez disponible el código. Es un visor de lectura; los ejemplos se ejecutan por el gateway con el rol correspondiente. No constituye la interfaz de negocio pendiente ni acredita aceptación externa. [Contratos y ejemplos](docs/contracts/README.md).
+
 ## Pruebas y automatización
 
 ```powershell
@@ -99,6 +109,7 @@ Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fecha
 | [ENTREGA-2.md](docs/ENTREGA-2.md) | Matriz de cumplimiento para el 23 de octubre |
 | [INTEGRACIONES.md](docs/INTEGRACIONES.md) | Acuerdos externos EXT-01 a EXT-15 |
 | [Contratos](docs/contracts/README.md) | API propias actuales y artefactos históricos |
+| [Referencia de endpoints y Swagger](docs/API.md) | 34 operaciones HTTP: permisos, entradas, respuestas, errores, ejemplos y visor local |
 | [ENTREGA-1.md](docs/ENTREGA-1.md) | Evidencia histórica de la primera entrega |
 
 ## Organización

@@ -1,5 +1,19 @@
 # Contratos propios e integración
 
+## Referencia completa y visor Swagger
+
+La [guía de endpoints](../API.md) documenta las **34 operaciones HTTP implementadas** al 28 de octubre de 2026, incluidos Clientes, Flota y disponibilidad/métricas. Cada contrato explica parámetros, cuerpos, permisos, respuestas y ejemplos ficticios. Ejecutar `go run ./cmd/apidocs` desde la raíz y abrir [Swagger UI](http://127.0.0.1:8090/api/); no requiere servicios activos ni credenciales y permite seleccionar las seis API propias vigentes. El visor de lectura incluye recursos locales; los contratos históricos y los del proveedor se conservan separados.
+
+| Contrato agregado | Cobertura |
+| --- | --- |
+| [customers-openapi.json](customers-openapi.json) | 3 operaciones de registro, lista y consulta de clientes |
+| [fleet-openapi.json](fleet-openapi.json) | 7 operaciones de catálogo, búsqueda, ficha, tarifa, escritura versionada y reindexación |
+| [operations-openapi.json](operations-openapi.json) | 2 operaciones técnicas comunes: disponibilidad de instancia y métricas |
+
+Los contratos de Alquileres, Empleados e integración clínica se completaron con ejemplos y explicaciones; mantienen sus versiones funcionales y no anuncian cambios de comportamiento. La verificación `scripts/check-api-docs.py` valida OpenAPI, referencias, ejemplos y correspondencia con las rutas implementadas; sus dependencias y reproducción se describen en la guía. No acredita pruebas con proveedores ni acuerdos externos.
+
+## Estado y antecedentes de las integraciones
+
 **Revisión vigente — 23/10/2026:** personal/gimnasio y la API administrativa clínica usan versión 0.3.0. [ADR-018](../adr/ADR-018-empleados-sin-candidatos.md) retira candidatos y [ADR-019](../adr/ADR-019-consumo-turnos-socios.md) adapta el flujo clínico a Turnos para socios 1.0.0 fijado a `c0b65f4`. Nuevos vínculos, intenciones y envíos que puedan crear exigen empleado activo; seguimiento previo de inactivos se conserva. La lista y membresías del gimnasio no cambian. Pruebas locales y aceptación externa se registran por separado.
 
 Actualización del 22 de octubre: [API administrativa de hospital](clinic-integration-openapi.json), versión 0.1.0, y [contrato observado de Turnos de Octi](providers/octi-turnos-observed.openapi.json). El segundo documenta código publicado, no un acuerdo bilateral ni el OpenAPI oficial del proveedor. Guía de configuración, uso y recuperación: [COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md). Se conserva la lista e intercambio propio del gimnasio.

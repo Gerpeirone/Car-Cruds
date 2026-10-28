@@ -1,0 +1,428 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — Clientes",
+    "version": "0.1.0",
+    "description": "API implementada de perfiles de conductores. No ofrece modificación ni eliminación HTTP de clientes, ni un endpoint de historial. Los empleados se administran en otro servicio."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Gateway local predeterminado; ajustar al entorno de ejecución."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Clientes",
+      "description": "Operaciones del servicio de Clientes."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "Listar perfiles de clientes",
+        "description": "Solo admin y service. Consulta PostgreSQL y devuelve hasta 200 perfiles, ordenados por id. No filtra por actividad; no ofrece parámetros de paginación ni búsqueda.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfiles ordenados por identificador; como máximo 200 registros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerList"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "cli-001",
+                      "name": "Persona ficticia de demostración",
+                      "active": true,
+                      "licenseValidUntil": "2030-12-31"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "DEPENDENCY_UNAVAILABLE",
+                  "message": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Registrar un cliente conductor",
+        "description": "Solo admin. Requiere los cuatro campos del perfil. Valida identificador, nombre y fecha; active debe ser un booleano explícito. El identificador lo proporciona el solicitante y un duplicado produce 409 CONFLICT. No es idempotente por encabezado.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "admin"
+        ],
+        "responses": {
+          "201": {
+            "description": "Cliente persistido con su actividad y fecha de licencia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                },
+                "example": {
+                  "id": "cli-001",
+                  "name": "Persona ficticia de demostración",
+                  "active": true,
+                  "licenseValidUntil": "2030-12-31"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_INPUT: identificador, nombre, fecha o JSON inválidos; active debe ser explícito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, nombre, fecha o JSON inválidos; active debe ser explícito."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: ya existe un cliente con ese identificador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "CONFLICT",
+                  "message": "CONFLICT: ya existe un cliente con ese identificador."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "DEPENDENCY_UNAVAILABLE",
+                  "message": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Objeto JSON de la operación. Los valores del ejemplo son ficticios.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Customer"
+              },
+              "example": {
+                "id": "cli-001",
+                "name": "Persona ficticia de demostración",
+                "active": true,
+                "licenseValidUntil": "2030-12-31"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identificador del cliente a consultar.",
+          "schema": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "example": "cli-001"
+        }
+      ],
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "Consultar un perfil y su habilitación",
+        "description": "admin y service consultan cualquier perfil. client consulta únicamente su CustomerID configurado; consultar un cliente ajeno devuelve 404, igual que uno inexistente. Un identificador inválido del perfil propio o consultado por administración produce 400. La respuesta incluye actividad y vencimiento para validar el conductor.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil visible para la aplicación solicitante.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                },
+                "example": {
+                  "id": "cli-001",
+                  "name": "Persona ficticia de demostración",
+                  "active": true,
+                  "licenseValidUntil": "2030-12-31"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada, parámetros o cuerpo inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Entrada, parámetros o cuerpo inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente o no visible para la aplicación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "DEPENDENCY_UNAVAILABLE",
+                  "message": "DEPENDENCY_UNAVAILABLE: PostgreSQL falló; SERVICE_UNAVAILABLE: gateway no disponible."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-contract-status": "implemented-own-api",
+  "x-source-files": [
+    "services/customers/presentation/http.go",
+    "services/customers/business/service.go",
+    "services/customers/data/postgres.go"
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token opaco de aplicación configurado fuera de Git. No es una cuenta de usuario ni se presupone JWT. Los roles no se toman del cuerpo."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código estable para interpretar el error."
+          },
+          "message": {
+            "type": "string",
+            "description": "Detalle legible; puede variar sin cambiar el código."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "Identifier": {
+        "type": "string",
+        "description": "Identificador sensible a mayúsculas.",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre normalizado mediante recorte de espacios exteriores; de 1 a 200 bytes UTF-8.",
+            "minLength": 1
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Habilitación administrativa; la licencia también se verifica al alquilar."
+          },
+          "licenseValidUntil": {
+            "type": "string",
+            "description": "Vencimiento registrado de licencia; fecha válida YYYY-MM-DD. El alta admite fechas vencidas.",
+            "format": "date"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "active",
+          "licenseValidUntil"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "id": "cli-001",
+          "name": "Persona ficticia de demostración",
+          "active": true,
+          "licenseValidUntil": "2030-12-31"
+        }
+      },
+      "CustomerList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            },
+            "maxItems": 200,
+            "description": "Hasta 200 perfiles ordenados por id; sin paginación ni conteo total."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    }
+  }
+}

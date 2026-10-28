@@ -1,0 +1,214 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — Operación técnica",
+    "version": "0.1.0",
+    "description": "Rutas comunes de los procesos Go: gateway, Clientes, cada réplica de Flota, Alquileres, Empleados e indexador. En el gateway describen su propia instancia; no se enrutan a las métricas de otro servicio. Caddy bloquea /internal/* en el despliegue público."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Gateway local predeterminado; ajustar al entorno de ejecución."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Operación técnica",
+      "description": "Rutas comunes de los procesos Go: gateway, Clientes, cada réplica de Flota, Alquileres, Empleados e indexador. En el gateway describen su propia instancia; no se enrutan a las métricas de otro servicio. Caddy bloquea /internal/* en el despliegue público."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/internal/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "summary": "Consultar disponibilidad de una instancia",
+        "description": "Solo admin y service. Ejecuta el chequeo del componente con hasta un segundo. El gateway consulta en paralelo los cuatro servicios de negocio; las comprobaciones de cada servicio dependen de su configuración. 200 no prueba disponibilidad de integraciones externas, aceptación bilateral ni ausencia de degradación en todas las capacidades.",
+        "tags": [
+          "Operación técnica"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "La comprobación de disponibilidad de esta instancia finalizó satisfactoriamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ready"
+                },
+                "example": {
+                  "status": "ok",
+                  "service": "gateway",
+                  "instance": "gateway"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: la comprobación no logró verificar una dependencia dentro de su presupuesto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "SERVICE_UNAVAILABLE: la comprobación no logró verificar una dependencia dentro de su presupuesto."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "summary": "Leer métricas Prometheus de una instancia",
+        "description": "Solo admin y service. Devuelve métricas de solicitudes, latencia, proceso Go y colectores registrados por el componente. No agrega métricas del conjunto. Se consume en la red privada; el despliegue Caddy responde 404 a estas rutas.",
+        "tags": [
+          "Operación técnica"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas en formato de exposición Prometheus; el tipo exacto se negocia con Accept. El ejemplo muestra una parte de la salida.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "# HELP car_cruds_http_requests_total Solicitudes por ruta y resultado.\n# TYPE car_cruds_http_requests_total counter\ncar_cruds_http_requests_total{service=\"gateway\",instance=\"gateway\",method=\"GET\",route=\"GET /internal/ready\",status=\"200\"} 1\n"
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-contract-status": "implemented-own-api",
+  "x-source-files": [
+    "internal/platform/runtime.go",
+    "cmd/gateway/main.go",
+    "infra/caddy/Caddyfile"
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token opaco de aplicación configurado fuera de Git. No es una cuenta de usuario ni se presupone JWT. Los roles no se toman del cuerpo."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código estable para interpretar el error."
+          },
+          "message": {
+            "type": "string",
+            "description": "Detalle legible; puede variar sin cambiar el código."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "Ready": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Resultado de disponibilidad.",
+            "enum": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "description": "Servicio que respondió."
+          },
+          "instance": {
+            "type": "string",
+            "description": "Instancia que respondió."
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "instance"
+        ]
+      }
+    }
+  }
+}
