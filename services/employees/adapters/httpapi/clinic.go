@@ -29,6 +29,7 @@ type clinicRequestDTO struct {
 	CreatedAt      time.Time             `json:"createdAt"`
 	AttemptedAt    *time.Time            `json:"attemptedAt"`
 	ObservedAt     *time.Time            `json:"observedAt"`
+	NextAttemptAt  *time.Time            `json:"nextAttemptAt,omitempty"`
 	State          string                `json:"state"`
 	Classification string                `json:"classification"`
 	FailureCode    string                `json:"failureCode,omitempty"`
@@ -37,6 +38,7 @@ type clinicRequestDTO struct {
 
 func clinicDTO(s domain.ClinicRequest) clinicRequestDTO {
 	d := clinicRequestDTO{ID: s.ID, LocalReference: s.LocalReference, PersonKind: s.PersonKind, PersonID: s.PersonID, PatientID: s.PatientID, DoctorID: s.DoctorID, StartAt: s.StartAt, CreatedAt: s.CreatedAt, AttemptedAt: s.AttemptedAt, ObservedAt: s.ObservedAt, State: s.State, Classification: s.Classification(), FailureCode: s.FailureCode}
+	d.NextAttemptAt = s.NextAttemptAt
 	if a := s.Appointment; a != nil {
 		d.Appointment = &clinicAppointmentDTO{a.ID, a.PatientID, a.DoctorID, a.StartAt, a.EndAt, a.Status, a.Version}
 	}

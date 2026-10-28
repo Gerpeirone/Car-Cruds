@@ -107,10 +107,13 @@ func verify(ctx context.Context, base, token string) error {
 	if _, err := get("/v1/employees?page=0", token, 400); err != nil {
 		return err
 	}
-	for _, path := range []string{"/v1/admin/employees", "/v1/candidates", "/v1/employees/integrations"} {
+	for _, path := range []string{"/v1/admin/employees", "/v1/employees/integrations"} {
 		if _, err := get(path, token, 403); err != nil {
 			return err
 		}
+	}
+	if _, err := get("/v1/candidates", token, 404); err != nil {
+		return err
 	}
 	return nil
 }

@@ -77,13 +77,6 @@ func (h *harness) cleanup(ctx context.Context) error {
 			failures = append(failures, errors.New("empleado inactivo sigue expuesto al gimnasio"))
 		}
 	}
-	if h.candidateID != "" {
-		if _, err := h.request(ctx, "eliminar_candidato_smoke", "DELETE", "/v1/candidates/"+h.candidateID, h.admin, nil, "", 204, nil); err != nil {
-			failures = append(failures, err)
-		} else if _, err := h.request(ctx, "candidato_eliminado", "GET", "/v1/candidates/"+h.candidateID, h.admin, nil, "", 404, nil); err != nil {
-			failures = append(failures, err)
-		}
-	}
 	if h.vehicleIntent {
 		var quote struct {
 			ID      string `json:"vehicleId"`

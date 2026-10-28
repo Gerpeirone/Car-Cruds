@@ -24,7 +24,7 @@ func TestMembershipPersistenceCorrectionsAndReport(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := repo.CreateCandidate(ctx, domain.Candidate{ID: "candidate", DisplayName: "Candidato ficticio"}); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO candidates(candidate_id,display_name) VALUES('candidate','Registro historico')`); err != nil {
 		t.Fatal(err)
 	}
 	s := domain.MembershipSnapshot{EmployeeID: "a", Period: "2026-10", SourceReference: "ref-a", Version: 2, ObservedAt: time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC), Member: ptr(true), Used: ptr(false), CostMinor: ptr(int64(100)), SpendingMinor: ptr(int64(0)), Currency: "ARS"}

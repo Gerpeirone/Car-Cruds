@@ -19,7 +19,7 @@ import (
 )
 
 func testHandler() http.Handler {
-	repo := &memoryRepository{employees: map[string]domain.Employee{}, candidates: map[string]domain.Candidate{}}
+	repo := &memoryRepository{employees: map[string]domain.Employee{}}
 	next := 0
 	service := application.New(repo, func() string { next++; return fmt.Sprintf("person-%03d", next) })
 	return platform.AuthMiddleware(httpapi.New(service), map[string]platform.Principal{
@@ -43,15 +43,12 @@ func request(handler http.Handler, method, path, body, token string) *httptest.R
 	return w
 }
 
-func TestSharedListProjectsActiveEmployeesAndNeverCandidates(t *testing.T) {
+func TestSharedListProjectsActiveEmployees(t *testing.T) {
 	handler := testHandler()
 	for _, body := range []string{`{"displayName":"Ana ficticia","active":true}`, `{"displayName":"Luis ficticio","active":false}`, `{"displayName":"Rosa ficticia","active":true}`} {
 		if w := request(handler, "POST", "/v1/employees", body, "test-admin"); w.Code != 201 {
 			t.Fatalf("employee creation: %d %s", w.Code, w.Body)
 		}
-	}
-	if w := request(handler, "POST", "/v1/candidates", `{"displayName":"Candidato ficticio"}`, "test-admin"); w.Code != 201 {
-		t.Fatalf("candidate: %d", w.Code)
 	}
 	w := request(handler, "GET", "/v1/employees?page=2&pageSize=1", "", "test-gym")
 	if w.Code != 200 {
@@ -108,9 +105,9 @@ func TestRoleIsolationAndUnconfiguredIntegrations(t *testing.T) {
 		{"PUT", "/v1/employees/any", `{"displayName":"A","active":true}`, "test-gym", 403},
 		{"DELETE", "/v1/employees/any", "", "test-gym", 403},
 		{"GET", "/v1/admin/employees", "", "test-gym", 403},
-		{"GET", "/v1/candidates", "", "test-gym", 403},
-		{"POST", "/v1/candidates", `{"displayName":"A"}`, "test-gym", 403},
-		{"GET", "/v1/candidates/any", "", "test-service", 403},
+		{"GET", "/v1/candidates", "", "test-gym", 404},
+		{"POST", "/v1/candidates", `{"displayName":"A"}`, "test-gym", 404},
+		{"GET", "/v1/candidates/any", "", "test-service", 404},
 		{"GET", "/v1/employees/integrations", "", "test-gym", 403},
 		{"GET", "/v1/employees/integrations", "", "test-admin", 503},
 	} {
@@ -139,7 +136,6 @@ func TestStableRoutePatternsSurvivePlatformMuxAndAuthentication(t *testing.T) {
 	for _, entry := range []struct{ path, pattern string }{
 		{"/v1/employees/person-001", "/v1/employees/{id}"},
 		{"/v1/employees/person-002", "/v1/employees/{id}"},
-		{"/v1/candidates/person-003", "/v1/candidates/{id}"},
 		{"/v1/employees/integrations", "/v1/employees/integrations"},
 	} {
 		r := httptest.NewRequest(http.MethodGet, entry.path, nil)
@@ -151,40 +147,39 @@ func TestStableRoutePatternsSurvivePlatformMuxAndAuthentication(t *testing.T) {
 	}
 }
 
-func TestAdministrativeLifecycleDoesNotPromoteCandidatesImplicitly(t *testing.T) {
+func TestAdministrativeEmployeeLifecycle(t *testing.T) {
 	handler := testHandler()
-	steps := []struct {
+	for _, step := range []struct {
 		method, path, body string
 		status             int
 	}{
-		{"POST", "/v1/candidates", `{"displayName":"Posible incorporación ficticia"}`, 201},
-		{"GET", "/v1/candidates/person-001", "", 200},
-		{"PUT", "/v1/candidates/person-001", `{"displayName":"Nombre revisado"}`, 200},
 		{"POST", "/v1/employees", `{"displayName":"Empleado ficticio","active":false}`, 201},
-		{"GET", "/v1/employees/person-002", "", 200},
-		{"PUT", "/v1/employees/person-002", `{"displayName":"Empleado ficticio","active":true}`, 200},
-		{"DELETE", "/v1/candidates/person-001", "", 204},
-		{"GET", "/v1/candidates/person-001", "", 404},
+		{"GET", "/v1/employees/person-001", "", 200},
+		{"PUT", "/v1/employees/person-001", `{"displayName":"Nombre revisado","active":true}`, 200},
 		{"PUT", "/v1/employees/missing", `{"displayName":"No registrado","active":true}`, 404},
-	}
-	for _, step := range steps {
+	} {
 		w := request(handler, step.method, step.path, step.body, "test-admin")
 		if w.Code != step.status {
 			t.Fatalf("%s %s = %d: %s", step.method, step.path, w.Code, w.Body)
 		}
 	}
 	w := request(handler, "GET", "/v1/employees", "", "test-gym")
-	var response struct {
-		Items []struct {
-			ID string `json:"employeeId"`
+	if !strings.Contains(w.Body.String(), `"employeeId":"person-001"`) || !strings.Contains(w.Body.String(), `"displayName":"Nombre revisado"`) {
+		t.Fatalf("employee update lost: %s", w.Body)
+	}
+}
+
+func TestCandidateRoutesWereRemoved(t *testing.T) {
+	handler := testHandler()
+	for _, route := range []struct{ method, path string }{
+		{"GET", "/v1/candidates"}, {"POST", "/v1/candidates"},
+		{"GET", "/v1/candidates/legacy"}, {"PUT", "/v1/candidates/legacy"}, {"DELETE", "/v1/candidates/legacy"},
+	} {
+		for _, token := range []string{"test-admin", "test-gym", "test-service"} {
+			if w := request(handler, route.method, route.path, `{}`, token); w.Code != 404 {
+				t.Errorf("retired route %s %s = %d", route.method, route.path, w.Code)
+			}
 		}
-		Total int
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatal(err)
-	}
-	if response.Total != 1 || len(response.Items) != 1 || response.Items[0].ID != "person-002" {
-		t.Fatalf("candidate was promoted or employee update lost: %s", w.Body)
 	}
 }
 
@@ -253,8 +248,7 @@ func TestSharedResponseMatchesOwnOpenAPIProjection(t *testing.T) {
 // In-memory output-port double for HTTP and authorization unit tests only.
 // PostgreSQL behavior is verified separately against TEST_DATABASE_URL.
 type memoryRepository struct {
-	employees  map[string]domain.Employee
-	candidates map[string]domain.Candidate
+	employees map[string]domain.Employee
 }
 
 func (m *memoryRepository) ListEmployees(_ context.Context, p domain.Page, active bool) ([]domain.Employee, int64, error) {
@@ -299,42 +293,4 @@ func (m *memoryRepository) DeactivateEmployee(ctx context.Context, id string) (d
 	item.Active = false
 	m.employees[id] = item
 	return item, nil
-}
-func (m *memoryRepository) ListCandidates(_ context.Context, p domain.Page) ([]domain.Candidate, int64, error) {
-	items := []domain.Candidate{}
-	for _, item := range m.candidates {
-		items = append(items, item)
-	}
-	sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
-	total := int64(len(items))
-	start := p.Offset()
-	if start >= total {
-		return []domain.Candidate{}, total, nil
-	}
-	return items[start:min(start+int64(p.Size), total)], total, nil
-}
-func (m *memoryRepository) GetCandidate(_ context.Context, id string) (domain.Candidate, error) {
-	item, ok := m.candidates[id]
-	if !ok {
-		return item, domain.ErrNotFound
-	}
-	return item, nil
-}
-func (m *memoryRepository) CreateCandidate(_ context.Context, item domain.Candidate) error {
-	m.candidates[item.ID] = item
-	return nil
-}
-func (m *memoryRepository) UpdateCandidate(ctx context.Context, item domain.Candidate) (domain.Candidate, error) {
-	if _, err := m.GetCandidate(ctx, item.ID); err != nil {
-		return item, err
-	}
-	m.candidates[item.ID] = item
-	return item, nil
-}
-func (m *memoryRepository) DeleteCandidate(_ context.Context, id string) error {
-	if _, ok := m.candidates[id]; !ok {
-		return domain.ErrNotFound
-	}
-	delete(m.candidates, id)
-	return nil
 }
