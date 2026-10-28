@@ -1,5 +1,7 @@
 # Servicio Alquileres
 
+La [referencia de endpoints y Swagger](../../docs/API.md) reúne el contrato de Alquileres con las otras API propias y explica el recorrido de disponibilidad, reserva, retiro y devolución.
+
 | Aspecto | Implementación |
 | --- | --- |
 | Fecha | 13 de octubre de 2026 |

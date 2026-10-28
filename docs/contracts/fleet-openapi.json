@@ -1,0 +1,1419 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Car Cruds — Flota",
+    "version": "0.1.0",
+    "description": "Catálogo fuente en MongoDB, fichas con caché Redis y búsqueda derivada en Solr. El gateway distribuye las solicitudes entre dos réplicas mediante NGINX. Los importes se expresan en centavos de ARS. No existe DELETE: la baja se expresa con active=false mediante PUT."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Gateway local predeterminado; ajustar al entorno de ejecución."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Flota",
+      "description": "Operaciones del servicio de Flota."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/vehicles": {
+      "get": {
+        "operationId": "listVehicles",
+        "summary": "Listar el catálogo fuente",
+        "description": "admin, client y service. Lee MongoDB sin depender de Solr; por defecto solo activos. includeInactive=true incluye inactivos únicamente para admin; para otros roles se ignora. El parámetro q es aceptado y validado por el lector común, pero no filtra esta operación: usar /search para buscar texto. Conteo e ítems provienen de consultas separadas; no hay snapshot común.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de vehículos obtenida de MongoDB con el conteo de coincidencias.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiclePage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "vehicleId": "auto-001",
+                      "brand": "Toyota",
+                      "model": "Corolla",
+                      "category": "sedan",
+                      "transmission": "manual",
+                      "seats": 5,
+                      "dailyRateMinor": 5000000,
+                      "currency": "ARS",
+                      "active": true,
+                      "version": 1,
+                      "updatedAt": "2026-10-28T12:00:00Z"
+                    }
+                  ],
+                  "page": 1,
+                  "pageSize": 20,
+                  "total": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Página desde 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de marca, sensible a mayúsculas; se recortan espacios exteriores.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "example": "Toyota"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de categoría; se recortan espacios exteriores.",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "example": "sedan"
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por transmisión.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "automatic"
+              ]
+            },
+            "example": "manual"
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de plazas; 0 u omisión desactiva el filtro.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9
+            },
+            "example": 5
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Orden por tarifa; vehicleId ascendente desempata.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "price_asc"
+            },
+            "example": "price_asc"
+          },
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "required": false,
+            "description": "Solo el literal true y el rol admin incluyen vehículos inactivos.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createVehicle",
+        "summary": "Registrar un vehículo y su cambio de catálogo",
+        "description": "admin y service. Registra el vehículo con version=1 y su evento outbox en el mismo documento. active es opcional y por defecto true. version debe omitirse o ser 0. Campos desconocidos/duplicados se rechazan; la representación documentada es application/json, aunque este handler no verifica explícitamente Content-Type.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "201": {
+            "description": "Vehículo persistido en versión 1 con evento outbox pendiente de publicación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vehicle"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "brand": "Toyota",
+                  "model": "Corolla",
+                  "category": "sedan",
+                  "transmission": "manual",
+                  "seats": 5,
+                  "dailyRateMinor": 5000000,
+                  "currency": "ARS",
+                  "active": true,
+                  "version": 1,
+                  "updatedAt": "2026-10-28T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERSION_CONFLICT: identificador duplicado o versión desactualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "VERSION_CONFLICT",
+                  "message": "VERSION_CONFLICT: identificador duplicado o versión desactualizada."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Objeto JSON de la operación. Los valores del ejemplo son ficticios.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehicle"
+              },
+              "example": {
+                "vehicleId": "auto-001",
+                "brand": "Toyota",
+                "model": "Corolla",
+                "category": "sedan",
+                "transmission": "manual",
+                "seats": 5,
+                "dailyRateMinor": 5000000,
+                "currency": "ARS",
+                "active": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vehicles/search": {
+      "get": {
+        "operationId": "searchVehicles",
+        "summary": "Buscar vehículos en el índice Solr",
+        "description": "admin, client y service. Busca texto y aplica filtros sobre la proyección derivada; siempre excluye inactivos. q se interpreta como texto escapado, sin aceptar sintaxis Lucene arbitraria. El índice puede retrasarse respecto de MongoDB: no autoriza precio ni reserva. Si Solr falla devuelve 503 SEARCH_UNAVAILABLE, sin reemplazar el fallo por una lista vacía.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de coincidencias del índice Solr, siempre de vehículos activos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiclePage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "vehicleId": "auto-001",
+                      "brand": "Toyota",
+                      "model": "Corolla",
+                      "category": "sedan",
+                      "transmission": "manual",
+                      "seats": 5,
+                      "dailyRateMinor": 5000000,
+                      "currency": "ARS",
+                      "active": true,
+                      "version": 1,
+                      "updatedAt": "2026-10-28T12:00:00Z"
+                    }
+                  ],
+                  "page": 1,
+                  "pageSize": 20,
+                  "total": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SEARCH_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Página desde 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "example": 20
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de marca, sensible a mayúsculas; se recortan espacios exteriores.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "example": "Toyota"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de categoría; se recortan espacios exteriores.",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "example": "sedan"
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por transmisión.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "automatic"
+              ]
+            },
+            "example": "manual"
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "required": false,
+            "description": "Coincidencia exacta de plazas; 0 u omisión desactiva el filtro.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9
+            },
+            "example": 5
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Orden por tarifa; vehicleId ascendente desempata.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "price_asc"
+            },
+            "example": "price_asc"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Texto de búsqueda; se recortan espacios. Sin texto se buscan todos los vehículos activos.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "example": "Corolla"
+          }
+        ]
+      }
+    },
+    "/v1/vehicles/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identificador del vehículo.",
+          "schema": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "example": "auto-001"
+        }
+      ],
+      "get": {
+        "operationId": "getVehicle",
+        "summary": "Consultar la ficha de un vehículo",
+        "description": "admin, client y service. Consulta Redis y, ante miss o error, MongoDB con tiempo y concurrencia acotados. La ficha puede conservar la vigencia de la caché; no debe usarse como tarifa autoritativa de confirmación. La consulta por identificador puede devolver un vehículo inactivo.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Ficha del vehículo, desde caché o fuente, con versión y fecha del cambio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vehicle"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "brand": "Toyota",
+                  "model": "Corolla",
+                  "category": "sedan",
+                  "transmission": "manual",
+                  "seats": 5,
+                  "dailyRateMinor": 5000000,
+                  "currency": "ARS",
+                  "active": true,
+                  "version": 1,
+                  "updatedAt": "2026-10-28T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VEHICLE_NOT_FOUND: vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "VEHICLE_NOT_FOUND",
+                  "message": "VEHICLE_NOT_FOUND: vehículo inexistente."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateVehicle",
+        "summary": "Actualizar un vehículo con control de versión",
+        "description": "admin y service. Sustituye marca, modelo, categoría, transmisión, plazas, tarifa y moneda. Requiere version vigente; una carrera produce 409 VERSION_CONFLICT. vehicleId es opcional en el cuerpo y, si aparece, debe coincidir con la ruta. active omitido o null conserva el estado actual; active=false produce baja lógica. Guarda cambio y outbox, incrementa versión e intenta invalidar caché. No admite Idempotency-Key.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Nueva versión del vehículo persistida con su evento outbox.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vehicle"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "brand": "Toyota",
+                  "model": "Corolla",
+                  "category": "sedan",
+                  "transmission": "manual",
+                  "seats": 5,
+                  "dailyRateMinor": 5500000,
+                  "currency": "ARS",
+                  "active": true,
+                  "version": 2,
+                  "updatedAt": "2026-10-28T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VEHICLE_NOT_FOUND: vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "VEHICLE_NOT_FOUND",
+                  "message": "VEHICLE_NOT_FOUND: vehículo inexistente."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERSION_CONFLICT: identificador duplicado o versión desactualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "VERSION_CONFLICT",
+                  "message": "VERSION_CONFLICT: identificador duplicado o versión desactualizada."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Objeto JSON de la operación. Los valores del ejemplo son ficticios.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVehicle"
+              },
+              "example": {
+                "vehicleId": "auto-001",
+                "brand": "Toyota",
+                "model": "Corolla",
+                "category": "sedan",
+                "transmission": "manual",
+                "seats": 5,
+                "dailyRateMinor": 5500000,
+                "currency": "ARS",
+                "active": true,
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vehicles/{id}/quote": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identificador del vehículo.",
+          "schema": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "example": "auto-001"
+        }
+      ],
+      "get": {
+        "operationId": "getVehicleQuote",
+        "summary": "Consultar la tarifa autoritativa",
+        "description": "Solo admin y service. Lee directamente MongoDB, sin caché ni búsqueda. Devuelve actividad, tarifa, moneda y versión; un vehículo inactivo también tiene respuesta y su actividad debe evaluarse en Alquileres. client cotiza mediante GET /v1/availability, no mediante esta ruta.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Tarifa, moneda, actividad y versión obtenidas directamente de MongoDB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "vehicleId": "auto-001",
+                  "active": true,
+                  "dailyRateMinor": 5000000,
+                  "currency": "ARS",
+                  "version": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_VEHICLE",
+                  "message": "INVALID_VEHICLE: identificador, campos de vehículo o filtros inválidos."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VEHICLE_NOT_FOUND: vehículo inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "VEHICLE_NOT_FOUND",
+                  "message": "VEHICLE_NOT_FOUND: vehículo inexistente."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vehicles/reindex": {
+      "post": {
+        "operationId": "reindexVehicles",
+        "summary": "Reencolar el catálogo para reconstruir la búsqueda",
+        "description": "Solo admin y service. Recorre todos los vehículos y agrega eventos a la outbox; el indexador aplica luego la versión fuente a Solr. Sin cuerpo ni Idempotency-Key. 202 significa encolado, no reconstrucción terminada. Puede haber avance parcial antes de un 503; repetir vuelve a encolar y la aplicación de versiones protege la proyección.",
+        "tags": [
+          "Flota"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "responses": {
+          "202": {
+            "description": "Recorrido de encolado finalizado; la indexación posterior sigue siendo asíncrona.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReindexReceipt"
+                },
+                "example": {
+                  "status": "pending",
+                  "enqueued": 2
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FLEET_UNAVAILABLE",
+                  "message": "FLEET_UNAVAILABLE: dependencia de Flota fallida; SOURCE_BUSY: límite de lectura; OUTBOX_FULL: cambios pendientes; SEARCH_UNAVAILABLE: índice no disponible; SERVICE_UNAVAILABLE: gateway/proxy no disponible."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-contract-status": "implemented-own-api",
+  "x-source-files": [
+    "services/fleet/http.go",
+    "services/fleet/model.go",
+    "services/fleet/service.go",
+    "services/fleet/mongo.go",
+    "services/fleet/solr.go"
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token opaco de aplicación configurado fuera de Git. No es una cuenta de usuario ni se presupone JWT. Los roles no se toman del cuerpo."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código estable para interpretar el error."
+          },
+          "message": {
+            "type": "string",
+            "description": "Detalle legible; puede variar sin cambiar el código."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "Identifier": {
+        "type": "string",
+        "description": "Identificador sensible a mayúsculas.",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "brand": {
+            "type": "string",
+            "description": "Marca no vacía tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "description": "Modelo no vacío tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría de dominio libre; máximo 64 bytes UTF-8, no vacía tras recortar espacios.",
+            "minLength": 1
+          },
+          "transmission": {
+            "type": "string",
+            "description": "Transmisión admitida.",
+            "enum": [
+              "manual",
+              "automatic"
+            ]
+          },
+          "seats": {
+            "type": "integer",
+            "description": "Cantidad de plazas.",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "description": "Tarifa diaria en centavos de ARS.",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Moneda admitida.",
+            "enum": [
+              "ARS"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Alta: por defecto true si se omite o es null. Actualización: conserva valor actual si se omite o es null."
+          },
+          "version": {
+            "type": "integer",
+            "description": "Versión de concurrencia que aumenta en cada cambio.",
+            "format": "int64",
+            "minimum": 1
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Fecha UTC del cambio de catálogo.",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "vehicleId",
+          "brand",
+          "model",
+          "category",
+          "transmission",
+          "seats",
+          "dailyRateMinor",
+          "currency",
+          "active",
+          "version",
+          "updatedAt"
+        ],
+        "example": {
+          "vehicleId": "auto-001",
+          "brand": "Toyota",
+          "model": "Corolla",
+          "category": "sedan",
+          "transmission": "manual",
+          "seats": 5,
+          "dailyRateMinor": 5000000,
+          "currency": "ARS",
+          "active": true,
+          "version": 1,
+          "updatedAt": "2026-10-28T12:00:00Z"
+        }
+      },
+      "CreateVehicle": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "brand": {
+            "type": "string",
+            "description": "Marca no vacía tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "description": "Modelo no vacío tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría de dominio libre; máximo 64 bytes UTF-8, no vacía tras recortar espacios.",
+            "minLength": 1
+          },
+          "transmission": {
+            "type": "string",
+            "description": "Transmisión admitida.",
+            "enum": [
+              "manual",
+              "automatic"
+            ]
+          },
+          "seats": {
+            "type": "integer",
+            "description": "Cantidad de plazas.",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "description": "Tarifa diaria en centavos de ARS.",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Moneda admitida.",
+            "enum": [
+              "ARS"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Alta: por defecto true si se omite o es null. Actualización: conserva valor actual si se omite o es null.",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "description": "En el alta solo se admite 0; puede omitirse.",
+            "enum": [
+              0
+            ],
+            "default": 0
+          }
+        },
+        "required": [
+          "vehicleId",
+          "brand",
+          "model",
+          "category",
+          "transmission",
+          "seats",
+          "dailyRateMinor",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "vehicleId": "auto-001",
+          "brand": "Toyota",
+          "model": "Corolla",
+          "category": "sedan",
+          "transmission": "manual",
+          "seats": 5,
+          "dailyRateMinor": 5000000,
+          "currency": "ARS",
+          "active": true
+        }
+      },
+      "UpdateVehicle": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "brand": {
+            "type": "string",
+            "description": "Marca no vacía tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "description": "Modelo no vacío tras recortar espacios; máximo 128 bytes UTF-8.",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría de dominio libre; máximo 64 bytes UTF-8, no vacía tras recortar espacios.",
+            "minLength": 1
+          },
+          "transmission": {
+            "type": "string",
+            "description": "Transmisión admitida.",
+            "enum": [
+              "manual",
+              "automatic"
+            ]
+          },
+          "seats": {
+            "type": "integer",
+            "description": "Cantidad de plazas.",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "description": "Tarifa diaria en centavos de ARS.",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Moneda admitida.",
+            "enum": [
+              "ARS"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Alta: por defecto true si se omite o es null. Actualización: conserva valor actual si se omite o es null.",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "description": "Versión leída antes del cambio; obligatoria para concurrencia optimista.",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "brand",
+          "model",
+          "category",
+          "transmission",
+          "seats",
+          "dailyRateMinor",
+          "currency",
+          "version"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "vehicleId": "auto-001",
+          "brand": "Toyota",
+          "model": "Corolla",
+          "category": "sedan",
+          "transmission": "manual",
+          "seats": 5,
+          "dailyRateMinor": 5500000,
+          "currency": "ARS",
+          "active": true,
+          "version": 1
+        }
+      },
+      "VehiclePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Vehicle"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "description": "Página devuelta.",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Tamaño de página.",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "description": "Cantidad total de coincidencias.",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "dailyRateMinor": {
+            "type": "integer",
+            "description": "Tarifa diaria en centavos de ARS.",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000
+          },
+          "currency": {
+            "type": "string",
+            "description": "Moneda admitida.",
+            "enum": [
+              "ARS"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Alta: por defecto true si se omite o es null. Actualización: conserva valor actual si se omite o es null."
+          },
+          "version": {
+            "type": "integer",
+            "description": "Versión fuente vigente.",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "vehicleId",
+          "dailyRateMinor",
+          "currency",
+          "active",
+          "version"
+        ]
+      },
+      "ReindexReceipt": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Trabajo encolado, sin garantía de que el índice ya se actualizó.",
+            "enum": [
+              "pending"
+            ]
+          },
+          "enqueued": {
+            "type": "integer",
+            "description": "Vehículos reencolados hasta completar el recorrido.",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "status",
+          "enqueued"
+        ]
+      }
+    }
+  }
+}

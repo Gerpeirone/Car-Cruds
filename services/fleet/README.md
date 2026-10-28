@@ -1,5 +1,7 @@
 # Servicio Flota
 
+Referencia de todas las operaciones, filtros, escritura versionada, ejemplos y errores: [OpenAPI de Flota](../../docs/contracts/fleet-openapi.json). [Guía y visor Swagger](../../docs/API.md).
+
 Flota implementa una arquitectura en capas: handlers HTTP, servicio de aplicación y repositorios/adaptadores. MongoDB es la fuente de fichas y tarifas; Redis es una copia temporal; Solr es una proyección de búsqueda. La disponibilidad por período pertenece a Alquileres.
 
 ## Ejecutables y configuración

@@ -18,3 +18,6 @@ Dockerfile text eol=lf
 .gitattributes text eol=lf
 *.pdf binary
 Caddyfile text eol=lf
+# Conservar los bytes oficiales de Swagger para verificar sus hashes en Windows/Linux.
+docs/api/vendor/* -text
+docs/api/vendor/provenance.json text eol=lf
