@@ -1,10 +1,12 @@
 # Registro de decisiones arquitectónicas
 
+> **Revisión — 08/11/2026:** ADR-018 y ADR-019 están integrados en `main`; la [revisión actual](../REVISION-E2-2026-11-08.md) registra dependencias reales, contrato hospitalario y traza. Los resultados históricos se conservan; [pendientes](../PENDIENTES-E2.md) distingue CI, acuerdos externos y ampliaciones de presentación.
+
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
-| Estado | Decisiones vigentes con implementación propia y evidencia parcial |
+| Versión documental | 0.5 |
+| Fecha de revisión | 8 de noviembre de 2026 |
+| Estado | Decisiones integradas con verificación local actual; CI y operación conjunta pendientes |
 
 El número ADR identifica el registro histórico; **D1–D13** identifica la decisión obligatoria del enunciado. Un reemplazo utiliza un archivo nuevo y conserva el anterior. Implementación propia, evidencia local y acuerdo externo son estados diferentes; no se atribuye aprobación a ninguno por la existencia del documento.
 
@@ -13,14 +15,14 @@ El número ADR identifica el registro histórico; **D1–D13** identifica la dec
 | Decisión | Registro | Estado y límite principal |
 | --- | --- | --- |
 | D1: límites | [ADR-018](ADR-018-empleados-sin-candidatos.md), conserva fronteras de ADR-014 | Cuatro propietarios; Empleados sin candidatos, nuevas acciones clínicas solo para activos |
-| D2: arquitectura interna | [ADR-002](ADR-002-arquitectura-interna.md) | Capas y Hexagonal reconocibles en código; adaptadores externos pendientes |
+| D2: arquitectura interna | [ADR-002](ADR-002-arquitectura-interna.md) | Capas y Hexagonal reconocibles en código; adaptador hospitalario verificado en laboratorio |
 | D3: persistencia | [ADR-018](ADR-018-empleados-sin-candidatos.md), conserva motores de ADR-015 | Datos históricos de candidatos conservados sin API activa; PostgreSQL/MongoDB y outbox sin cambios |
 | D4: consistencia | [ADR-004](ADR-004-consistencia-concurrencia.md) | Agenda e idempotencia PostgreSQL; concurrencia y repetición verificadas |
 | D5: comunicación | [ADR-016](ADR-016-comunicacion-v2.md), alcance ADR-018 y consumo ADR-019 | HTTP/eventos; envío clínico autenticado e idempotente, recuperación explícita y espera durable |
 | D6: búsqueda | [ADR-006](ADR-006-busqueda.md) | Cambios y reconstrucción inicial verificados; frescura desde commit e índice sombra pendientes |
 | D7: caché | [ADR-007](ADR-007-cache.md) | Versiones/expulsión y reducción de lecturas medidas; latencia no uniforme, fría/baseline/retención pendientes |
 | D8: capacidad propia | [ADR-017](ADR-017-contrato-empleados.md) y revisión de alcance ADR-018 | API 0.3.0 sin candidatos; lista y membresías sin cambios, aceptación externa pendiente |
-| D9: consumo | [ADR-019](ADR-019-consumo-turnos-socios.md), conserva alcance ADR-018 | Turnos socios 1.0.0 fijado a c0b65f4, API administrativa 0.3.0; verificación de rama y conexión conjunta se registran por separado |
+| D9: consumo | [ADR-019](ADR-019-consumo-turnos-socios.md), conserva alcance ADR-018 | Turnos socios 1.0.0 fijado a c0b65f4, API administrativa 0.3.0; prueba contra proveedor original aprobada el 8 de noviembre; conexión conjunta pendiente |
 | D10: resiliencia | [ADR-010](ADR-010-resiliencia.md), complemento ADR-019 | Espera clínica acotada y recuperación explícita; Circuit Breaker y ampliación de ensayos pendientes |
 | D11: observabilidad | [ADR-011](ADR-011-observabilidad.md), complemento ADR-019 | Logs y primera traza HTTP reales; correlación clínica sin secretos, AMQP/tablero/alertas pendientes |
 | D12: balanceo | [ADR-012](ADR-012-balanceo-carga.md) | NGINX, distribución, retirada/recuperación reales; LB y fuentes únicas siguen como límites |

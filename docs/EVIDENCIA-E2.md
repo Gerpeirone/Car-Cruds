@@ -1,13 +1,22 @@
 # Evidencia técnica de la entrega 2
 
+> **Corte vigente — 08/11/2026:** [revisión](REVISION-E2-2026-11-08.md) y [resumen](evidence/revision-e2-2026-11-08.json): 155 pruebas/subpruebas propias reales sin omisiones, smoke de 67 solicitudes, checkshared, contrato hospitalario aislado y traza nueva aprobados. La CI de `19c4e06` falla en MongoDB; falta aceptación conjunta externa. Las tablas de octubre conservan su alcance histórico.
+
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.1 |
-| Fecha de corte | 14 de octubre de 2026 |
+| Versión documental | 0.2 |
+| Corte vigente | 8 de noviembre de 2026; ensayos históricos fechados individualmente |
 | Estado | Evidencia local de componentes propios |
 | Entorno | Windows/Go 1.26.1, Docker Compose; configuración local fuera de Git |
 
 ## 1. Índice y alcance
+
+| Evidencia vigente | Alcance |
+| --- | --- |
+| [Revisión del 8 de noviembre](REVISION-E2-2026-11-08.md) y [resumen](evidence/revision-e2-2026-11-08.json) | Suite real de 155 pruebas/subpruebas, smoke de 67 solicitudes, checkshared y contrato hospitalario aprobados; CI actual fallida y límites explícitos |
+| [Traza actual](evidence/trace-reservation-2026-11-08.json) y [logs](evidence/correlated-logs-2026-11-08.json) | Reserva real, siete spans y correlación entre cuatro servicios |
+
+La tabla siguiente conserva los ensayos históricos de octubre:
 
 | Artefacto | Operación o ensayo | Resultado acreditado |
 | --- | --- | --- |
@@ -25,7 +34,7 @@
 
 La suite final de 60 pruebas, sin omisiones y con vet satisfactorio, se ejecutó después de la corrección Redis y la reconstrucción del entorno sobre `8327268`. El recorrido final aprobó 78 solicitudes; ejecución `10ead0c0c22142bc968ec9e8ef55cb60`, con `RentalCompleted` único observado en 1712 ms desde el primer sondeo. El recorrido de 75 solicitudes y la traza de siete spans del 13 de octubre se conservan separados como antecedentes.
 
-Los resultados son operaciones ejecutadas sobre dependencias reales propias. No se atribuyen al gimnasio ni al hospital, cuyos contratos y accesos están pendientes. Tampoco acreditan frontend, publicación cloud ni aceptación del equipo. La ejecución de GitHub Actions sobre `11d475c` (14 de octubre) aprobó pruebas, análisis y el trabajo Compose: [ejecución 38509003244](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244).
+Los resultados son operaciones ejecutadas sobre dependencias reales propias. No se atribuyen al gimnasio ni al hospital, cuyos accesos y aceptación conjunta estaban pendientes en ese corte; el contrato oficial del hospital y su prueba aislada vigente se documentan en la revisión de noviembre. Tampoco acreditan frontend, publicación cloud ni aceptación del equipo. La ejecución de GitHub Actions sobre `11d475c` (14 de octubre) aprobó pruebas, análisis y el trabajo Compose: [ejecución 38509003244](https://github.com/Gerpeirone/Car-Cruds/actions/runs/38509003244).
 
 ## 2. Comandos reproducibles
 
@@ -60,7 +69,7 @@ La traza verifica el recorrido HTTP; la mensajería se correlaciona por event ID
 | D6 | Actualización y reconstrucción de búsqueda; frescura extrema pendiente |
 | D7 | Redis/versiones/expulsión y comparación caliente/fallback; fría/baseline pendientes |
 | D8 | Contrato propio y lista por gateway; consumidor/acceso público pendientes |
-| D9 | Sin evidencia externa; puertos y estado no configurado |
+| D9 | Contrato oficial e integración aislada contra código original aprobados el 8 de noviembre; conexión y aceptación conjuntas pendientes |
 | D10/D12 | Fallas/recuperación y registro de acciones |
 | D11 | Logs correlacionados y traza HTTP |
 | D13 | Carga local, muestras de recursos y estimación fechada |

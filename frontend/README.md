@@ -21,13 +21,13 @@ La interfaz web presenta los flujos de búsqueda, cotización y reserva, además
 
 `src/` aloja la estructura prevista del código. La interfaz consume el gateway; el acceso a persistencia, mensajería y proveedores corresponde a los servicios de negocio.
 
-El informe de clínica distingue turno confirmado, ausencia confirmada y estado desconocido. El de gimnasio distingue uso, no uso e información faltante. La interfaz mostrará fecha/origen y condiciones pendientes; no tratará una falla externa como un resultado negativo ni generará tarifas o conclusiones médicas. La interfaz de estos flujos aún no tiene implementación. Nuevas vinculaciones, intenciones y primer envío de turnos requieren empleado activo; la baja conserva seguimiento previo. Candidatos se retiró según ADR-018.
+El informe de clínica distingue turno confirmado, ausencia confirmada y estado desconocido. El de gimnasio distingue uso, no uso e información faltante. La interfaz mostrará fecha/origen y condiciones pendientes; no tratará una falla externa como un resultado negativo ni generará tarifas o conclusiones médicas. La interfaz de estos flujos aún no tiene implementación. Nuevas vinculaciones, intenciones y primer envío de turnos requieren empleado activo; la baja conserva seguimiento previo.
 
 ## Referencias
 
 - [SPEC.md — actores, alcance y reglas](../SPEC.md).
 - [Arquitectura del sistema](../docs/ARCHITECTURE.md).
-- [D1 vigente — empleados sin candidatos](../docs/adr/ADR-018-empleados-sin-candidatos.md).
+- [D1 vigente — alcance de personal](../docs/adr/ADR-018-empleados-sin-candidatos.md).
 - [D8 vigente — empleados](../docs/adr/ADR-017-contrato-empleados.md).
 - [Contrato histórico de reservas](../docs/contracts/RESERVAS.md).
 - [Historias y criterios de aceptación](../docs/BACKLOG.md).

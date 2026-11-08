@@ -1,15 +1,13 @@
 # Backlog del producto — Car Cruds
 
-**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos; HU-10 conserva su identificador como retirada. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta HU-15/HU-16/HU-17 a Turnos para socios 1.0.0: credencial privada, clave idempotente persistida, recuperación explícita con el mismo cuerpo y espera durable. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; seguimiento previo de inactivos continúa permitido. Los resultados históricos mantienen sus fechas; pruebas de la rama, aceptación bilateral y conexión pública se registran por separado.
+**Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`.
 
-**Avance del 22/10/2026:** HU-15 dispone de vínculo de paciente, intención durable y envío de turno; HU-16 de conciliación por ID externo e historia; HU-17 de informe de la última intención por persona. Implementación y límites: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se consideran aceptadas por el proveedor: faltan contrato formal de Turnos, acceso autenticado y pacientes reales. HU-23 continúa pendiente de una operación del hospital; la indicación administrativa local sí permite iniciar una consulta. Los criterios siguen vigentes salvo los cambios de alcance del 23 de octubre indicados arriba.
-
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+La [revisión actual](REVISION-E2-2026-11-08.md) verifica dependencias reales, recepción propia de membresías y contrato hospitalario aislado. El gimnasio de Pablo consume la lista de empleados; Car Cruds consume los turnos del hospital de Octi. Acceso operativo, devolución aceptada por el gimnasio y ensayo conjunto siguen pendientes. La indicación médica proveniente del hospital requiere una capacidad externa todavía no publicada. Los [pendientes actuales](PENDIENTES-E2.md) precisan los aportes necesarios.
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.4 |
-| Fecha | 23 de octubre de 2026 |
+| Versión | 0.5 |
+| Fecha de revisión | 8 de noviembre de 2026 |
 | Estado | Backlog con cobertura parcial del backend; cierre de historias pendiente |
 | Hito objetivo | Viernes 23 de octubre de 2026 |
 | Negocio principal | Alquiler de vehículos |
@@ -19,7 +17,7 @@
 
 El backlog incorpora el servicio Empleados y un Load Balancer tras la revisión de la primera entrega. El gimnasio consume la lista de empleados y comunica uso o no uso de membresía; Car Cruds consume la capacidad de turnos de la clínica para consultas médicas de empleados registrados y activos. Estas integraciones pertenecen a Empleados y conservan independiente la operación de alquileres.
 
-Los contratos, campos, protocolos, identidad de consumidores y mecanismos de devolución o consulta externos están pendientes de acuerdo. Los criterios que dependen de esos acuerdos son obligaciones de comportamiento para el diseño; todavía no constituyen endpoints, eventos o esquemas publicados.
+El hospital publica Turnos para socios 1.0.0 y Car Cruds implementa su consumo y una propuesta propia de lista/devolución para el gimnasio. Identidad, acceso compartido, datos operativos y aceptación bilateral siguen pendientes. Los criterios dependientes de esos acuerdos no se consideran aceptados por las pruebas de laboratorio.
 
 Los cuatro servicios propios, gateway, balanceador e infraestructura están implementados y cuentan con evidencia local. La lista de empleados es una API propia provisional; el acuerdo, acceso público y consumo real del gimnasio siguen pendientes. Los criterios y prioridades se conservan: disponer de código o un ensayo parcial no cierra automáticamente una historia. Ver [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) y [ENTREGA-2](ENTREGA-2.md).
 
@@ -32,18 +30,20 @@ Los cuatro servicios propios, gateway, balanceador e infraestructura están impl
 - Las historias técnicas se identifican como **habilitadores** y se evalúan por evidencia operativa.
 - Una historia se considera terminada cuando satisface sus criterios, cuenta con verificaciones pertinentes y actualiza la documentación y los contratos afectados.
 
-## 3. Cobertura de implementación — 14 de octubre
+## 3. Cobertura vigente — 8 de noviembre de 2026
 
 | Historias | Cobertura disponible | Validación o alcance pendiente |
 | --- | --- | --- |
 | HU-01 a HU-09 | Catálogo/búsqueda, perfil de conductor, disponibilidad, reserva, cancelación, retiro/devolución y mantenimiento propios | Revisión completa de criterios, interfaz web y operación definitiva; Clientes no implementa edición/baja de perfiles |
-| HU-11 | Gestión de empleados y bajas administrativas; HU-10 retirada por ADR-018 | Integración externa de turnos; la matriz histórica no acredita la revisión del 23 de octubre |
+| HU-11 | Gestión de empleados y bajas; HU-10 retirada; elegibilidad activa y seguimiento previo de inactivos verificados | Operación conjunta con los equipos externos pendiente |
 | HU-12 | Lista activa mínima, autenticación, paginación e aislamiento verificados en PostgreSQL y por gateway | Aceptación del contrato, población, publicación y consumo real del gimnasio |
-| HU-13 a HU-17 y HU-23 | Puertos internos y condiciones de integración definidos | Contratos y accesos reales: membresías/uso/gastos, necesidad de consulta, solicitud y conciliación de turnos |
+| HU-13/HU-14 | Recepción, deduplicación, historia e informe de membresías/uso/gastos implementados; pruebas SQL reales aprobadas | Aceptación del mecanismo y datos reales del gimnasio |
+| HU-15 a HU-17 | Solicitud, recuperación, consulta e informe de turnos implementados; contrato original del hospital aprobado en laboratorio | URL, clave, pacientes/médicos y ensayo conjunto |
+| HU-23 | Indicación administrativa local disponible | Indicación externa de necesidad médica sin capacidad publicada del hospital |
 | HU-18 | Tokens de aplicación y permisos de recurso implementados; respuestas 401/403 verificadas | Identidad personal, condiciones públicas y revisión final de todos los criterios |
 | HU-19 | Round-robin, dos réplicas y retirada/recuperación verificadas con errores iniciales documentados | Comparación representativa y caída de LB/fuente común |
 | HU-20 | Registros correlacionados y primera traza HTTP real; métricas instrumentadas | Propagación asíncrona, colector, tablero y alertas |
-| HU-21 y HU-22 | Suite real de 60 pruebas sin omisiones, vet y Compose/smoke aprobados localmente | Ejecución publicada de CI y ampliación de ensayos según alcance |
+| HU-21 y HU-22 | Suite actual de 155 pruebas/subpruebas reales sin omisiones; vet y smoke de 67 solicitudes aprobados | CI actual falla al iniciar MongoDB; ampliación de ensayos según alcance |
 | HU-24 | Outbox, efecto único, recuperación de broker y mensaje incompatible a DLQ verificados | Ensayos ampliados de desorden y reproceso de mensajes de negocio fallidos |
 | HU-25 | Indexación ante cambios y reconstrucción inicial en el mismo core verificadas | Frescura desde commit, reconstrucción operativa e índice sombra previsto |
 | HU-26 | Caché/versiones/expulsión y comparación caliente/fallback con reducción de lecturas MongoDB | Fase fría, línea base sin dependencia, duración sostenida y retención de marcas |
@@ -194,10 +194,6 @@ Como **operador**, quiero registrar bloqueos de agenda para impedir reservas dur
 
 1. **Dado** un vehículo y período sin conflicto, **cuando** registra mantenimiento, **entonces** Alquileres ocupa ese período y las nuevas reservas incompatibles se rechazan.
 2. **Dado** un período que se solapa con una reserva o bloqueo existente, **cuando** intenta agregar mantenimiento, **entonces** recibe un conflicto; no se cancelan reservas silenciosamente.
-
-### HU-10 — Registrar candidatos — retirada
-
-**Estado:** Retirada del alcance el 23 de octubre de 2026 por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Se conserva el identificador para trazabilidad con RF-10, sin renumerar las otras historias. El CRUD y el flujo clínico de candidatos dejan de ser capacidades activas. Las migraciones, filas y referencias históricas se conservan sin exposición en la API ni promoción automática a empleados.
 
 ### HU-11 — Gestionar empleados
 

@@ -9,9 +9,9 @@ La [referencia de endpoints y Swagger](../../docs/API.md) reúne administración
 | Entrada ejecutable | [cmd/employees](../../cmd/employees/main.go) |
 | Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.3.0 |
 | Contrato administrativo de turnos | [OpenAPI 3.0.3](../../docs/contracts/clinic-integration-openapi.json), versión 0.3.0 |
-| Decisiones vigentes | [ADR-018 — Empleados sin candidatos](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
+| Decisiones vigentes | [ADR-018 — Alcance de Empleados](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
 
-Empleados administra el registro laboral de la concesionaria, la evidencia de membresías del gimnasio y el seguimiento administrativo de turnos médicos. El dominio activo contiene únicamente empleados; la gestión de candidatos fue retirada. La lista compartida con el gimnasio mantiene exclusivamente `employeeId` y `displayName` de empleados activos, sin cambios en su formato ni en el intercambio de membresías.
+Empleados administra el registro laboral de la concesionaria, la evidencia de membresías del gimnasio y el seguimiento administrativo de turnos médicos. El dominio comprende exclusivamente personal registrado. La lista compartida con el gimnasio mantiene exclusivamente `employeeId` y `displayName` de empleados activos, sin cambios en su formato ni en el intercambio de membresías.
 
 ## Arquitectura y persistencia
 
@@ -23,8 +23,6 @@ Empleados administra el registro laboral de la concesionaria, la evidencia de me
 - `cmd/employees/`: ensamblado por inyección explícita y servidor de la plataforma compartida.
 
 El servicio conserva base y credenciales PostgreSQL propias; no consulta bases ajenas. Sus datos activos incluyen `employees`, evidencia de membresías, vínculos de pacientes, intenciones de turno e historia. La migración de inicio usa una transacción, registro de versión y bloqueo para coordinar arranques concurrentes.
-
-Las migraciones históricas y la tabla `candidates` permanecen para conservar instalaciones y referencias previas. Sus filas, vínculos y solicitudes no se borran ni se convierten automáticamente en empleados. La API activa no permite acceder a esos registros ni operarlos; un paciente ya vinculado a un registro histórico conserva esa vinculación y requiere revisión administrativa antes de cualquier reasignación futura. No se agregan candidatos a la siembra.
 
 Cada página utiliza `READ ONLY REPEATABLE READ`: conteo y registros pertenecen a la misma instantánea, ordenados por identificador. `page` comienza en 1 (predeterminado 1); `pageSize` admite 1–100 (predeterminado 20). Se rechaza un desplazamiento que no quepa en 64 bits. Entre páginas los datos pueden cambiar; una ausencia no acredita una baja laboral.
 
@@ -50,7 +48,7 @@ Las operaciones usan autenticación Bearer de aplicación. El rol procede del mi
 | `/v1/employees/reports/clinic` | GET | `admin`, `service`: informe de empleados |
 | `/v1/employees/integrations` | GET | `admin`, `service`: estado general `503 NOT_CONFIGURED`, sin acreditar aceptación externa |
 
-Las rutas `/v1/candidates` y `/v1/candidates/{id}` se retiraron; con autenticación válida devuelven `404`, también para Administración. El middleware conserva el rechazo `401` de solicitudes sin autenticación. El rol `client` no accede a personal. El gimnasio no administra empleados ni consulta detalles administrativos o clínicos.
+El middleware conserva el rechazo `401` de solicitudes sin autenticación. El rol `client` no accede a personal. El gimnasio no administra empleados ni consulta detalles administrativos o clínicos.
 
 Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, múltiples objetos y cuerpos de más de 1 MiB se rechazan. Los contratos describen API propias y no acreditan acuerdo bilateral ni despliegue público.
 
@@ -58,7 +56,7 @@ Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, mú
 
 Nuevos vínculos, intenciones y cualquier envío que pueda crear turno, incluido el reintento incierto, exigen empleado existente y activo. Un empleado inexistente devuelve `404`; un inactivo, `409 EMPLOYEE_INACTIVE`. La validación y la escritura local se coordinan en PostgreSQL para no admitir una baja concurrente entre ambos pasos. No se mantiene una transacción durante HTTP.
 
-Se conservan `personKind` y `personId` en el formato clínico por compatibilidad, pero el único tipo admitido es `employee`. El informe puede consultarse sin selector; `personKind=employee` sigue siendo válido y `candidate` se rechaza. No incluye registros históricos de candidatos.
+Se conservan `personKind` y `personId` en el formato clínico por compatibilidad, pero el único tipo admitido es `employee`. El informe puede consultarse sin selector; `personKind=employee` sigue siendo válido y se rechazan otros valores.
 
 Una baja permite consultar/actualizar evidencia previa mediante `refresh`, sin cancelar automáticamente ni permitir otro POST incierto que pueda crear. Repetir la referencia administrativa recupera la intención original. Antes de HTTP se persisten procedencia `turnos-partner-v1` y clave igual a `requestId`. Cada acción explícita hace como máximo un intento; al vencer `nextAttemptAt` puede repetirse la misma clave/datos, sin trabajador automático. El reclamo y el enfriamiento mínimo duran diez segundos; 429 amplía la espera con `Retry-After`. Conflicto idempotente requiere revisión. Solicitudes terminales/con turno y solicitudes antiguas ya enviadas sin procedencia idempotente nunca se reenvían como POST.
 
@@ -103,7 +101,7 @@ En la distribución completa se accede mediante el gateway. Las guías de [gimna
 go test ./services/employees/... ./cmd/employees
 ```
 
-Las pruebas del servicio cubren entradas, permisos, bajas y contratos propios. Las pruebas PostgreSQL requieren `TEST_DATABASE_URL`; sin ella se omiten explícitamente. Usan un esquema aislado para verificar migraciones, persistencia y paginación. Las verificaciones de esta revisión deben cubrir rechazo de candidatos, elegibilidad activa, conservación de registros históricos y seguimiento de inactivos.
+Las pruebas del servicio cubren entradas, permisos, bajas y contratos propios. Las pruebas PostgreSQL requieren `TEST_DATABASE_URL`; sin ella se omiten explícitamente. Usan un esquema aislado para verificar migraciones, persistencia y paginación. Las verificaciones de esta revisión deben cubrir permisos de personal, elegibilidad activa, conservación de evidencia y seguimiento de inactivos.
 
 ```powershell
 $env:TEST_DATABASE_URL = $env:DATABASE_URL

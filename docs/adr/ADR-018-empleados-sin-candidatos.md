@@ -1,5 +1,7 @@
 # ADR-018 — Empleados sin candidatos
 
+> **Vigencia — 08/11/2026:** la retirada de candidatos está integrada en `main` (PR #5) y verificada por la suite real y smoke actuales. La migración clínica diferida en este registro fue implementada por [ADR-019](ADR-019-consumo-turnos-socios.md), que deja vigente el contrato administrativo clínico 0.3.0. Se conserva debajo la historia del cambio de alcance.
+
 > **Complemento posterior del 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) adapta el consumo a Turnos para socios 1.0.0 y reemplaza D9 anterior. Mantiene la conservación histórica y exige empleado activo también para reintentar un envío incierto que pueda crear un turno. Las afirmaciones siguientes sobre la migración pendiente corresponden al corte original de este ADR.
 
 | Campo | Valor |

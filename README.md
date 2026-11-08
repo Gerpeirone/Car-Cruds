@@ -7,8 +7,8 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
-| Estado | Backend propio implementado y verificado localmente; integración externa pendiente |
+| Fecha de revisión | 8 de noviembre de 2026 |
+| Estado | Backend y contrato hospitalario verificados en laboratorio; CI y operación conjunta pendientes |
 | Hito | Entrega 2 — viernes 23 de octubre de 2026 |
 | Equipo | Alterman, Ivo · Peirone, German · Grbavac, Darko |
 | Repositorio | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
@@ -17,9 +17,11 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 
 Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsqueda, disponibilidad, reserva, retiro y devolución. Alquileres controla la agenda, congela el precio acordado y evita asignaciones superpuestas. Un vehículo todavía no devuelto impide otro retiro, incluso después del fin planificado.
 
-La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
+La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. El contrato oficial del hospital está publicado y el adaptador funciona en laboratorio; acceso operativo y pruebas conjuntas siguen pendientes.
 
-La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
+Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
+
+La [revisión del 8 de noviembre](docs/REVISION-E2-2026-11-08.md) registra 155 pruebas/subpruebas reales sin omisiones, smoke de 67 solicitudes y contrato hospitalario aprobados. La CI de `19c4e06` falló al iniciar MongoDB. [PENDIENTES-E2](docs/PENDIENTES-E2.md) identifica los datos externos y verificaciones que faltan.
 
 ## Estado disponible
 

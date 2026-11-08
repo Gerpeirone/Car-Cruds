@@ -1,6 +1,6 @@
 # Comunicación con el gimnasio de Pablo
 
-Estado al 22 de octubre de 2026: implementado del lado de Car Cruds en `entrega-2/cierre`. La lista y la recepción están disponibles al ejecutar el conjunto propio. El gimnasio todavía debe aceptar la devolución propuesta e implementar su consumidor y productor. No se acredita una conexión real entre ambos despliegues.
+Estado vigente al 8 de noviembre de 2026: implementado del lado de Car Cruds e integrado en `main`; lista y permisos verificados por suite real, smoke y checkshared. El contrato propio vigente es 0.3.0. La lista y la recepción están disponibles al ejecutar el conjunto propio. El gimnasio todavía debe aceptar la devolución propuesta e implementar su consumidor y productor. No se acredita una conexión real entre ambos despliegues.
 
 ## Dirección y alcance
 

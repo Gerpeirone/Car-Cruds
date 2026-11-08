@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-08",
+  "timezone": "America/Buenos_Aires",
+  "revision": "19c4e065330ee86c0c92720c463a3059fb930530",
+  "environment": {
+    "os": "Windows",
+    "go": "1.26.1",
+    "raceDetector": true,
+    "dockerDesktop": true,
+    "solrHostPort": 18983
+  },
+  "scope": "Ejecución local actual; proveedor original aislado. Sin aceptación externa ni despliegue público.",
+  "realTests": {
+    "command": "go test -race -count=1 -json -timeout 180s ./cmd/... ./internal/... ./services/...",
+    "exitCode": 0,
+    "testAndSubtestCounts": {
+      "pass": 155,
+      "skip": 0,
+      "fail": 0
+    },
+    "dependencies": [
+      "PostgreSQL Clientes/Alquileres/Empleados",
+      "MongoDB",
+      "Redis",
+      "Redis de presión separado",
+      "Solr"
+    ]
+  },
+  "initialTests": {
+    "command": "go test -race -count=1 -json ./...",
+    "passed": 128,
+    "skipped": 29,
+    "failed": 0
+  },
+  "staticChecks": {
+    "goVet": true,
+    "goModVerify": true,
+    "historicalMockRaceTestsAndVet": true
+  },
+  "apiDocs": {
+    "contracts": 6,
+    "operations": 34,
+    "examples": 218,
+    "swaggerIntegrityVerified": true
+  },
+  "smoke": {
+    "command": "go run ./cmd/smoke -history",
+    "exitCode": 0,
+    "requests": 67,
+    "runId": "076abe503c1b486c9bd988e050ef1060",
+    "concurrentReservationStatuses": [
+      201,
+      409
+    ],
+    "rentalCompletedUniqueEffect": true,
+    "cleanupPassed": true
+  },
+  "checkshared": {
+    "exitCode": 0,
+    "checks": [
+      "authentication",
+      "minimalProjection",
+      "pagination",
+      "administrativeIsolation"
+    ],
+    "externalAcceptance": false
+  },
+  "hospitalContract": {
+    "test": "TestCarCrudsConsumesUnmodifiedHospitalAppointments",
+    "command": "go test -race -count=1 -timeout 120s -v ./integration/cliniccontract",
+    "exitCode": 0,
+    "durationSeconds": 10.47,
+    "providerRevision": "c0b65f45867f884e0bdc8f7c23eb0f344f646bb2",
+    "providerCheckoutModified": false,
+    "originalComponents": [
+      "gateway",
+      "Turnos",
+      "MySQL",
+      "RabbitMQ"
+    ],
+    "publicProviderContacted": false,
+    "keysAndPrice": "fixtures ficticios"
+  },
+  "trace": {
+    "traceId": "fe8db5725630d5534c447e22ef010013",
+    "spans": 7,
+    "services": [
+      "gateway",
+      "rentals",
+      "customers",
+      "fleet"
+    ],
+    "export": "trace-reservation-2026-11-08.json",
+    "logs": "correlated-logs-2026-11-08.json"
+  },
+  "ci": {
+    "url": "https://github.com/Gerpeirone/Car-Cruds/actions/runs/42516259957",
+    "conclusion": "failure",
+    "documentation": "success",
+    "testsAndStaticAnalysis": "success",
+    "compose": "failure",
+    "failure": "MongoDB exited (1) during startup",
+    "rootCause": "undetermined; job log lacks MongoDB internal logs",
+    "subsequentIntegrationStepsExecuted": false
+  },
+  "freshLocalMongoStartup": {
+    "isolatedVolume": true,
+    "exitCode": 0
+  },
+  "notRepeated": [
+    "load",
+    "controlledFailures",
+    "cacheComparison",
+    "persistenceAfterRestart"
+  ],
+  "limitations": [
+    "CI not green",
+    "no public deployment",
+    "no joint external acceptance",
+    "usual local clinic URL/key not configured",
+    "counts overlap and include subtests"
+  ]
+}
