@@ -140,6 +140,23 @@ async function toCheckout(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
+it("distingue una referencia de error 401 de un código de reserva", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+    Response.json({ code: "UNAUTHORIZED" }, {
+      status: 401,
+      headers: { "X-Request-ID": "support-fixture-001" },
+    }),
+  ));
+  const user = userEvent.setup();
+  mount();
+  await login(user);
+  await screen.findByRole("button", { name: /Copiar referencia de soporte/ });
+  expect(screen.getByText(/Esta referencia identifica el error/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: /Empezar mi viaje/ })).toBeTruthy();
+  expect(screen.queryByRole("heading", { name: "CÓDIGO DE RESERVA" })).toBeNull();
+  expect(postCalls).toHaveLength(0);
+});
+
 it("completa acceso, disponibilidad, creación y cancelación con confirmación explícita", async () => {
   const user = userEvent.setup();
   mount();

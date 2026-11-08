@@ -194,14 +194,19 @@ function ErrorBox({ error, retry }: { error: unknown; retry?: () => void }) {
       <div>
         <p>{errorMessage(error)}</p>
         {error instanceof ApiError && error.requestID && (
-          <button
-            className="text-button"
-            onClick={() =>
-              navigator.clipboard?.writeText(error.requestID).catch(() => {})
-            }
-          >
-            Copiar referencia de consulta <Copy size={13} />
-          </button>
+          <>
+            <button
+              className="text-button"
+              onClick={() =>
+                navigator.clipboard?.writeText(error.requestID).catch(() => {})
+              }
+            >
+              Copiar referencia de soporte <Copy size={13} />
+            </button>
+            <p className="small">
+              Esta referencia identifica el error; no es un código de reserva.
+            </p>
+          </>
         )}
         {retry && (
           <button className="text-button" onClick={retry}>
@@ -467,6 +472,7 @@ function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
                 <input
                   name="credential"
                   type="password"
+                  aria-describedby="credential-hint"
                   autoComplete="off"
                   placeholder="Tu credencial de cliente"
                   value={token}
@@ -475,6 +481,9 @@ function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
                 />
               </span>
             </label>
+            <p id="credential-hint" className="field-hint">
+              Pegá solo la credencial de cliente, sin agregar «Bearer» ni comillas.
+            </p>
             {!!error && <ErrorBox error={error} />}
             <Button type="submit" busy={busy}>
               Empezar mi viaje <ArrowRight size={18} />

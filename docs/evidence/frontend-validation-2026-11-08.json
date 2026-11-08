@@ -7,7 +7,7 @@
     "backend": "Docker Compose, servicios y almacenes reales"
   },
   "unitAndComponentTests": {
-    "passed": 24,
+    "passed": 25,
     "failed": 0,
     "liveTestSkippedInOrdinarySuite": 1,
     "environment": "jsdom"
@@ -53,5 +53,9 @@
     "Caddy público y despliegue cloud pendientes",
     "Acceso de laboratorio, sin cuentas personales",
     "Pantallas administrativas y de personal fuera de F3-01"
-  ]
+  ],
+  "accessClarification": {
+    "supportReferenceDistinctFromReservationCode": true,
+    "unauthorizedRegressionTest": true
+  }
 }
