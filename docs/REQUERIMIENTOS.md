@@ -1,6 +1,6 @@
 # Requerimientos del sistema — Car Cruds
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. Es un diseño previo; la interfaz todavía no está implementada.
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
 
 **Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos, conservando RF-10 como retirado y datos históricos sin API activa. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta RF-15/RF-16/RF-17 a Turnos para socios 1.0.0: autenticación privada, idempotencia persistida y recuperación explícita con espera durable. Nuevos vínculos, intenciones y cualquier POST que pueda crear exigen empleado activo; consulta/actualización previa admite inactivos. Las matrices históricas conservan sus cortes; la evidencia nueva se registra por separado.
 

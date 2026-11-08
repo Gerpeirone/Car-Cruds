@@ -1,0 +1,9 @@
+# Interfaz local con build estático y API del mismo origen.
+# docker compose -f compose.yaml -f compose.frontend.yaml up -d --build --wait
+services:
+  web:
+    build: {context: ./frontend, dockerfile: Dockerfile}
+    restart: unless-stopped
+    ports: ["127.0.0.1:${WEB_PORT:-8081}:8080"]
+    depends_on:
+      gateway: {condition: service_healthy}

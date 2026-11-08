@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Fecha | 8 de noviembre de 2026 |
-| Estado | Propuesto; documentación previa a implementación |
+| Estado | Implementado en rama; revisión del equipo, visual y publicación pendientes |
 | Alcance | F3-01 de [entrega 3](../ENTREGA-3.md) |
 | Complementa | D2: presentación y límites; D5: consumo HTTP; D11: correlación |
 | Sustituye | Ningún ADR del backend |
@@ -20,11 +20,11 @@ Usar **React con TypeScript y Vite**, React Router para navegación, CSS propio 
 
 La documentación oficial de [React sobre una aplicación desde cero](https://react.dev/learn/build-a-react-app-from-scratch) identifica Vite y la plantilla React/TypeScript, y advierte que navegación y acceso a datos requieren decisiones adicionales. [Vite](https://vite.dev/guide/) documenta el desarrollo y build estático. La elección acepta ese trabajo adicional para integrar una interfaz acotada a una API ya existente; no presume ventajas medidas ni una recomendación universal de SPA.
 
-Las versiones exactas de Node, React, Vite y Router se elegirán y fijarán al implementar, con compatibilidad revisada, manifiesto y lockfile versionados. Esta documentación no instala paquetes ni afirma que el entorno ya construya el frontend.
+Versiones implementadas y fijadas en manifiesto/lockfile: Node 24.11.1, React 19.3.1, Vite 8.3.6, React Router 7.18.5 y TypeScript 7.0.2. jsdom 29.1.1 es compatible con ese Node; Vitest 5.1.0 verifica componentes. Fontsource sirve las tipografías localmente, sin requerir Google Fonts. Build local y Docker aprobados; ver [evidencia](../EVIDENCIA-FRONTEND.md).
 
 ## 3. Organización y dependencias
 
-Estructura prevista bajo `frontend/src/`: `app/` para rutas y contexto de acceso; `features/access/`, `features/vehicles/` y `features/reservations/` para casos de interfaz; `shared/api/` para transporte/DTO y `shared/ui/` para controles comunes. Los nombres son una propuesta, no directorios implementados.
+Estructura implementada bajo `frontend/src/`: `App.tsx` reúne rutas, contexto de acceso y pantallas de este incremento; `api.ts` delimita transporte/errores; `domain.ts` contiene tipos, fechas, importes y operación pendiente; `CarArt.tsx` y `styles.css` contienen presentación. Las pruebas de comportamiento y de API real viven en archivos separados. La división por carpetas de funcionalidades queda como refactor al ampliar administración y personal, sin presentar directorios inexistentes.
 
 Las páginas coordinan acciones de UI; el adaptador HTTP centraliza encabezados, timeout, parseo tolerante y correlación. La presentación adapta los DTO a etiquetas y formatos. Las reglas de precio autoritativo, propiedad, concurrencia e idempotencia durable permanecen en los servicios. La validación local es ayuda al usuario y no reemplaza el rechazo del servidor.
 
@@ -42,7 +42,7 @@ flowchart LR
     G --> B[Balanceador de Flota]
 ```
 
-Es una topología propuesta: el Caddyfile actual reenvía todo al gateway y todavía no sirve esta SPA. Vite/proxy, build, servidor estático y cambios de Compose/Caddy se implementarán y probarán después; no se anuncian como disponibles. No se abre CORS global ni se conecta el navegador directamente a microservicios, almacenes, gimnasio u hospital.
+Vite/proxy y el servidor estático NGINX de `compose.frontend.yaml` ya implementan esta topología local, con API del mismo origen. El Caddyfile público actual todavía reenvía todo al gateway: su adaptación y publicación HTTPS siguen pendientes. No se modificó el despliegue público por agregar la entrada local. No se abre CORS global ni se conecta el navegador directamente a microservicios, almacenes, gimnasio u hospital.
 
 ## 5. Acceso y recuperación
 

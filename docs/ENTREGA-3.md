@@ -5,7 +5,7 @@
 | Fecha | 8 de noviembre de 2026 |
 | Rama | `feature/entrega-3` |
 | Base | `main`, `19c4e06` |
-| Estado | Primera etapa documentada; implementación web pendiente |
+| Estado | F3-01 implementado y probado localmente; revisión visual y publicación pendientes |
 | Referencia académica | [Enunciado](../Enunciado%20TP%20Final.md), presentación grupal |
 
 ## 1. Objetivo y alcance del hito
@@ -18,19 +18,19 @@ La presentación exige frontend completo, entrada única autenticada, servicios 
 
 | Etapa | Resultado | Estado |
 | --- | --- | --- |
-| F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Especificado en [FRONTEND-ALQUILER](FRONTEND-ALQUILER.md); sin implementación |
+| F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Implementado; [evidencia](EVIDENCIA-FRONTEND.md), con revisión visual pendiente |
 | F3-02: operación administrativa | Pantallas para las operaciones disponibles de flota, clientes, retiro, devolución y mantenimiento | Pendiente de especificación detallada |
 | F3-03: personal e integraciones | Empleados registrados, informes de membresías y seguimiento administrativo de turnos | Pendiente de especificación detallada y acuerdos operativos |
 | F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Requiere infraestructura, credenciales y coordinación |
 | F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | Pendiente de ejecución sobre el conjunto final |
 
-La autorización de esta etapa comprende la documentación de F3-01. No se crean pantallas, dependencias, contenedores ni nuevos endpoints durante este corte documental. No se incorporan pagos ni funciones ajenas al alquiler documentado.
+F3-01 incluye ahora código de interfaz, dependencias fijadas, build, pruebas y una entrada estática local con NGINX. Se conservan los endpoints de negocio existentes. No se incorporan pagos ni funciones ajenas al alquiler documentado.
 
 ## 3. Cierre esperado de F3-01
 
 Un cliente de laboratorio podrá entrar con la credencial asignada, buscar un auto, seleccionar fechas, obtener disponibilidad y total desde Alquileres, confirmar una única reserva y consultar o cancelar una reserva propia por código. El recorrido tendrá estados de carga, vacío, conflicto, error y resultado desconocido; será utilizable con teclado y en pantalla móvil.
 
-La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y orden de implementación. [ADR-020](adr/ADR-020-frontend-alquiler.md) propone la tecnología, los límites de autenticación y la distribución. Ambos describen decisiones de diseño pendientes de implementar, no capacidades ya disponibles.
+La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y orden de implementación. [ADR-020](adr/ADR-020-frontend-alquiler.md) propone la tecnología, los límites de autenticación y la distribución. La implementación y sus pruebas actuales se registran en [EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md); la presentación completa aún requiere las otras etapas.
 
 ## 4. Dependencias y pendientes
 
@@ -42,4 +42,4 @@ La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y
 
 ## 5. Estado y verificación de esta etapa
 
-Este corte contiene únicamente Markdown. Se revisarán enlaces locales, trazabilidad y correspondencia de rutas/campos con los OpenAPI y handlers vigentes. Las pruebas de componentes y navegador se ejecutarán al implementar; sus resultados no se presentan como obtenidos en esta documentación.
+El corte documental inicial se conserva en el historial. El incremento actual implementa F3-01: build, 24 pruebas ordinarias, prueba React contra API real y servidor estático Docker verificados. La herramienta de navegador se bloqueó por no poder verificar la URL en Windows; no se declara aprobado el layout ni el recorrido visual/teclado en navegador. Ver [evidencia y pendientes](EVIDENCIA-FRONTEND.md).

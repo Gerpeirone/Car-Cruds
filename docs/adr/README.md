@@ -32,7 +32,7 @@ D4 no integra el listado específico de ADR de entrega 2, pero es obligatoria en
 
 | Registro | Alcance | Estado |
 | --- | --- | --- |
-| [ADR-020](ADR-020-frontend-alquiler.md) | SPA del alquiler, acceso de laboratorio y consumo por gateway | Documentado; tecnología y distribución propuestas, sin implementación |
+| [ADR-020](ADR-020-frontend-alquiler.md) | SPA del alquiler, acceso de laboratorio y consumo por gateway | Implementado en rama; build y pruebas locales aprobados; revisión visual y publicación pendientes |
 
 ## Registros reemplazados
 

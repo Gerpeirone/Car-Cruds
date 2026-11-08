@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-08",
+  "branch": "feature/entrega-3",
+  "environment": {
+    "node": "24.11.1",
+    "os": "Windows",
+    "backend": "Docker Compose, servicios y almacenes reales"
+  },
+  "unitAndComponentTests": {
+    "passed": 24,
+    "failed": 0,
+    "liveTestSkippedInOrdinarySuite": 1,
+    "environment": "jsdom"
+  },
+  "liveReactIntegration": {
+    "passed": 1,
+    "failed": 0,
+    "baseURL": "http://127.0.0.1:8081",
+    "sameOriginProxy": "NGINX -> gateway",
+    "steps": [
+      "acceso de cliente",
+      "búsqueda indexada de vehículo ficticio propio",
+      "disponibilidad real",
+      "creación persistente",
+      "pérdida de respuesta provocada después del commit",
+      "remontaje y nuevo acceso",
+      "recuperación con misma clave/cuerpo e ID de reserva",
+      "consulta y cancelación real"
+    ],
+    "fixtureCleanup": "Reserva cancelada y vehículo propio inactivo"
+  },
+  "build": {
+    "typecheck": true,
+    "viteBuild": true,
+    "dockerBuild": true
+  },
+  "httpChecks": {
+    "spaDeepLink": 200,
+    "apiWithoutAuth": 401,
+    "internalEndpoint": 404,
+    "missingAsset": 404,
+    "cspVerified": true
+  },
+  "productionDependencyAudit": {
+    "vulnerabilities": 0
+  },
+  "visualBrowserQA": {
+    "completed": false,
+    "reason": "Computer Use detuvo la sesión al no poder verificar la URL actual en Windows; no se eludió el bloqueo."
+  },
+  "limitations": [
+    "Revisión visual móvil/teclado y contraste pendiente",
+    "Caddy público y despliegue cloud pendientes",
+    "Acceso de laboratorio, sin cuentas personales",
+    "Pantallas administrativas y de personal fuera de F3-01"
+  ]
+}

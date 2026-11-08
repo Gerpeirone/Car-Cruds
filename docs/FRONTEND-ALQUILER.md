@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.1 |
+| Versión | 0.2 |
 | Fecha | 8 de noviembre de 2026 |
-| Estado | Diseño propuesto; sin implementación |
+| Estado | Implementado en rama; pruebas locales aprobadas; revisión visual pendiente |
 | Hito | [Entrega 3](ENTREGA-3.md), primera etapa |
 | Actor | Cliente de laboratorio vinculado a un conductor existente |
 | Decisión técnica | [ADR-020](adr/ADR-020-frontend-alquiler.md) |
@@ -171,6 +171,6 @@ Los identificadores FE-A son tareas de interfaz de esta etapa; no reemplazan ni 
 5. Consulta por código y cancelación; verificación de permisos y estados.
 6. Recorrido real en navegador, accesibilidad móvil/teclado y evidencia de aceptación.
 
-Las pruebas de componentes futuras deben cubrir cambios de cotización, datos fuera de orden y escrituras inciertas, usando respuestas controladas identificadas como tales. La aceptación de integración exige API real: perfil habilitado, vehículo activo, fechas vigentes, confirmación, GET y cancelación. El ensayo de pérdida de respuesta debe verificar en el backend una única reserva; un mock por sí solo no acredita persistencia.
+Las pruebas de componentes cubren cambios de cotización, datos fuera de orden y escrituras inciertas, usando respuestas controladas identificadas como tales. La aceptación de integración exige API real: perfil habilitado, vehículo activo, fechas vigentes, confirmación, GET y cancelación. El ensayo de pérdida de respuesta debe verificar en el backend una única reserva; un mock por sí solo no acredita persistencia.
 
-La interfaz solo se considerará implementada al existir build reproducible, verificaciones pertinentes aprobadas y evidencia del recorrido real. Un documento, captura de diseño o servidor de desarrollo vacío no cierra F3-01.
+El build reproducible, las pruebas de componentes y el recorrido React contra API real están registrados en [EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md). La revisión visual móvil/teclado en navegador sigue pendiente por bloqueo de la herramienta. No se declara el cierre completo de FE-A10 ni del frontend final de presentación.

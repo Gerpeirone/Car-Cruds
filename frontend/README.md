@@ -1,31 +1,75 @@
-# Frontend web de Car Cruds
+# Frontend del alquiler
 
-| Aspecto | Estado al 8 de noviembre de 2026 |
-| --- | --- |
-| Hito | Entrega 3: preparación de la presentación grupal |
-| Primera etapa | F3-01: frontend del alquiler |
-| Estado | Documentación previa; interfaz pendiente de implementación |
-| Actor inicial | Cliente de laboratorio vinculado a un conductor existente |
-| Tecnología propuesta | React, TypeScript, Vite y React Router; sin paquetes instalados en esta etapa |
-| API | Rutas relativas `/v1/*`, siempre mediante el gateway |
+Interfaz React/TypeScript/Vite de F3-01, implementada en `feature/entrega-3`. Acceso de laboratorio, búsqueda/filtros, ficha, disponibilidad, confirmación idempotente, recuperación, consulta por código y cancelación. Tipografías locales e ilustración vectorial neutra propia; diseño adaptable en CSS.
 
-## Documentación para empezar
+## Desarrollo local
 
-- [ENTREGA-3](../docs/ENTREGA-3.md): etapas, dependencias y alcance del hito.
-- [FRONTEND-ALQUILER](../docs/FRONTEND-ALQUILER.md): pantallas, navegación, contratos, errores y criterios FE-A01 a FE-A10.
-- [ADR-020](../docs/adr/ADR-020-frontend-alquiler.md): decisión técnica, autenticación de laboratorio y distribución propuesta.
-- [API vigente](../docs/API.md): endpoints, permisos y límites del backend.
+Requiere Node **24.11.1** y el backend saludable por gateway en `http://127.0.0.1:8080`. Desde `frontend/`:
 
-## Primer recorrido previsto
+```powershell
+npm ci
+npm run dev
+```
 
-Acceso de laboratorio → catálogo y búsqueda → ficha y fechas → disponibilidad y total → resumen → confirmación → consulta por código → cancelación antes del retiro.
+Abrir [la interfaz local](http://127.0.0.1:5173). Vite reenvía `/v1/*` al gateway; el navegador no se conecta a almacenes ni microservicios directamente. El servidor escucha exclusivamente en loopback. Usar el identificador vinculado a `AUTH_CLIENT_CUSTOMER_ID` (predeterminado `cli-001`) y el valor de `AUTH_CLIENT_TOKEN` del `.env` privado del backend. No usar tokens administrativos, del gimnasio ni del servicio.
 
-El acceso actual usa una credencial de aplicación y consulta el perfil autorizado; no hay login de usuario/contraseña ni registro público. La API no lista reservas: la primera versión permite consultar una propia por su código. El cliente no usa credenciales administrativas, no llama al endpoint de cotización restringido y no conserva tokens en almacenamiento del navegador.
+No hay registro público ni login con contraseña personal. La credencial se conserva solo en memoria y se solicita otra vez al recargar; la operación de reserva incierta puede recuperarse después de volver a entrar al mismo perfil. No copiar `.env` dentro del frontend ni definir tokens en variables `VITE_*`.
 
-El precio y la disponibilidad provienen de Alquileres. Un timeout al confirmar deja un resultado incierto y se recupera con la misma clave y cuerpo. Cambiar fechas o auto invalida la cotización; una doble pulsación no crea otra operación.
+## Build y servidor estático
 
-## Implementación posterior
+```powershell
+npm run build
+npm run preview
+```
 
-No hay todavía comandos de instalación, build ni ejecución del frontend aprobados. La próxima etapa creará el proyecto y fijará dependencias; después se implementarán acceso/catálogo, ficha/cotización, confirmación idempotente y consulta/cancelación, en ese orden.
+El build comprueba tipos y genera `dist/`. Preview sirve para revisar ese build en `http://127.0.0.1:4173`, con proxy al gateway; no es un servidor de publicación cloud.
 
-Las pantallas de operador y personal, y las integraciones de gimnasio/hospital, pertenecen a etapas posteriores. La descripción de F3-01 no acredita el frontend completo exigido para la presentación.
+Desde la raíz del repositorio, la alternativa Docker construye la interfaz y la sirve con NGINX:
+
+```powershell
+docker compose -f compose.yaml -f compose.frontend.yaml up -d --build --wait --wait-timeout 300
+```
+
+Abrir [la entrada web del conjunto](http://127.0.0.1:8081). NGINX sirve archivos y enlaces directos de la SPA, pasa `/v1/*` al gateway y bloquea `/internal/*`. El puerto se configura con `WEB_PORT`. Se reutiliza el `.env` privado del conjunto; si está en otro checkout del mismo entorno, indicarlo con `--env-file <ruta>` sin copiarlo al frontend. La configuración pública de Caddy y su publicación quedan para la etapa de despliegue.
+
+En esta computadora Windows reserva el puerto 58983 de Solr. La revisión usó una superposición local ignorada por Git en `tmp/frontend/compose.override.yaml`:
+
+```yaml
+services:
+  solr:
+    ports: !override
+      - "127.0.0.1:18983:8983"
+```
+
+Agregar `-f tmp/frontend/compose.override.yaml` al comando de Compose cuando sea necesario; requiere una versión de Compose compatible con `!override`. El puerto interno de Solr no cambia. Detener con el mismo par/trío de archivos y `stop`; conservar los volúmenes existentes.
+
+## Pruebas
+
+```powershell
+npm test
+npm run build
+```
+
+La suite ordinaria usa respuestas controladas e incluye pérdida de respuesta y recuperación tras remontar la aplicación. La prueba adicional `src/live.test.tsx` se omite salvo configuración explícita:
+
+```powershell
+$env:FRONTEND_LIVE_TEST = "true"
+$env:FRONTEND_TEST_BASE_URL = "http://127.0.0.1:8081"
+$env:FRONTEND_TEST_CUSTOMER_ID = "cli-001"
+# Cargar privadamente FRONTEND_TEST_CLIENT_TOKEN y FRONTEND_TEST_ADMIN_TOKEN
+# con credenciales distintas del mismo entorno local. No escribir valores en Git.
+npm test -- src/live.test.tsx
+```
+
+Esta prueba solo admite loopback. Crea un vehículo ficticio exclusivo, usa el cliente habilitado configurado, provoca una respuesta perdida después del commit, recupera la misma reserva y la cancela. En la limpieza desactiva su propio vehículo y conserva la reserva final; no borra datos ajenos. Se requiere el conjunto real saludable y licencia vigente del perfil. No ejecutarla contra un proveedor externo ni con datos de producción.
+
+## Estructura y límites
+
+`src/App.tsx` contiene rutas y pantallas; `api.ts`, transporte y errores; `domain.ts`, fechas/importes/operación pendiente; `CarArt.tsx`, ilustración propia; `styles.css`, diseño. `main.tsx` carga fuentes locales. El lockfile fija las dependencias. La CI de frontend ejecuta `npm ci`, pruebas ordinarias y build.
+
+La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. No se implementan pantallas de operador/personal ni cloud en este corte.
+
+- [Evidencia y limitación de revisión visual](../docs/EVIDENCIA-FRONTEND.md).
+- [Especificación de pantallas y criterios](../docs/FRONTEND-ALQUILER.md).
+- [Plan de entrega 3](../docs/ENTREGA-3.md).
+- [ADR-020](../docs/adr/ADR-020-frontend-alquiler.md).
