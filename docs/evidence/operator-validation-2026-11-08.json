@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-08",
+  "branch": "feature/entrega-3",
+  "ordinaryTests": {
+    "passed": 36,
+    "failed": 0,
+    "optionalIntegrationTests": 2
+  },
+  "operatorLiveTest": {
+    "passed": 1,
+    "failed": 0,
+    "baseURL": "http://127.0.0.1:8081",
+    "steps": [
+      "session role admin",
+      "create vehicle",
+      "edit rate",
+      "create customer",
+      "prepare rental via API",
+      "pickup through React",
+      "return through React",
+      "create maintenance through React",
+      "availability false during maintenance"
+    ],
+    "cleanup": "Own vehicle inactive; rental completed; fictitious customer and maintenance retained because no delete API"
+  },
+  "gateway": {
+    "raceTests": true,
+    "vet": true,
+    "sessionProjectionAuthenticated": true
+  },
+  "openapi": {
+    "contracts": 6,
+    "operations": 35,
+    "examples": 222
+  },
+  "build": true,
+  "browserVisualReview": false,
+  "limitations": [
+    "Laboratory credentials, no personal accounts",
+    "No customer edit/delete API",
+    "No general reservation list API",
+    "No maintenance lookup/cancel/idempotency API",
+    "Pending maintenance blocks retries in this tab",
+    "Visual mobile/keyboard/contrast review pending",
+    "Cloud and staff integrations pending"
+  ],
+  "lateVehicleReadRegression": true,
+  "clientAndOperatorLiveTests": {
+    "passed": 2,
+    "failed": 0
+  }
+}

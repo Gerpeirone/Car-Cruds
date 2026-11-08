@@ -67,9 +67,13 @@ Esta prueba solo admite loopback. Crea un vehículo ficticio exclusivo, usa el c
 
 `src/App.tsx` contiene rutas y pantallas; `api.ts`, transporte y errores; `domain.ts`, fechas/importes/operación pendiente; `CarArt.tsx`, ilustración propia; `styles.css`, diseño. `main.tsx` carga fuentes locales. El lockfile fija las dependencias. La CI de frontend ejecuta `npm ci`, pruebas ordinarias y build.
 
-La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. No se implementan pantallas de operador/personal ni cloud en este corte.
+La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. El [panel del operador](../docs/PANEL-OPERADOR.md) está implementado en `/operador/acceso`: usa exclusivamente `AUTH_ADMIN_TOKEN`, sin ID de cliente, y verifica `role=admin` por `/v1/session`. La interfaz de personal y cloud siguen pendientes.
 
 - [Evidencia y limitación de revisión visual](../docs/EVIDENCIA-FRONTEND.md).
 - [Especificación de pantallas y criterios](../docs/FRONTEND-ALQUILER.md).
 - [Plan de entrega 3](../docs/ENTREGA-3.md).
 - [ADR-020](../docs/adr/ADR-020-frontend-alquiler.md).
+
+## Prueba real del operador
+
+`src/operator/operator.live.test.tsx` se activa con `OPERATOR_LIVE_TEST=true`, `OPERATOR_TEST_BASE_URL` de loopback y `OPERATOR_TEST_TOKEN` cargado privadamente. Registra fixtures propios de auto/cliente, opera retiro y devolución y crea mantenimiento. Desactiva su auto y conserva cliente y mantenimiento por falta de API de baja/eliminación. Ver [guía y evidencia](../docs/PANEL-OPERADOR.md).

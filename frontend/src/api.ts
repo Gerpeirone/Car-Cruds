@@ -80,6 +80,10 @@ const messages: Record<string, string> = {
     "No pudimos completar la conexión. Revisá tu conexión e intentá nuevamente.",
   INVALID_RESPONSE:
     "No pudimos interpretar la respuesta del servicio. Intentá consultar nuevamente.",
+  VERSION_CONFLICT:
+    "La ficha cambió o ese identificador ya existe. Consultá el registro actual antes de volver a guardar.",
+  CONFLICT:
+    "Ya existe un cliente con ese identificador. Consultá sus datos antes de registrar otro.",
 };
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError)

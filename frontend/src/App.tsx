@@ -68,6 +68,7 @@ import type {
   VehiclePage,
 } from "./domain";
 import CarArt from "./CarArt";
+import OperatorApp from "./operator/OperatorApp";
 
 type Call = <T>(path: string, init?: RequestInit) => Promise<T>;
 interface Access {
@@ -271,7 +272,13 @@ export default function App() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const location = useLocation();
   useEffect(() => {
-    document.title = `Car Cruds · ${location.pathname.startsWith("/reservas") ? "Tu reserva" : location.pathname === "/acceso" ? "Bienvenido" : "Tu próximo viaje"}`;
+    if (location.pathname.startsWith("/operador")) {
+      setSession(null);
+      setQuote(null);
+    }
+  }, [location.pathname]);
+  useEffect(() => {
+    document.title = `Car Cruds · ${location.pathname.startsWith("/operador") ? "Panel del operador" : location.pathname.startsWith("/reservas") ? "Tu reserva" : location.pathname === "/acceso" ? "Bienvenido" : "Tu próximo viaje"}`;
     document.querySelector<HTMLElement>("main h1")?.focus();
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -291,6 +298,7 @@ export default function App() {
     },
     [session?.token],
   );
+  if (location.pathname.startsWith("/operador")) return <OperatorApp />;
   if (!session)
     return (
       <Routes>
@@ -482,7 +490,8 @@ function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
               </span>
             </label>
             <p id="credential-hint" className="field-hint">
-              Pegá solo la credencial de cliente, sin agregar «Bearer» ni comillas.
+              Pegá solo la credencial de cliente, sin agregar «Bearer» ni
+              comillas.
             </p>
             {!!error && <ErrorBox error={error} />}
             <Button type="submit" busy={busy}>
@@ -496,6 +505,9 @@ function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
               credencial no se guarda en este navegador.
             </p>
           </div>
+          <Link to="/operador/acceso" className="back-link">
+            Soy operador <ArrowUpRight size={15} />
+          </Link>
         </div>
         <span className="access-footnote">
           CAR CRUDS · ALQUILER DE VEHÍCULOS

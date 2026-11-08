@@ -5,7 +5,7 @@
 | Fecha | 8 de noviembre de 2026 |
 | Rama | `feature/entrega-3` |
 | Base | `main`, `19c4e06` |
-| Estado | F3-01 implementado y probado localmente; revisión visual y publicación pendientes |
+| Estado | F3-01 y F3-02 implementados y probados localmente; revisión visual y publicación pendientes |
 | Referencia académica | [Enunciado](../Enunciado%20TP%20Final.md), presentación grupal |
 
 ## 1. Objetivo y alcance del hito
@@ -19,7 +19,7 @@ La presentación exige frontend completo, entrada única autenticada, servicios 
 | Etapa | Resultado | Estado |
 | --- | --- | --- |
 | F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Implementado; [evidencia](EVIDENCIA-FRONTEND.md), con revisión visual pendiente |
-| F3-02: operación administrativa | Pantallas para las operaciones disponibles de flota, clientes, retiro, devolución y mantenimiento | Pendiente de especificación detallada |
+| F3-02: operación administrativa | Flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento | [Implementado y probado con servicios reales](PANEL-OPERADOR.md); revisión visual pendiente |
 | F3-03: personal e integraciones | Empleados registrados, informes de membresías y seguimiento administrativo de turnos | Pendiente de especificación detallada y acuerdos operativos |
 | F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Requiere infraestructura, credenciales y coordinación |
 | F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | Pendiente de ejecución sobre el conjunto final |

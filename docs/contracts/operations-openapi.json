@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Operación técnica",
-    "version": "0.1.0",
-    "description": "Rutas comunes de los procesos Go: gateway, Clientes, cada réplica de Flota, Alquileres, Empleados e indexador. En el gateway describen su propia instancia; no se enrutan a las métricas de otro servicio. Caddy bloquea /internal/* en el despliegue público."
+    "version": "0.2.0",
+    "description": "Rutas comunes de los procesos Go: gateway, Clientes, cada réplica de Flota, Alquileres, Empleados e indexador. En el gateway describen su propia instancia; no se enrutan a las métricas de otro servicio. Caddy bloquea /internal/* en el despliegue público. GET /v1/session existe exclusivamente en el gateway y devuelve una proyección del acceso autenticado."
   },
   "servers": [
     {
@@ -150,6 +150,75 @@
           }
         }
       }
+    },
+    "/v1/session": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "Consultar el acceso autenticado",
+        "description": "Solo en el gateway. Devuelve el rol establecido por la credencial validada y customerId para client, sin tokens ni datos personales. No crea una sesión de usuario ni concede permisos. La respuesta usa Cache-Control: no-store. El frontend de operador exige role=admin; cada servicio mantiene su autorización.",
+        "tags": [
+          "Operación técnica"
+        ],
+        "x-roles": [
+          "admin",
+          "client",
+          "gym",
+          "service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proyección mínima del acceso autenticado; sin credenciales.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                },
+                "examples": {
+                  "operador": {
+                    "value": {
+                      "role": "admin"
+                    }
+                  },
+                  "cliente": {
+                    "value": {
+                      "role": "client",
+                      "customerId": "cli-001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: el gateway agotó su límite de admisión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "Capacidad de entrada temporalmente agotada"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "x-contract-status": "implemented-own-api",
@@ -208,6 +277,29 @@
           "service",
           "instance"
         ]
+      },
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "client",
+              "gym",
+              "service"
+            ],
+            "description": "Rol asociado por el servidor a la credencial opaca."
+          },
+          "customerId": {
+            "type": "string",
+            "description": "Identificador ligado al acceso client; omitido para otros roles."
+          }
+        }
       }
     }
   }

@@ -6,4 +6,4 @@ services:
     restart: unless-stopped
     ports: ["127.0.0.1:${WEB_PORT:-8081}:8080"]
     depends_on:
-      gateway: {condition: service_healthy}
+      gateway: {condition: service_healthy, restart: true}

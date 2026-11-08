@@ -34,6 +34,10 @@ D4 no integra el listado específico de ADR de entrega 2, pero es obligatoria en
 | --- | --- | --- |
 | [ADR-020](ADR-020-frontend-alquiler.md) | SPA del alquiler, acceso de laboratorio y consumo por gateway | Implementado en rama; build y pruebas locales aprobados; revisión visual y publicación pendientes |
 
+## Panel del operador
+
+[ADR-021](ADR-021-panel-operador.md) documenta F3-02 y la proyección de sesión del gateway. Implementado en rama, con revisión visual y aceptación del equipo pendientes.
+
 ## Registros reemplazados
 
 | Registro histórico | Sucesor | Motivo |
