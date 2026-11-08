@@ -1,5 +1,7 @@
 # Car Cruds
 
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. Es un diseño previo; la interfaz todavía no está implementada.
+
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
 Universidad Católica de Córdoba · Facultad de Ingeniería

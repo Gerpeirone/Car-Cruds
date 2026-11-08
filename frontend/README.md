@@ -1,33 +1,31 @@
-# Frontend web
+# Frontend web de Car Cruds
 
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
-
-| Aspecto | Diseño propuesto de entrega 2 |
+| Aspecto | Estado al 8 de noviembre de 2026 |
 | --- | --- |
-| Estado | Estructura inicial; interfaz pendiente de implementación |
-| Usuarios | Cliente, operador y responsable de personal |
-| Integración | API Gateway mediante HTTP |
-| Tecnología | Framework pendiente de selección |
+| Hito | Entrega 3: preparación de la presentación grupal |
+| Primera etapa | F3-01: frontend del alquiler |
+| Estado | Documentación previa; interfaz pendiente de implementación |
+| Actor inicial | Cliente de laboratorio vinculado a un conductor existente |
+| Tecnología propuesta | React, TypeScript, Vite y React Router; sin paquetes instalados en esta etapa |
+| API | Rutas relativas `/v1/*`, siempre mediante el gateway |
 
-La interfaz web presenta los flujos de búsqueda, cotización y reserva, además de la operación de alquileres y administración según el rol.
+## Documentación para empezar
 
-## Flujos previstos
+- [ENTREGA-3](../docs/ENTREGA-3.md): etapas, dependencias y alcance del hito.
+- [FRONTEND-ALQUILER](../docs/FRONTEND-ALQUILER.md): pantallas, navegación, contratos, errores y criterios FE-A01 a FE-A10.
+- [ADR-020](../docs/adr/ADR-020-frontend-alquiler.md): decisión técnica, autenticación de laboratorio y distribución propuesta.
+- [API vigente](../docs/API.md): endpoints, permisos y límites del backend.
 
-| Usuario | Funcionalidades |
-| --- | --- |
-| Cliente | Ingreso, catálogo y búsqueda, disponibilidad y precio, reserva, consulta y cancelación |
-| Operador | Administración de flota y clientes, bloqueos de agenda, retiro y devolución |
-| Responsable de personal | Empleados; solicitudes de revisión y seguimiento de turnos; informe de uso de membresías por período |
+## Primer recorrido previsto
 
-`src/` aloja la estructura prevista del código. La interfaz consume el gateway; el acceso a persistencia, mensajería y proveedores corresponde a los servicios de negocio.
+Acceso de laboratorio → catálogo y búsqueda → ficha y fechas → disponibilidad y total → resumen → confirmación → consulta por código → cancelación antes del retiro.
 
-El informe de clínica distingue turno confirmado, ausencia confirmada y estado desconocido. El de gimnasio distingue uso, no uso e información faltante. La interfaz mostrará fecha/origen y condiciones pendientes; no tratará una falla externa como un resultado negativo ni generará tarifas o conclusiones médicas. La interfaz de estos flujos aún no tiene implementación. Nuevas vinculaciones, intenciones y primer envío de turnos requieren empleado activo; la baja conserva seguimiento previo. Candidatos se retiró según ADR-018.
+El acceso actual usa una credencial de aplicación y consulta el perfil autorizado; no hay login de usuario/contraseña ni registro público. La API no lista reservas: la primera versión permite consultar una propia por su código. El cliente no usa credenciales administrativas, no llama al endpoint de cotización restringido y no conserva tokens en almacenamiento del navegador.
 
-## Referencias
+El precio y la disponibilidad provienen de Alquileres. Un timeout al confirmar deja un resultado incierto y se recupera con la misma clave y cuerpo. Cambiar fechas o auto invalida la cotización; una doble pulsación no crea otra operación.
 
-- [SPEC.md — actores, alcance y reglas](../SPEC.md).
-- [Arquitectura del sistema](../docs/ARCHITECTURE.md).
-- [D1 vigente — empleados sin candidatos](../docs/adr/ADR-018-empleados-sin-candidatos.md).
-- [D8 vigente — empleados](../docs/adr/ADR-017-contrato-empleados.md).
-- [Contrato histórico de reservas](../docs/contracts/RESERVAS.md).
-- [Historias y criterios de aceptación](../docs/BACKLOG.md).
+## Implementación posterior
+
+No hay todavía comandos de instalación, build ni ejecución del frontend aprobados. La próxima etapa creará el proyecto y fijará dependencias; después se implementarán acceso/catálogo, ficha/cotización, confirmación idempotente y consulta/cancelación, en ese orden.
+
+Las pantallas de operador y personal, y las integraciones de gimnasio/hospital, pertenecen a etapas posteriores. La descripción de F3-01 no acredita el frontend completo exigido para la presentación.
