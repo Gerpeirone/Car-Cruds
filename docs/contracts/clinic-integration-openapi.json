@@ -17,74 +17,102 @@
         "description": "Solo admin; requiere un empleado registrado y activo. personKind solo admite employee. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "204": {
-            "description": "Consultar estado y documentación de la operación."
+            "description": "Vínculo persistido; respuesta sin cuerpo. No crea un paciente en el hospital."
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "404": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Registro inexistente o no visible para la aplicación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
                 }
               }
             }
           },
           "409": {
-            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar un envío que pueda crear turno, incluido el reintento incierto.",
+            "description": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "EVIDENCE_CONFLICT",
+                  "message": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación."
                 }
               }
             }
           },
           "415": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNSUPPORTED_MEDIA_TYPE",
+                  "message": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
@@ -96,10 +124,23 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatientLink"
+              },
+              "example": {
+                "personKind": "employee",
+                "personId": "employee-001",
+                "patientId": "paciente-demo-001"
               }
             }
-          }
-        }
+          },
+          "description": "JSON estricto: sin campos desconocidos ni duplicados. El ejemplo es ficticio y sus identificadores deben vincularse antes de operar."
+        },
+        "x-roles": [
+          "admin"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "linkClinicPatient"
       }
     },
     "/v1/employees/clinic/requests": {
@@ -108,81 +149,124 @@
         "description": "Solo admin; requiere un empleado registrado y activo para una nueva intención. personKind solo admite employee. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Intención guardada o recuperada por referencia local; no se envió una reserva al hospital.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClinicRequest"
+                },
+                "example": {
+                  "requestId": "revision-demo-001",
+                  "localReference": "revision-employee-001-01",
+                  "personKind": "employee",
+                  "personId": "employee-001",
+                  "patientId": "paciente-demo-001",
+                  "doctorId": "medico-demo-001",
+                  "requestedStartAt": "2030-01-15T12:00:00Z",
+                  "createdAt": "2026-10-28T12:00:00Z",
+                  "attemptedAt": null,
+                  "observedAt": null,
+                  "state": "ready",
+                  "classification": "pending_verification",
+                  "lastKnownAppointment": null
                 }
               }
             }
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "404": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Registro inexistente o no visible para la aplicación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
                 }
               }
             }
           },
           "409": {
-            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar un envío que pueda crear turno, incluido el reintento incierto.",
+            "description": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "EVIDENCE_CONFLICT",
+                  "message": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación."
                 }
               }
             }
           },
           "415": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNSUPPORTED_MEDIA_TYPE",
+                  "message": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
@@ -194,10 +278,25 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateReview"
+              },
+              "example": {
+                "personKind": "employee",
+                "personId": "employee-001",
+                "localReference": "revision-employee-001-01",
+                "doctorId": "medico-demo-001",
+                "startAt": "2030-01-15T12:00:00Z"
               }
             }
-          }
-        }
+          },
+          "description": "JSON estricto: sin campos desconocidos ni duplicados. El ejemplo es ficticio y sus identificadores deben vincularse antes de operar."
+        },
+        "x-roles": [
+          "admin"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "createClinicRequest"
       }
     },
     "/v1/employees/clinic/requests/{requestId}": {
@@ -210,7 +309,9 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
-          }
+          },
+          "description": "Identificador de la intención local.",
+          "example": "revision-demo-001"
         }
       ],
       "get": {
@@ -218,86 +319,108 @@
         "description": "Solo admin; consulta solicitudes de empleados activos o inactivos y conserva su historia. Sin parámetros de consulta. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Estado administrativo local de la intención; no realiza una consulta externa.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClinicRequest"
+                },
+                "example": {
+                  "requestId": "revision-demo-001",
+                  "localReference": "revision-employee-001-01",
+                  "personKind": "employee",
+                  "personId": "employee-001",
+                  "patientId": "paciente-demo-001",
+                  "doctorId": "medico-demo-001",
+                  "requestedStartAt": "2030-01-15T12:00:00Z",
+                  "createdAt": "2026-10-28T12:00:00Z",
+                  "attemptedAt": null,
+                  "observedAt": null,
+                  "state": "ready",
+                  "classification": "pending_verification",
+                  "lastKnownAppointment": null
                 }
               }
             }
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "404": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Registro inexistente o no visible para la aplicación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
           }
-        }
+        },
+        "x-roles": [
+          "admin"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "getClinicRequest"
       }
     },
     "/v1/employees/clinic/requests/{requestId}/submit": {
@@ -310,7 +433,9 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
-          }
+          },
+          "description": "Identificador de la intención local.",
+          "example": "revision-demo-001"
         }
       ],
       "post": {
@@ -318,86 +443,154 @@
         "description": "Solo admin; sin cuerpo ni parámetros de consulta. Cada acción hace como máximo una llamada externa, respetando nextAttemptAt y Retry-After. Todo envío que pueda crear, incluido el reintento incierto, exige empleado activo. Se reutilizan clave y datos persistidos; no se exponen en la respuesta. Una solicitud terminal, con turno vinculado, conflicto idempotente o ya enviada bajo la API antigua sin procedencia idempotente no genera otro POST. El 200 describe el estado local. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Estado local posterior a la acción. Incluso con 200 puede conservar state=unknown y failureCode ante un error externo; no implica turno confirmado.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClinicRequest"
+                },
+                "examples": {
+                  "desconocido": {
+                    "summary": "Fallo externo guardado; no prueba ausencia de turno",
+                    "value": {
+                      "requestId": "revision-demo-001",
+                      "localReference": "revision-employee-001-01",
+                      "personKind": "employee",
+                      "personId": "employee-001",
+                      "patientId": "paciente-demo-001",
+                      "doctorId": "medico-demo-001",
+                      "requestedStartAt": "2030-01-15T12:00:00Z",
+                      "createdAt": "2026-10-28T12:00:00Z",
+                      "attemptedAt": "2026-10-28T12:01:00Z",
+                      "observedAt": null,
+                      "state": "unknown",
+                      "classification": "pending_verification",
+                      "lastKnownAppointment": null,
+                      "failureCode": "CLINIC_UNAVAILABLE"
+                    }
+                  },
+                  "confirmado": {
+                    "summary": "Evidencia de turno confirmada; no acredita asistencia",
+                    "value": {
+                      "requestId": "revision-demo-001",
+                      "localReference": "revision-employee-001-01",
+                      "personKind": "employee",
+                      "personId": "employee-001",
+                      "patientId": "paciente-demo-001",
+                      "doctorId": "medico-demo-001",
+                      "requestedStartAt": "2030-01-15T12:00:00Z",
+                      "createdAt": "2026-10-28T12:00:00Z",
+                      "attemptedAt": "2026-10-28T12:01:00Z",
+                      "observedAt": "2026-10-28T12:01:01Z",
+                      "state": "booked",
+                      "classification": "confirmed",
+                      "lastKnownAppointment": {
+                        "id": "turno-demo-001",
+                        "patientId": "paciente-demo-001",
+                        "doctorId": "medico-demo-001",
+                        "startAt": "2030-01-15T12:00:00Z",
+                        "endAt": "2030-01-15T12:30:00Z",
+                        "status": "booked",
+                        "version": 1
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "404": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Registro inexistente o no visible para la aplicación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
                 }
               }
             }
           },
           "409": {
-            "description": "Conflicto de la operación; EMPLOYEE_INACTIVE cuando el empleado está inactivo y se intenta vincularlo, crear una nueva intención o efectuar un envío que pueda crear turno, incluido el reintento incierto.",
+            "description": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "EVIDENCE_CONFLICT",
+                  "message": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
           }
-        }
+        },
+        "x-roles": [
+          "admin"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "submitClinicRequest"
       }
     },
     "/v1/employees/clinic/requests/{requestId}/refresh": {
@@ -410,7 +603,9 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
-          }
+          },
+          "description": "Identificador de la intención local.",
+          "example": "revision-demo-001"
         }
       ],
       "post": {
@@ -418,81 +613,156 @@
         "description": "Solo admin; permite consulta y conciliación de evidencia anterior de empleados activos o inactivos. Exige turno legible con la credencial de Car Cruds y coincidencia de paciente, médico e inicio. GET 404 puede ocultar turnos ajenos y no prueba ausencia. Sin parámetros de consulta; JSON estricto. Ver COMUNICACION-HOSPITAL.md.",
         "responses": {
           "200": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Última evidencia local tras consultar o esperar; 200 puede conservar incertidumbre y failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClinicRequest"
+                },
+                "examples": {
+                  "desconocido": {
+                    "summary": "Fallo externo guardado; no prueba ausencia de turno",
+                    "value": {
+                      "requestId": "revision-demo-001",
+                      "localReference": "revision-employee-001-01",
+                      "personKind": "employee",
+                      "personId": "employee-001",
+                      "patientId": "paciente-demo-001",
+                      "doctorId": "medico-demo-001",
+                      "requestedStartAt": "2030-01-15T12:00:00Z",
+                      "createdAt": "2026-10-28T12:00:00Z",
+                      "attemptedAt": "2026-10-28T12:01:00Z",
+                      "observedAt": null,
+                      "state": "unknown",
+                      "classification": "pending_verification",
+                      "lastKnownAppointment": null,
+                      "failureCode": "CLINIC_UNAVAILABLE"
+                    }
+                  },
+                  "confirmado": {
+                    "summary": "Evidencia de turno confirmada; no acredita asistencia",
+                    "value": {
+                      "requestId": "revision-demo-001",
+                      "localReference": "revision-employee-001-01",
+                      "personKind": "employee",
+                      "personId": "employee-001",
+                      "patientId": "paciente-demo-001",
+                      "doctorId": "medico-demo-001",
+                      "requestedStartAt": "2030-01-15T12:00:00Z",
+                      "createdAt": "2026-10-28T12:00:00Z",
+                      "attemptedAt": "2026-10-28T12:01:00Z",
+                      "observedAt": "2026-10-28T12:01:01Z",
+                      "state": "booked",
+                      "classification": "confirmed",
+                      "lastKnownAppointment": {
+                        "id": "turno-demo-001",
+                        "patientId": "paciente-demo-001",
+                        "doctorId": "medico-demo-001",
+                        "startAt": "2030-01-15T12:00:00Z",
+                        "endAt": "2030-01-15T12:30:00Z",
+                        "status": "booked",
+                        "version": 1
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "404": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Registro inexistente o no visible para la aplicación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente o no visible para la aplicación."
                 }
               }
             }
           },
           "409": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "EVIDENCE_CONFLICT",
+                  "message": "EVIDENCE_CONFLICT: referencia, intención o evidencia incompatible; PATIENT_LINK_REQUIRED: falta el vínculo previo; EMPLOYEE_INACTIVE: nueva acción que exige empleado activo. Los códigos posibles dependen de la operación."
                 }
               }
             }
           },
           "415": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNSUPPORTED_MEDIA_TYPE",
+                  "message": "UNSUPPORTED_MEDIA_TYPE: se requiere Content-Type application/json."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
@@ -504,10 +774,21 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Recovery"
+              },
+              "example": {
+                "appointmentId": "turno-demo-001"
               }
             }
-          }
-        }
+          },
+          "description": "JSON estricto: sin campos desconocidos ni duplicados. El ejemplo es ficticio y sus identificadores deben vincularse antes de operar."
+        },
+        "x-roles": [
+          "admin"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "refreshClinicRequest"
       }
     },
     "/v1/employees/reports/clinic": {
@@ -516,81 +797,96 @@
         "description": "admin o service. Incluye empleados activos e inactivos; faltantes pendientes. personKind solo admite employee y su valor predeterminado es employee. Lectura local; no certifica todos los turnos externos de un empleado. Conserva las solicitudes e historia tras una baja.",
         "responses": {
           "200": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "Última intención registrada por empleado; no enumera todos los turnos externos.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Report"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "personKind": "employee",
+                      "personId": "employee-001",
+                      "displayName": "Persona ficticia de demostración",
+                      "active": true,
+                      "classification": "pending_verification",
+                      "request": {
+                        "requestId": "revision-demo-001",
+                        "localReference": "revision-employee-001-01",
+                        "personKind": "employee",
+                        "personId": "employee-001",
+                        "patientId": "paciente-demo-001",
+                        "doctorId": "medico-demo-001",
+                        "requestedStartAt": "2030-01-15T12:00:00Z",
+                        "createdAt": "2026-10-28T12:00:00Z",
+                        "attemptedAt": null,
+                        "observedAt": null,
+                        "state": "ready",
+                        "classification": "pending_verification",
+                        "lastKnownAppointment": null
+                      }
+                    }
+                  ],
+                  "page": 1,
+                  "pageSize": 20,
+                  "total": 1
                 }
               }
             }
           },
           "400": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "INVALID_INPUT: identificador, campos, precisión temporal, cuerpo o consulta inválidos. Si una solicitud aún no tiene turno conocido, refresh requiere appointmentId verificable."
                 }
               }
             }
           },
           "401": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
                 }
               }
             }
           },
           "403": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Consultar estado y documentación de la operación.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
                 }
               }
             }
           },
           "503": {
-            "description": "Consultar estado y documentación de la operación.",
+            "description": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "NOT_CONFIGURED: falta el adaptador requerido; SERVICE_UNAVAILABLE: persistencia o gateway no disponible; CLINIC_UNAVAILABLE: límite de llamadas concurrentes o respuesta no verificable. Un fallo externo que se logra guardar suele representarse con 200 y state/failureCode."
                 }
               }
             }
@@ -607,7 +903,9 @@
               ],
               "default": "employee",
               "description": "Campo conservado por compatibilidad; solo admite employee."
-            }
+            },
+            "description": "Filtro de la consulta; no repetir ni agregar parámetros desconocidos.",
+            "example": "employee"
           },
           {
             "name": "page",
@@ -616,7 +914,9 @@
               "type": "integer",
               "minimum": 1,
               "default": 1
-            }
+            },
+            "description": "Filtro de la consulta; no repetir ni agregar parámetros desconocidos.",
+            "example": 1
           },
           {
             "name": "pageSize",
@@ -626,9 +926,19 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
-            }
+            },
+            "description": "Filtro de la consulta; no repetir ni agregar parámetros desconocidos.",
+            "example": 20
           }
-        ]
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "tags": [
+          "Clínica"
+        ],
+        "operationId": "getClinicReport"
       }
     }
   },
@@ -645,10 +955,12 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "type": "string"
+            "type": "string",
+            "description": "Código estable para interpretar el resultado; no depende del texto del mensaje."
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "description": "Explicación legible del error; el texto puede cambiar."
           }
         },
         "required": [
@@ -663,12 +975,14 @@
           "requestId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador local de la intención clínica persistida en Car Cruds."
           },
           "localReference": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Referencia estable definida por el operador para identificar la misma intención y detectar contradicciones."
           },
           "personKind": {
             "type": "string",
@@ -681,35 +995,42 @@
           "personId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del empleado de Car Cruds; no es el identificador del paciente externo."
           },
           "patientId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del paciente previamente verificado en el hospital y vinculado al empleado."
           },
           "doctorId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del médico del proveedor; no se crea desde esta API."
           },
           "requestedStartAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Inicio solicitado al hospital, con zona horaria y precisión de segundos; se guarda en UTC."
           },
           "createdAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Fecha de creación de la intención local."
           },
           "attemptedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "Fecha del intento persistido; null antes del primer envío."
           },
           "observedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "Fecha de observación de la evidencia; puede ser null si todavía no se observó."
           },
           "state": {
             "type": "string",
@@ -719,7 +1040,8 @@
               "rejected",
               "booked",
               "cancelled"
-            ]
+            ],
+            "description": "Estado administrativo local: ready, unknown, rejected, booked o cancelled. No acredita asistencia médica."
           },
           "classification": {
             "type": "string",
@@ -727,7 +1049,8 @@
               "confirmed",
               "without_confirmed_appointment",
               "pending_verification"
-            ]
+            ],
+            "description": "confirmed: turno respaldado por evidencia; without_confirmed_appointment: cancelación/rechazo registrado; pending_verification: información insuficiente."
           },
           "lastKnownAppointment": {
             "type": "object",
@@ -741,12 +1064,14 @@
               "patientId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador del paciente previamente verificado en el hospital y vinculado al empleado."
               },
               "doctorId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador del médico del proveedor; no se crea desde esta API."
               },
               "startAt": {
                 "type": "string",
@@ -778,7 +1103,8 @@
               "status",
               "version"
             ],
-            "nullable": true
+            "nullable": true,
+            "description": "Última evidencia válida de turno obtenida del hospital; null si no existe evidencia confirmada."
           },
           "failureCode": {
             "type": "string",
@@ -804,7 +1130,22 @@
           "state",
           "classification",
           "lastKnownAppointment"
-        ]
+        ],
+        "example": {
+          "requestId": "revision-demo-001",
+          "localReference": "revision-employee-001-01",
+          "personKind": "employee",
+          "personId": "employee-001",
+          "patientId": "paciente-demo-001",
+          "doctorId": "medico-demo-001",
+          "requestedStartAt": "2030-01-15T12:00:00Z",
+          "createdAt": "2026-10-28T12:00:00Z",
+          "attemptedAt": null,
+          "observedAt": null,
+          "state": "ready",
+          "classification": "pending_verification",
+          "lastKnownAppointment": null
+        }
       },
       "PatientLink": {
         "type": "object",
@@ -821,19 +1162,26 @@
           "personId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del empleado de Car Cruds; no es el identificador del paciente externo."
           },
           "patientId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del paciente previamente verificado en el hospital y vinculado al empleado."
           }
         },
         "required": [
           "personKind",
           "personId",
           "patientId"
-        ]
+        ],
+        "example": {
+          "personKind": "employee",
+          "personId": "employee-001",
+          "patientId": "paciente-demo-001"
+        }
       },
       "CreateReview": {
         "type": "object",
@@ -850,17 +1198,20 @@
           "personId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del empleado de Car Cruds; no es el identificador del paciente externo."
           },
           "localReference": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Referencia estable definida por el operador para identificar la misma intención y detectar contradicciones."
           },
           "doctorId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del médico del proveedor; no se crea desde esta API."
           },
           "startAt": {
             "type": "string",
@@ -874,7 +1225,14 @@
           "localReference",
           "doctorId",
           "startAt"
-        ]
+        ],
+        "example": {
+          "personKind": "employee",
+          "personId": "employee-001",
+          "localReference": "revision-employee-001-01",
+          "doctorId": "medico-demo-001",
+          "startAt": "2030-01-15T12:00:00Z"
+        }
       },
       "Recovery": {
         "type": "object",
@@ -883,10 +1241,13 @@
           "appointmentId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador de turno conocido y verificado para conciliar; debe coincidir con la intención. Puede omitirse si ya hay turno vinculado."
           }
         },
-        "required": []
+        "example": {
+          "appointmentId": "turno-demo-001"
+        }
       },
       "ReportItem": {
         "type": "object",
@@ -903,14 +1264,17 @@
           "personId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Identificador del empleado de Car Cruds; no es el identificador del paciente externo."
           },
           "displayName": {
-            "type": "string"
+            "type": "string",
+            "description": "Nombre administrativo normalizado; máximo 150 caracteres, sin controles."
           },
           "active": {
             "type": "boolean",
-            "nullable": true
+            "nullable": true,
+            "description": "Estado administrativo actual del empleado; la baja conserva su historia."
           },
           "classification": {
             "type": "string",
@@ -918,7 +1282,8 @@
               "confirmed",
               "without_confirmed_appointment",
               "pending_verification"
-            ]
+            ],
+            "description": "confirmed: turno respaldado por evidencia; without_confirmed_appointment: cancelación/rechazo registrado; pending_verification: información insuficiente."
           },
           "request": {
             "type": "object",
@@ -927,12 +1292,14 @@
               "requestId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador local de la intención clínica persistida en Car Cruds."
               },
               "localReference": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Referencia estable definida por el operador para identificar la misma intención y detectar contradicciones."
               },
               "personKind": {
                 "type": "string",
@@ -945,35 +1312,42 @@
               "personId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador del empleado de Car Cruds; no es el identificador del paciente externo."
               },
               "patientId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador del paciente previamente verificado en el hospital y vinculado al empleado."
               },
               "doctorId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100
+                "maxLength": 100,
+                "description": "Identificador del médico del proveedor; no se crea desde esta API."
               },
               "requestedStartAt": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "Inicio solicitado al hospital, con zona horaria y precisión de segundos; se guarda en UTC."
               },
               "createdAt": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "Fecha de creación de la intención local."
               },
               "attemptedAt": {
                 "type": "string",
                 "format": "date-time",
-                "nullable": true
+                "nullable": true,
+                "description": "Fecha del intento persistido; null antes del primer envío."
               },
               "observedAt": {
                 "type": "string",
                 "format": "date-time",
-                "nullable": true
+                "nullable": true,
+                "description": "Fecha de observación de la evidencia; puede ser null si todavía no se observó."
               },
               "state": {
                 "type": "string",
@@ -983,7 +1357,8 @@
                   "rejected",
                   "booked",
                   "cancelled"
-                ]
+                ],
+                "description": "Estado administrativo local: ready, unknown, rejected, booked o cancelled. No acredita asistencia médica."
               },
               "classification": {
                 "type": "string",
@@ -991,7 +1366,8 @@
                   "confirmed",
                   "without_confirmed_appointment",
                   "pending_verification"
-                ]
+                ],
+                "description": "confirmed: turno respaldado por evidencia; without_confirmed_appointment: cancelación/rechazo registrado; pending_verification: información insuficiente."
               },
               "lastKnownAppointment": {
                 "type": "object",
@@ -1005,12 +1381,14 @@
                   "patientId": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 100
+                    "maxLength": 100,
+                    "description": "Identificador del paciente previamente verificado en el hospital y vinculado al empleado."
                   },
                   "doctorId": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 100
+                    "maxLength": 100,
+                    "description": "Identificador del médico del proveedor; no se crea desde esta API."
                   },
                   "startAt": {
                     "type": "string",
@@ -1042,7 +1420,8 @@
                   "status",
                   "version"
                 ],
-                "nullable": true
+                "nullable": true,
+                "description": "Última evidencia válida de turno obtenida del hospital; null si no existe evidencia confirmada."
               },
               "failureCode": {
                 "type": "string",
@@ -1069,7 +1448,8 @@
               "classification",
               "lastKnownAppointment"
             ],
-            "nullable": true
+            "nullable": true,
+            "description": "Última intención del empleado; null si no existe intención registrada."
           }
         },
         "required": [
@@ -1089,21 +1469,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReportItem"
-            }
+            },
+            "description": "Registros incluidos en esta página de resultados."
           },
           "page": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Página desde 1; valor predeterminado 1."
           },
           "pageSize": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Registros por página, entre 1 y 100; valor predeterminado 20."
           },
           "total": {
             "type": "integer",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Cantidad total de registros que cumplen la consulta, no solo de la página."
           }
         },
         "required": [
@@ -1111,8 +1495,49 @@
           "page",
           "pageSize",
           "total"
-        ]
+        ],
+        "example": {
+          "items": [
+            {
+              "personKind": "employee",
+              "personId": "employee-001",
+              "displayName": "Persona ficticia de demostración",
+              "active": true,
+              "classification": "pending_verification",
+              "request": {
+                "requestId": "revision-demo-001",
+                "localReference": "revision-employee-001-01",
+                "personKind": "employee",
+                "personId": "employee-001",
+                "patientId": "paciente-demo-001",
+                "doctorId": "medico-demo-001",
+                "requestedStartAt": "2030-01-15T12:00:00Z",
+                "createdAt": "2026-10-28T12:00:00Z",
+                "attemptedAt": null,
+                "observedAt": null,
+                "state": "ready",
+                "classification": "pending_verification",
+                "lastKnownAppointment": null
+              }
+            }
+          ],
+          "page": 1,
+          "pageSize": 20,
+          "total": 1
+        }
       }
     }
-  }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Gateway local predeterminado; ajustar al entorno. No es una URL pública acordada."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Clínica",
+      "description": "Operaciones propias implementadas de Clínica."
+    }
+  ]
 }

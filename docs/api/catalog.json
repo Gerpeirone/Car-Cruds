@@ -1,0 +1,8 @@
+[
+  {"name": "1 · Clientes", "file": "customers-openapi.json"},
+  {"name": "2 · Flota", "file": "fleet-openapi.json"},
+  {"name": "3 · Alquileres", "file": "rentals-openapi.json"},
+  {"name": "4 · Empleados y gimnasio", "file": "employees-openapi.json"},
+  {"name": "5 · Empleados: integración clínica", "file": "clinic-integration-openapi.json"},
+  {"name": "6 · Disponibilidad y métricas", "file": "operations-openapi.json"}
+]

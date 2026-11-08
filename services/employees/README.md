@@ -1,5 +1,7 @@
 # Servicio Empleados
 
+La [referencia de endpoints y Swagger](../../docs/API.md) reúne administración de empleados, evidencia e informes del gimnasio y las seis operaciones de integración clínica, con permisos, ejemplos y errores.
+
 | Campo | Valor |
 | --- | --- |
 | Fecha de alcance | 23 de octubre de 2026 |

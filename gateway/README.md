@@ -24,6 +24,8 @@ La llamada al hospital sale directamente de Empleados mediante su adaptador. Las
 
 ## Ejecución y evidencia
 
+La [referencia de endpoints](../docs/API.md) explica todas las rutas de negocio encaminadas y las dos rutas técnicas propias del gateway. El visor Swagger se inicia por separado con `go run ./cmd/apidocs` en `http://127.0.0.1:8090/api/`, sin abrir excepciones a la autenticación del gateway.
+
 `compose.yaml` configura los destinos en red privada y publica la entrada únicamente en loopback. [cmd/smoke](../cmd/smoke/README.md) ejercita el conjunto desde este punto de entrada. El recorrido, los roles y una traza real se registran en [ESTADO-IMPLEMENTACION](../docs/ESTADO-IMPLEMENTACION.md).
 
 Consultar [arquitectura](../docs/ARCHITECTURE.md), [D5](../docs/adr/ADR-016-comunicacion-v2.md), [D8](../docs/adr/ADR-017-contrato-empleados.md) y [balanceador](../load-balancer/README.md). Los directorios `src/` conservan la estructura documental inicial; el código operativo está en `cmd/gateway`.

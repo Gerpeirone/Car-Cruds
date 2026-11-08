@@ -12,6 +12,8 @@
 
 ## Operaciones
 
+Referencia de entradas, esquemas, ejemplos y errores: [OpenAPI de Clientes](../../docs/contracts/customers-openapi.json). [Guía y visor Swagger](../../docs/API.md).
+
 | Método y ruta | Propósito | Permisos |
 | --- | --- | --- |
 | `GET /v1/customers/{id}` | Perfil para validar conductor | admin/service; client para su CustomerID |
