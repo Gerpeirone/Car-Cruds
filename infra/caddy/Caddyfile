@@ -1,5 +1,6 @@
 # Entrada pública de la VM. Caddy obtiene y renueva el certificado HTTPS
-# para PUBLIC_HOST y reenvía todo el tráfico al gateway, que autentica.
+# para PUBLIC_HOST. La API va directo al gateway, que autentica; el resto
+# lo sirve la interfaz web estática.
 {$PUBLIC_HOST} {
 	encode zstd gzip
 
@@ -7,7 +8,13 @@
 	@internal path /internal/*
 	respond @internal 404
 
-	reverse_proxy gateway:8080
+	handle /v1/* {
+		reverse_proxy gateway:8080
+	}
+
+	handle {
+		reverse_proxy web:8080
+	}
 
 	log {
 		output stdout
