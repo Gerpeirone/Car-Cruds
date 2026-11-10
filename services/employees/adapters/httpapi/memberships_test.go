@@ -67,4 +67,9 @@ func TestGymInboxAuthorizationStrictInputAndAuthenticatedSource(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatalf("report: %d %s", w.Code, w.Body)
 	}
+	partial := `{"employeeId":"e1","period":"2026-10","sourceReference":"gym-1","version":2,"observedAt":"2026-10-23T12:00:00Z","member":null,"used":null,"costMinor":null,"spendingMinor":null,"currency":"ARS"}`
+	w = request(handler, "POST", "/v1/employees/membership-evidence", partial, "gym")
+	if w.Code != 200 || spy.snapshot.Member != nil || spy.snapshot.Used != nil || spy.snapshot.CostMinor != nil || spy.snapshot.SpendingMinor != nil {
+		t.Fatalf("partial facts coerced to false/zero: %d %s", w.Code, w.Body)
+	}
 }

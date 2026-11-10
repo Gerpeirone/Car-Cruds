@@ -37,6 +37,11 @@ func TestMembershipPersistenceCorrectionsAndReport(t *testing.T) {
 	}
 	receive(s, true)
 	receive(s, false)
+	changedObservation := s
+	changedObservation.ObservedAt = changedObservation.ObservedAt.Add(time.Second)
+	if _, err := repo.ReceiveMembership(ctx, "gimnasio-pablo", changedObservation); !errors.Is(err, domain.ErrEvidenceConflict) {
+		t.Fatalf("changed observedAt on replay=%v", err)
+	}
 	conflict := s
 	conflict.CostMinor = ptr(int64(200))
 	if _, err := repo.ReceiveMembership(ctx, "gimnasio-pablo", conflict); !errors.Is(err, domain.ErrEvidenceConflict) {

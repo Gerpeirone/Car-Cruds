@@ -34,7 +34,7 @@ El gimnasio consulta la lista de empleados activos y puede enviar evidencia de m
 | D13: capacidad/costos | Carga histórica, límite, alternativa y estimación fechada documentados | Carga y precios no se actualizaron ni acreditan capacidad cloud |
 | Validación D1/D3/D5 | Propiedad de datos, almacenes y comunicaciones verificadas; RentalCompleted con efecto único | Operación conjunta externa pendiente |
 | Primera versión D11 | Instrumentación, correlación y traza HTTP actuales | No hay tablero ni alertas operativas |
-| Actualización D8 | Contrato propio de personal/gimnasio 0.3.0, lista y permisos verificados | Aceptación bilateral, población y acceso acordados pendientes |
+| Actualización D8 | Contrato propio de personal/gimnasio 0.3.0, lista y permisos verificados el 08/11; la versión 0.4.0 agrega la consulta de estado laboral `/status` (PR #4) | Aceptación bilateral, población y acceso acordados pendientes |
 
 ## 3. Evidencia del corte del 8 de noviembre
 

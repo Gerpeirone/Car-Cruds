@@ -4,6 +4,8 @@
 
 **Revisión vigente — 23/10/2026:** Empleados administra exclusivamente personal registrado; [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, fijado a `c0b65f4`. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; evidencia previa de inactivos se conserva. La adaptación agrega clave privada, idempotencia persistida, recuperación explícita y espera durable sin ampliar el producto hacia otras operaciones clínicas. La validación de la rama y la aceptación conjunta se registran por separado.
 
+**Gimnasio — 23/10/2026:** según el mensaje recibido del gimnasio, el profesor confirmó lista → vinculación manual → evidencia. [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md) responde sus preguntas, registra la elección de Car Cruds de costos por meses iguales y mantiene meses parciales pendientes. OpenAPI 0.4.0 agrega la consulta mínima de estado laboral y conserva la lista y la evidencia de 0.3.0. Perfil semántico, host y prueba conjunta siguen pendientes de confirmación bilateral.
+
 **Actualización — 22/10/2026:** se conserva el alcance original. Gimnasio: lista, recepción propuesta, historia e informe en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md); aceptación de Pablo pendiente. Hospital: vínculo de paciente, intención persistente, solicitud y consulta de turnos mediante operaciones reales observadas en `feature/entrega-2`, con informe y recuperación en [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md). No se modifica ninguno de los proyectos externos ni se reemplazan turnos por correos. Acuerdos y acceso externo siguen pendientes.
 
 **Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. El contrato oficial del hospital está publicado; su acceso operativo y los acuerdos bilaterales siguen pendientes. El contrato propio del gimnasio requiere aceptación del consumidor.
@@ -44,7 +46,7 @@ El alquiler de autos conserva su flujo principal de clientes. El seguimiento de 
 4. Empleados verifica identidad del emisor, vínculo de la persona y consistencia de la información. Conserva evidencia y evita duplicar efectos.
 5. El responsable obtiene un informe con uso informado, no uso informado e información faltante; se registra fecha de actualización y origen.
 
-El diseño inicial dejaba abierto el transporte. La implementación actual ofrece una llamada entrante **a Car Cruds**, descrita en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), pendiente de aceptación bilateral; no se inventa un endpoint del gimnasio. El borrador [employees-openapi-draft.json](contracts/employees-openapi-draft.json) se conserva histórico. El contrato propio implementado es [employees-openapi.json](contracts/employees-openapi.json), versión 0.3.0; la lista y el intercambio de membresías mantienen su comportamiento.
+El diseño inicial dejaba abierto el transporte. La implementación actual ofrece una llamada entrante **a Car Cruds**, descrita en [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md), pendiente de aceptación bilateral; no se inventa un endpoint del gimnasio. El borrador [employees-openapi-draft.json](contracts/employees-openapi-draft.json) se conserva histórico. El contrato propio implementado es [employees-openapi.json](contracts/employees-openapi.json), versión 0.4.0: agrega la consulta de estado laboral `/status`; la lista y el intercambio de membresías mantienen su comportamiento.
 
 ### Semántica interna propuesta
 
@@ -95,7 +97,7 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | --- | --- | --- | --- |
 | EXT-01 | Población de empleados compartida, activos/inactivos y cambios de altas/bajas | Gimnasio y responsable de personal | Define qué lista puede publicarse |
 | EXT-02 | Identificadores y vinculación de personas; campos mínimos y permisos | Ambos equipos externos | Evita vincular información a la persona incorrecta |
-| EXT-03 | Aceptar contrato propio 0.3.0, paginación y compatibilidad de la lista | Gimnasio | Contrato implementado y verificado; aceptación bilateral pendiente |
+| EXT-03 | Aceptar contrato propio 0.4.0, paginación, compatibilidad de la lista y consulta de estado laboral `/status` | Gimnasio | Contrato implementado y verificado; aceptación bilateral pendiente |
 | EXT-04 | Aceptar mecanismo y contrato propios de devolución de membresías, uso y costos | Gimnasio | Recepción implementada; falta productor del gimnasio y ensayo conjunto |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
 | EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Informe propio implementado; faltan datos y semántica aceptados para acreditar gastos reales |
