@@ -1,5 +1,7 @@
 # ADR-010 — Resiliencia y resultados desconocidos
 
+> **Circuit breaker de caché — 09/11/2026:** Flota envuelve Redis con un breaker ([breaker.go](../../services/fleet/breaker.go)). Cinco fallas consecutivas lo abren por 2 s; después pasa una sola sonda, y un éxito lo cierra. Solo se cortan lecturas y llenados: la invalidación siempre se intenta. Con Redis detenido y concurrencia 1, la ficha pasó de p50 155 ms a 1,6 ms ([evidencia](../evidence/cache-breaker-2026-11-09.json)). Las métricas `fleet_cache_breaker_state` y `fleet_cache_breaker_openings_total` alimentan la alerta `CacheFlotaSinRedis`.
+
 > **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) concreta timeout 100 ms–5 s (inicial 2 s), ocho llamadas simultáneas, un intento por acción explícita y espera durable ante incertidumbre/429. Conserva resultado desconocido sin reintentos automáticos. No modifica las evidencias históricas de este documento.
 
 | Campo | Valor |
