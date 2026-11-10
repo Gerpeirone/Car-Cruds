@@ -147,10 +147,18 @@ jobs:
             echo "La suite real omitió pruebas: falta una dependencia o configuración."
             exit 1
           fi
-      - name: Verificar API y publicación de historial
+      - name: Medir caché sostenida y frescura de búsqueda
+        run: bash scripts/measure-sustained.sh 10 8
+      - name: Registrar diagnóstico del ensayo sostenido
+        if: failure()
         run: |
-          bash scripts/measure-sustained.sh 10 8
-          go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
+          for file in output/sustained-*.json output/sustained-smoke.log; do
+            [ -f "$file" ] && { echo "== $file"; head -c 4000 "$file"; echo; }
+          done
+          docker compose ps --all
+          docker compose logs --no-color --tail 40 gateway fleet-a fleet-b indexer solr redis || true
+      - name: Verificar API y publicación de historial
+        run: go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
       - name: Probar contrato público contra gateway y Turnos originales del hospital
         shell: bash
         run: |
