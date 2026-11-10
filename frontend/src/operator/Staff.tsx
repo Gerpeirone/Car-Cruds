@@ -19,7 +19,7 @@ import {
   UserMinus,
   X,
 } from "lucide-react";
-import { ApiError } from "../api";
+import { ApiError, errorMessage } from "../api";
 import {
   Action,
   Back,
@@ -75,9 +75,7 @@ interface MembershipReport {
 }
 type ClinicState = "ready" | "unknown" | "rejected" | "booked" | "cancelled";
 type Classification =
-  | "confirmed"
-  | "without_confirmed_appointment"
-  | "pending_verification";
+  "confirmed" | "without_confirmed_appointment" | "pending_verification";
 export interface ClinicRequest {
   requestId: string;
   localReference: string;
@@ -150,6 +148,33 @@ export const isClinicRequest = (v: ClinicRequest) =>
   validKey(v.personId) &&
   states.includes(v.state) &&
   typeof v.classification === "string";
+interface ClinicDoctors {
+  doctors: { id: string; durationMinutes: number }[];
+}
+const isClinicDoctors = (v: ClinicDoctors) =>
+  !!v &&
+  Array.isArray(v.doctors) &&
+  v.doctors.every((d) => validKey(d.id) && Number.isInteger(d.durationMinutes));
+interface ClinicUsage {
+  period: string;
+  currentPrice: { amountMinor: number; currency: string };
+  totals: { currency: string; bookings: number; amountMinor: number }[];
+  items: {
+    appointmentId: string;
+    bookedAt: string;
+    priceMinor: number;
+    currency: string;
+    status: "booked" | "cancelled";
+  }[];
+}
+const isClinicUsage = (v: ClinicUsage) =>
+  !!v &&
+  typeof v.period === "string" &&
+  Array.isArray(v.totals) &&
+  Array.isArray(v.items) &&
+  Number.isSafeInteger(v.currentPrice?.amountMinor);
+// The hospital bills by UTC calendar month.
+const utcMonth = () => new Date().toISOString().slice(0, 7);
 const isClinicReport = (v: ClinicReport) =>
   !!v && Array.isArray(v.items) && Number.isInteger(v.total);
 // A 503 NOT_CONFIGURED is answered before any call to the hospital.
@@ -476,9 +501,9 @@ export function StaffCreate() {
         )}
         {unknown && (
           <div className="notice warning">
-            El alta pudo haberse guardado y esta API no admite repetirla de forma
-            segura. Revisá la lista de personal antes de registrar a la misma
-            persona otra vez.
+            El alta pudo haberse guardado y esta API no admite repetirla de
+            forma segura. Revisá la lista de personal antes de registrar a la
+            misma persona otra vez.
             <Link className="text-button" to="/operador/personal">
               Revisar la lista de personal
             </Link>
@@ -544,7 +569,9 @@ export function StaffEditor() {
     await command.run(async () => {
       try {
         if (unknown)
-          throw new Error("Consultá primero la ficha antes de volver a guardar.");
+          throw new Error(
+            "Consultá primero la ficha antes de volver a guardar.",
+          );
         const displayName = name.trim();
         if (!displayName || displayName.length > 150)
           throw new Error("Ingresá un nombre de entre 1 y 150 caracteres.");
@@ -600,9 +627,7 @@ export function StaffEditor() {
         current && (
           <>
             <form className="operator-form-card" onSubmit={save}>
-              <div className="operator-section-label">
-                {current.employeeId}
-              </div>
+              <div className="operator-section-label">{current.employeeId}</div>
               <div className="operator-fields">
                 <label>
                   Nombre administrativo
@@ -629,9 +654,9 @@ export function StaffEditor() {
                 </label>
               </div>
               <p className="field-hint">
-                Guardar reemplaza nombre y estado con los valores del formulario.
-                La baja no cancela turnos ni membresías: su seguimiento sigue
-                disponible.
+                Guardar reemplaza nombre y estado con los valores del
+                formulario. La baja no cancela turnos ni membresías: su
+                seguimiento sigue disponible.
               </p>
               {!!error && <Issue error={error} />}
               {!!success && <Success>{success}</Success>}
@@ -795,11 +820,11 @@ export function Memberships() {
               ))}
             </div>
             <div
-            className="operator-table-wrap"
-            tabIndex={0}
-            role="region"
-            aria-label="Tabla con desplazamiento horizontal"
-          >
+              className="operator-table-wrap"
+              tabIndex={0}
+              role="region"
+              aria-label="Tabla con desplazamiento horizontal"
+            >
               <table className="operator-table">
                 <caption className="sr-only">
                   Membresías del período {data.period}
@@ -856,9 +881,7 @@ export function Memberships() {
                 total={data.total}
                 page={page}
                 noun="empleados"
-                onPage={(next) =>
-                  setParams({ period, page: String(next) })
-                }
+                onPage={(next) => setParams({ period, page: String(next) })}
               />
             </div>
           </>
@@ -895,6 +918,10 @@ function forgetClinicDraft() {
 
 export function Clinic() {
   const { page, setPage } = usePage();
+  const doctors = useLoad<ClinicDoctors>(
+    "/v1/employees/clinic/doctors",
+    isClinicDoctors,
+  );
   const { data, error, loading, reload } = useLoad<ClinicReport>(
     `/v1/employees/reports/clinic?page=${page}&pageSize=${pageSize}`,
     isClinicReport,
@@ -1015,16 +1042,35 @@ export function Clinic() {
                 required
               />
             </label>
-            <label>
-              ID del profesional
-              <input
-                value={form.doctorId}
-                onChange={(e) => update("doctorId", e.target.value)}
-                disabled={locked}
-                maxLength={100}
-                required
-              />
-            </label>
+            {doctors.data?.doctors.length ? (
+              <label>
+                Médico del hospital
+                <select
+                  value={form.doctorId}
+                  onChange={(e) => update("doctorId", e.target.value)}
+                  disabled={locked}
+                  required
+                >
+                  <option value="">Elegí un médico</option>
+                  {doctors.data.doctors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.id} · {d.durationMinutes} min
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                ID del profesional
+                <input
+                  value={form.doctorId}
+                  onChange={(e) => update("doctorId", e.target.value)}
+                  disabled={locked}
+                  maxLength={100}
+                  required
+                />
+              </label>
+            )}
             <label>
               Fecha y hora (Buenos Aires)
               <input
@@ -1044,8 +1090,8 @@ export function Clinic() {
           {!!formError && <Issue error={formError} />}
           {unknown && (
             <div className="notice warning">
-              La solicitud pudo haberse guardado. Repetir con la misma referencia
-              recupera la original sin duplicarla.
+              La solicitud pudo haberse guardado. Repetir con la misma
+              referencia recupera la original sin duplicarla.
               <button
                 type="button"
                 className="text-button"
@@ -1079,11 +1125,24 @@ export function Clinic() {
           <ul>
             <li>Se vincula al empleado activo con su paciente del hospital.</li>
             <li>Se guarda la intención con una referencia estable.</li>
-            <li>El envío al hospital es una acción explícita, sin reintentos automáticos.</li>
-            <li>Un resultado desconocido se concilia consultando al hospital.</li>
+            <li>
+              El envío al hospital es una acción explícita, sin reintentos
+              automáticos.
+            </li>
+            <li>
+              Un resultado desconocido se concilia consultando al hospital.
+            </li>
           </ul>
         </aside>
       </div>
+      {!!doctors.error && (
+        <p className="operator-hint field-hint">
+          No pudimos leer los médicos del hospital (
+          {errorMessage(doctors.error)}). Podés ingresar el ID del profesional a
+          mano.
+        </p>
+      )}
+      <ClinicBilling />
       <h2 className="operator-subtitle">Última solicitud por empleado</h2>
       {loading ? (
         <Busy />
@@ -1196,7 +1255,8 @@ export function ClinicRequestView() {
   const waiting =
     !!r?.nextAttemptAt && new Date(r.nextAttemptAt).getTime() > Date.now();
   const canSubmit =
-    !!r && (r.state === "ready" || r.state === "unknown") &&
+    !!r &&
+    (r.state === "ready" || r.state === "unknown") &&
     !r.lastKnownAppointment;
   const canRefresh = !!r?.attemptedAt;
   function outcome(result: ClinicRequest) {
@@ -1314,9 +1374,13 @@ export function ClinicRequestView() {
             </div>
             {(r.failureCode || waiting) && (
               <p className="field-hint">
-                {r.failureCode && <>Último código informado: {r.failureCode}. </>}
+                {r.failureCode && (
+                  <>Último código informado: {r.failureCode}. </>
+                )}
                 {waiting && (
-                  <>El hospital pidió esperar hasta {moment(r.nextAttemptAt)}.</>
+                  <>
+                    El hospital pidió esperar hasta {moment(r.nextAttemptAt)}.
+                  </>
                 )}
               </p>
             )}
@@ -1359,14 +1423,17 @@ export function ClinicRequestView() {
                   disabled={command.busy || waiting}
                   onClick={() => setConfirm(true)}
                 >
-                  {r.state === "unknown" ? "Reenviar al hospital" : "Enviar al hospital"}{" "}
+                  {r.state === "unknown"
+                    ? "Reenviar al hospital"
+                    : "Enviar al hospital"}{" "}
                   <Send size={16} />
                 </Action>
               )}
             </div>
             <p className="field-hint">
-              Cada acción hace como máximo una llamada al hospital. Una respuesta
-              correcta no siempre confirma el turno: se informa la clasificación.
+              Cada acción hace como máximo una llamada al hospital. Una
+              respuesta correcta no siempre confirma el turno: se informa la
+              clasificación.
             </p>
             <dialog
               ref={dialog}
@@ -1413,6 +1480,123 @@ export function ClinicRequestView() {
               </div>
             </dialog>
           </section>
+        )
+      )}
+    </>
+  );
+}
+
+function ClinicBilling() {
+  const [period, setPeriod] = useState(utcMonth);
+  const [draft, setDraft] = useState(period);
+  const { data, error, loading, reload } = useLoad<ClinicUsage>(
+    `/v1/employees/clinic/usage?period=${encodeURIComponent(period)}`,
+    isClinicUsage,
+  );
+  return (
+    <>
+      <h2 className="operator-subtitle">Facturación del hospital</h2>
+      <form
+        className="operator-toolbar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (/^d{4}-(0[1-9]|1[0-2])$/.test(draft.trim()))
+            setPeriod(draft.trim());
+        }}
+      >
+        <label className="operator-search">
+          Mes facturado (UTC)
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="AAAA-MM"
+            pattern="d{4}-(0[1-9]|1[0-2])"
+            required
+          />
+        </label>
+        <Action type="submit">
+          <Search size={17} />
+          Ver facturación
+        </Action>
+      </form>
+      <p className="operator-hint field-hint">
+        El hospital cobra cada reserva creada al precio vigente. Cancelar no
+        reintegra el cargo y repetir una reserva incierta no la cobra de nuevo.
+      </p>
+      {loading ? (
+        <Busy />
+      ) : error ? (
+        <Issue error={error} retry={reload} />
+      ) : (
+        data && (
+          <>
+            <div className="operator-summary">
+              <div>
+                <small>PRECIO VIGENTE</small>
+                <strong>
+                  {amount(
+                    data.currentPrice.amountMinor,
+                    data.currentPrice.currency,
+                  )}
+                </strong>
+              </div>
+              {data.totals.map((t) => (
+                <div key={t.currency}>
+                  <small>TOTAL {t.currency}</small>
+                  <strong>{amount(t.amountMinor, t.currency)}</strong>
+                  <span className="field-hint">
+                    {t.bookings} reservas cobradas
+                  </span>
+                </div>
+              ))}
+              {!data.totals.length && (
+                <div>
+                  <small>TOTAL DEL MES</small>
+                  <strong>Sin cargos</strong>
+                </div>
+              )}
+            </div>
+            {!!data.items.length && (
+              <div
+                className="operator-table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Tabla con desplazamiento horizontal"
+              >
+                <table className="operator-table">
+                  <caption className="sr-only">
+                    Cargos del hospital en {data.period}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>Turno</th>
+                      <th>Reservado</th>
+                      <th>Estado</th>
+                      <th>Cargo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.items.map((i) => (
+                      <tr key={i.appointmentId}>
+                        <td>
+                          <small>{i.appointmentId}</small>
+                        </td>
+                        <td>{moment(i.bookedAt)}</td>
+                        <td>
+                          <span
+                            className={`operator-state ${i.status === "booked" ? "" : "inactive"}`}
+                          >
+                            {i.status === "booked" ? "Reservado" : "Cancelado"}
+                          </span>
+                        </td>
+                        <td>{amount(i.priceMinor, i.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )
       )}
     </>

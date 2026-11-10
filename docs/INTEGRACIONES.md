@@ -97,14 +97,14 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | EXT-04 | Mecanismo y contrato de devolución/consulta de membresías, uso y costos | Gimnasio | Define adaptador, entradas y prueba de contrato |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
 | EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Bloquea el informe económico de gastos individuales y totales; el informe de uso puede avanzar parcialmente |
-| EXT-07 | Publicado: Turnos para socios 1.0.0, `c0b65f4`; aceptación de integración pendiente | Clínica y Car Cruds | Adaptación propia de POST/GET e idempotencia; test de rama no sustituye prueba conjunta |
+| EXT-07 | Publicado y desplegado: Turnos para socios 1.0.0 en `https://api-turnos.srv1779429.hstgr.cloud/v1` (10/11/2026); contrato idéntico al integrado | Clínica y Car Cruds | Configurar URL y clave; falta la prueba conjunta registrada |
 | EXT-08 | Alta, identidad, recuperación de patientId y habilitación de empleados como pacientes | Clínica y empresa | Falta procedimiento real; el vínculo local no crea ni habilita pacientes |
 | EXT-09 | Pertenencia al consumidor de turnos creados antes del contrato de socios | Clínica | Sin asociación verificada la nueva API puede devolver 404; no recrearlos para recuperarlos |
-| EXT-10 | URL HTTPS compartida, clave privada de Car Cruds y entornos de prueba | Ambos equipos externos | La autenticación clínica está especificada; faltan datos operativos para conexión real |
+| EXT-10 | URL HTTPS del hospital recibida; clave privada de Car Cruds anunciada por canal privado. URL del gimnasio pendiente de la VM | Ambos equipos externos | Con la clave en `.env`, Empleados se conecta sin cambios de código |
 | EXT-11 | Datos administrativos permitidos, acceso y conservación | Empresa y equipos externos | Limita los datos compartidos y registrados |
-| EXT-12 | Confirmar límite de solicitudes del entorno (inicial documentado: 60/min), disponibilidad y cambios compatibles | Ambos equipos externos | Timeout/límite local no sustituyen el límite por minuto; se respeta Retry-After sin inventar SLA |
-| EXT-13 | Responsables, pacientes habilitados, médicos y horarios controlados de prueba conjunta | Ambos equipos externos | Permite comprobar identidad, reserva, repetición y consulta sin afectar datos reales |
-| EXT-16 | Tarifa inicial ARS 25.000 y condiciones publicadas de cobro, cancelación sin reintegro y nueva reserva | Clínica y empresa | Pendiente aceptación; sin precio fijo ni facturación clínica propia en esta adaptación |
+| EXT-12 | Confirmado por el hospital: 60 solicitudes por minuto por consumidor, `429` con `Retry-After` | Clínica | Ya respetado por el adaptador |
+| EXT-13 | Responsables, pacientes habilitados, médicos y horarios controlados de prueba conjunta | Ambos equipos externos | Permite comprobar identidad, reserva, repetición y consulta sin afectar datos reales Pacientes de prueba informados: `pat-001` y `pat-003` habilitados |
+| EXT-16 | Informado por el hospital: ARS 25.000 por reserva creada, sin reintegro al cancelar; repetir con la misma clave no se cobra | Clínica y empresa | El panel muestra la facturación mensual (`/v1/employees/clinic/usage`); aceptación económica a cargo del equipo |
 | EXT-15 | Información del hospital sobre empleados que requieren consulta: consulta/notificación, identidad, vigencia y correcciones | Hospital de Octi | Define identificación y seguimiento de la necesidad de consulta |
 | EXT-14 | Validación docente de la ampliación y su flujo de negocio | Cátedra y grupo | Confirma correspondencia con el enunciado |
 

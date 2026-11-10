@@ -13,6 +13,7 @@ type Service struct {
 	memberships MembershipInbox
 	clinicStore ClinicStore
 	clinic      Clinic
+	directory   ClinicDirectory
 	clinicSlots chan struct{}
 }
 

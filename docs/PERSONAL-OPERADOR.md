@@ -17,6 +17,8 @@ Se usa el mismo acceso administrativo del [panel del operador](PANEL-OPERADOR.md
 
 No se agregaron endpoints: la interfaz usa los contratos [employees-openapi.json](contracts/employees-openapi.json) 0.3.0 y [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json) 0.3.0. El gimnasio y el hospital nunca se llaman desde el navegador: Empleados es el único que habla con el hospital.
 
+> **Hospital publicado — 10/11/2026:** en Turnos médicos el médico se elige del catálogo del hospital (`GET /v1/employees/clinic/doctors`); si el hospital no responde, se puede ingresar a mano. La sección **Facturación del hospital** muestra, por mes UTC, el precio vigente, el total y cada cargo (`GET /v1/employees/clinic/usage`). Una cancelación sigue cobrada.
+
 ## Garantías de la interfaz
 
 - **Alta de empleado.** El identificador lo genera el servicio y el POST no es idempotente. Si la respuesta se pierde, la interfaz bloquea otro envío y pide revisar la lista antes de repetir.

@@ -204,3 +204,72 @@ func (h *Handler) clinicReport(w http.ResponseWriter, r *http.Request) {
 	}
 	platform.WriteJSON(w, 200, pageResponse[itemDTO]{Items: items, Page: page.Number, PageSize: page.Size, Total: total})
 }
+func (h *Handler) clinicDoctors(w http.ResponseWriter, r *http.Request) {
+	if !clinicAdmin(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
+		return
+	}
+	doctors, err := h.service.ClinicDoctors(r.Context())
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	type doctorDTO struct {
+		ID              string `json:"id"`
+		DurationMinutes int    `json:"durationMinutes"`
+	}
+	out := make([]doctorDTO, 0, len(doctors))
+	for _, d := range doctors {
+		out = append(out, doctorDTO{d.ID, d.DurationMinutes})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	platform.WriteJSON(w, 200, map[string]any{"doctors": out})
+}
+func (h *Handler) clinicUsage(w http.ResponseWriter, r *http.Request) {
+	if !platform.RequireRole(w, r, "admin", "service") {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
+		return
+	}
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(query) != 1 || len(query["period"]) != 1 {
+		writeError(w, domain.ErrInvalidInput)
+		return
+	}
+	u, err := h.service.ClinicUsage(r.Context(), query.Get("period"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	type moneyDTO struct {
+		AmountMinor int64  `json:"amountMinor"`
+		Currency    string `json:"currency"`
+	}
+	type totalDTO struct {
+		Currency    string `json:"currency"`
+		Bookings    int64  `json:"bookings"`
+		AmountMinor int64  `json:"amountMinor"`
+	}
+	type itemDTO struct {
+		AppointmentID string    `json:"appointmentId"`
+		BookedAt      time.Time `json:"bookedAt"`
+		PriceMinor    int64     `json:"priceMinor"`
+		Currency      string    `json:"currency"`
+		Status        string    `json:"status"`
+	}
+	totals := make([]totalDTO, 0, len(u.Totals))
+	for _, t := range u.Totals {
+		totals = append(totals, totalDTO{t.Currency, t.Bookings, t.AmountMinor})
+	}
+	items := make([]itemDTO, 0, len(u.Items))
+	for _, i := range u.Items {
+		items = append(items, itemDTO{i.AppointmentID, i.BookedAt, i.PriceMinor, i.Currency, i.Status})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	platform.WriteJSON(w, 200, map[string]any{"period": u.Period, "from": u.From, "to": u.To, "currentPrice": moneyDTO{u.CurrentPrice.AmountMinor, u.CurrentPrice.Currency}, "totals": totals, "items": items})
+}

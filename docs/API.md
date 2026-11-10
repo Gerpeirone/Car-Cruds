@@ -101,7 +101,7 @@ La evidencia del gimnasio identifica al emisor desde su token. `employeeId`, `pe
 
 El informe incluye inactivos y suma cantidades conocidas por moneda, sin conversión. Sus totales y contadores abarcan el registro completo del período, no solo la página. Ausencia de evidencia no significa no uso ni costo cero. El contrato es propio y provisional; su existencia no acredita aceptación del gimnasio. Ver [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md).
 
-## 7. Integración clínica de Empleados — 6 operaciones
+## 7. Integración clínica de Empleados — 8 operaciones
 
 Contrato: [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json). Implementación: `services/employees/adapters/httpapi/clinic.go`. Estas rutas son de Car Cruds: Empleados llama al hospital desde su adaptador; la API no publica la clave privada del proveedor.
 
@@ -113,6 +113,8 @@ Contrato: [clinic-integration-openapi.json](contracts/clinic-integration-openapi
 | `POST /v1/employees/clinic/requests/{requestId}/submit` | Sin cuerpo; envía o recupera la intención persistida respetando `nextAttemptAt` | `200`, estado administrativo resultante; puede seguir desconocido. Solo `admin`; toda acción que pueda crear exige empleado activo |
 | `POST /v1/employees/clinic/requests/{requestId}/refresh` | Consulta turno conocido; cuerpo opcional con `appointmentId` para conciliación verificada | `200`, última evidencia local, que puede conservar incertidumbre. Solo `admin`; admite empleados inactivos |
 | `GET /v1/employees/reports/clinic` | Informe paginado con `personKind=employee` opcional, `page`, `pageSize` | `200`, última intención por empleado, incluidos inactivos; no enumera todos sus turnos externos. `admin`, `service` |
+| `GET /v1/employees/clinic/doctors` | Catálogo de médicos del hospital (operación doctors del proveedor), sin parámetros | `200`, `doctors` con `id` y `durationMinutes`. Solo `admin`; sin hospital configurado `503 NOT_CONFIGURED` |
+| `GET /v1/employees/clinic/usage` | Facturación del hospital a Car Cruds con `period=AAAA-MM` (UTC) | `200`, precio vigente, totales por moneda y cargos por reserva en centavos; una cancelación no reintegra el cargo. `admin`, `service` |
 
 Las cinco operaciones de administración individual rechazan parámetros de consulta. El informe admite únicamente su tipo y paginación, sin repeticiones. No existe API activa de candidatos.
 

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds: consultas al hospital",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "API administrativa propia. Cada 200 devuelve el estado administrativo, no necesariamente un turno confirmado. Consume Turnos para socios 1.0.0: las solicitudes inciertas con procedencia idempotente pueden recuperarse mediante una acción explícita que conserva clave y cuerpo; no hay reintentos automáticos. nextAttemptAt es opcional y no dispara acciones. Claves y procedencia son internas. Cualquier envío que pueda crear exige empleado activo. Aceptación bilateral, acceso compartido y pacientes reales pendientes. personKind solo admite employee; los candidatos históricos quedan fuera de esta API."
   },
   "security": [
@@ -940,6 +940,226 @@
         ],
         "operationId": "getClinicReport"
       }
+    },
+    "/v1/employees/clinic/doctors": {
+      "get": {
+        "operationId": "listClinicDoctors",
+        "tags": [
+          "Clínica"
+        ],
+        "x-roles": [
+          "admin"
+        ],
+        "summary": "Médicos del hospital que aceptan turnos",
+        "description": "Solo admin. Empleados consulta GET /v1/doctors del hospital con la clave privada de Car Cruds; el navegador nunca llama al hospital. No admite parámetros. Sirve para elegir un doctorId válido antes de registrar la intención.",
+        "responses": {
+          "200": {
+            "description": "Catálogo vigente del hospital.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicDoctorList"
+                },
+                "example": {
+                  "doctors": [
+                    {
+                      "id": "doc-001",
+                      "durationMinutes": 30
+                    },
+                    {
+                      "id": "doc-002",
+                      "durationMinutes": 45
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_INPUT: la operación no admite parámetros de consulta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Datos o paginación inválidos; consultar el contrato de la operación"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "NOT_CONFIGURED sin URL del hospital; CLINIC_UNAVAILABLE si el hospital no responde, rechaza la clave o devuelve un formato incompatible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "CLINIC_UNAVAILABLE",
+                  "message": "Hospital no disponible o respuesta incompatible; consultar la intención persistida"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/clinic/usage": {
+      "get": {
+        "operationId": "getClinicUsage",
+        "tags": [
+          "Clínica"
+        ],
+        "x-roles": [
+          "admin",
+          "service"
+        ],
+        "summary": "Facturación del hospital a Car Cruds por mes",
+        "description": "admin o service. Lee GET /v1/usage del hospital: precio vigente, totales por moneda y cada reserva cobrada en el mes UTC. Una cancelación no reintegra el cargo. Importes en unidades menores, sin conversión.",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "description": "Mes AAAA-MM (UTC del hospital). Obligatorio, sin repetir ni agregar otros parámetros.",
+            "example": "2026-12"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado de cuenta del mes según el hospital.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicUsage"
+                },
+                "example": {
+                  "period": "2026-12",
+                  "from": "2026-12-01T00:00:00Z",
+                  "to": "2027-01-01T00:00:00Z",
+                  "currentPrice": {
+                    "amountMinor": 2500000,
+                    "currency": "ARS"
+                  },
+                  "totals": [
+                    {
+                      "currency": "ARS",
+                      "bookings": 2,
+                      "amountMinor": 5000000
+                    }
+                  ],
+                  "items": [
+                    {
+                      "appointmentId": "turno-demo-1",
+                      "bookedAt": "2026-12-01T13:05:12Z",
+                      "priceMinor": 2500000,
+                      "currency": "ARS",
+                      "status": "booked"
+                    },
+                    {
+                      "appointmentId": "turno-demo-2",
+                      "bookedAt": "2026-12-03T09:41:30Z",
+                      "priceMinor": 2500000,
+                      "currency": "ARS",
+                      "status": "cancelled"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_INPUT: period ausente, repetido o con formato distinto de AAAA-MM, o parámetros extra.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Datos o paginación inválidos; consultar el contrato de la operación"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "UNAUTHORIZED: credencial Bearer ausente, mal formada o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: aplicación autenticada sin el rol requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "FORBIDDEN: aplicación autenticada sin el rol requerido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "NOT_CONFIGURED sin URL del hospital; CLINIC_UNAVAILABLE si el hospital no responde, rechaza la clave o devuelve un formato incompatible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "CLINIC_UNAVAILABLE",
+                  "message": "Hospital no disponible o respuesta incompatible; consultar la intención persistida"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1524,6 +1744,157 @@
           "page": 1,
           "pageSize": 20,
           "total": 1
+        }
+      },
+      "ClinicDoctorList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "doctors"
+        ],
+        "properties": {
+          "doctors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "durationMinutes"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "doctorId del hospital, para usar al registrar la intención."
+                },
+                "durationMinutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Duración del turno de ese médico."
+                }
+              }
+            }
+          }
+        }
+      },
+      "ClinicUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "period",
+          "from",
+          "to",
+          "currentPrice",
+          "totals",
+          "items"
+        ],
+        "properties": {
+          "period": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "Mes calendario UTC del hospital."
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Inicio inclusivo."
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fin exclusivo."
+          },
+          "currentPrice": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "amountMinor",
+              "currency"
+            ],
+            "properties": {
+              "amountMinor": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "description": "Importe en unidades menores (centavos)."
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              }
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "bookings",
+                "amountMinor"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "bookings": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "amountMinor": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "appointmentId",
+                "bookedAt",
+                "priceMinor",
+                "currency",
+                "status"
+              ],
+              "properties": {
+                "appointmentId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "bookedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "priceMinor": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "booked",
+                    "cancelled"
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     }

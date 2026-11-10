@@ -1,5 +1,7 @@
 # Comunicación con el hospital de Octi
 
+> **Acceso compartido — 10/11/2026:** el grupo de Octi publicó Turnos para socios 1.0.0 en `https://api-turnos.srv1779429.hstgr.cloud/v1` y entregará la clave de Car Cruds por un canal privado. El contrato recibido es idéntico al integrado (solo agrega la URL pública en `servers`). Se verificó `/healthz` (200), el rechazo sin clave (401) y una latencia de unos 200 ms. Empleados agrega la lectura de médicos (`GET /v1/employees/clinic/doctors`) y de la facturación mensual (`GET /v1/employees/clinic/usage`); el panel elige el médico de ese catálogo y muestra los cargos. Precio informado: ARS 25.000 por reserva creada, sin reintegro al cancelar. Pacientes de prueba habilitados: `pat-001` y `pat-003` (`pat-002` registrado sin habilitar). Car Cruds no cancela turnos: la operación de cancelación del proveedor queda sin usar, como estaba decidido.
+
 Adaptación del 23 de octubre de 2026 a **Turnos para socios 1.0.0**, limitada a solicitar y consultar turnos para empleados. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) sustituye D9 anterior y complementa [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). No se modifica el repositorio del hospital.
 
 ## Contrato consumido y alcance de entrega 2
@@ -20,7 +22,7 @@ Se conserva vínculo → intención → envío → consulta → informe administ
 En el `.env` de Car Cruds, fuera de Git:
 
 ```dotenv
-CLINIC_BASE_URL=https://host-acordado-del-hospital/v1
+CLINIC_BASE_URL=https://api-turnos.srv1779429.hstgr.cloud/v1
 CLINIC_API_KEY=credencial-entregada-por-el-hospital
 CLINIC_ALLOW_HTTP=false
 CLINIC_TIMEOUT=2s
