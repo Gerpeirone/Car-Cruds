@@ -1167,7 +1167,7 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "code": "UNAVAILABLE",
+                  "code": "SERVICE_UNAVAILABLE",
                   "message": "Persistencia no disponible."
                 }
               }
