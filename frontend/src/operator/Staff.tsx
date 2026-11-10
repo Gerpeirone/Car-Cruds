@@ -649,6 +649,7 @@ export function StaffEditor() {
               <div className="operator-form-actions">
                 {current.active && (
                   <Action
+                    type="button"
                     className="secondary"
                     disabled={unknown || command.busy}
                     onClick={(e) => {
