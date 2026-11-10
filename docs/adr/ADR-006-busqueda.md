@@ -46,6 +46,8 @@ Solr implementa filtros, orden y paginación; VehicleChanged se publica ante cam
 
 El [trabajo Compose de CI](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42745574484/job/129597135342), revisión `2dc9c61`, terminó correctamente. El paso «Verificar API y publicación de historial» ejecutó el recorrido `cmd/smoke` con PostgreSQL, MongoDB, RabbitMQ, Solr, gateway y Flota reales. El nuevo control falla si alta, actualización o baja superan individualmente 5 s desde antes de su escritura HTTP; las tres pasaron, por lo que cada cota observada fue **menor que 5 s**. Los milisegundos exactos están en los logs del trabajo; no se copiaron a este documento porque la API pública de logs respondió 403 sin autenticación. Este resultado no prueba un máximo bajo carga sostenida, recuperación del broker ni reconstrucción del índice.
 
+El [ensayo de carga sostenida](../ENSAYO-CARGA-SOSTENIDA.md) mantiene tráfico de búsqueda durante treinta segundos y exige que el recorrido completo de alta, actualización y baja termine mientras esa carga sigue activa. La CI ejecutará esta comprobación con dependencias reales; sus resultados se registrarán después de la primera ejecución satisfactoria, sin anticipar cumplimiento.
+
 ## 5. Referencias e historial
 
 Material en `clases.zip`: `teoria/05-motores-de-busqueda.md` y `practica/clase-5-solr.md`. [D3](ADR-015-persistencia-v2.md), [D5](ADR-016-comunicacion-v2.md).

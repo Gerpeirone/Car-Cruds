@@ -149,7 +149,7 @@ jobs:
           fi
       - name: Verificar API y publicación de historial
         run: |
-          go run ./cmd/smoke -history
+          bash scripts/measure-sustained.sh 10 8
           go run ./cmd/checkshared -url http://127.0.0.1:8080 -env .env
       - name: Probar contrato público contra gateway y Turnos originales del hospital
         shell: bash
