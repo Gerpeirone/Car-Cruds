@@ -8,7 +8,7 @@
   --green: #173b32;
   --lime: #c7ed86;
   --line: #e1e6dc;
-  --muted: #738075;
+  --muted: #677369;
   --paper: #fff;
   --radius: 22px;
 }
@@ -110,7 +110,7 @@ form {
 }
 em {
   font-style: normal;
-  color: #729252;
+  color: #6d8b4e;
 }
 .muted {
   color: var(--muted);
@@ -452,7 +452,7 @@ em {
 }
 .section-number {
   font-size: 9px;
-  color: #899383;
+  color: #6c7566;
   letter-spacing: 0.17em;
   margin-bottom: 35px;
 }
@@ -486,21 +486,21 @@ em {
   display: flex;
   gap: 10px;
   margin-top: 27px;
-  color: #83917e;
+  color: #697564;
 }
 .access-help p {
   font-size: 11px;
 }
 .access-help svg {
   margin-top: 2px;
-  color: #729252;
+  color: #6d8b4e;
 }
 .access-footnote {
   position: absolute;
   bottom: 23px;
   font-size: 8px;
   letter-spacing: 0.16em;
-  color: #899383;
+  color: #6c7566;
 }
 
 /* Estructura */
@@ -532,7 +532,7 @@ em {
   gap: 8px;
   padding: 10px 18px;
   font-size: 12px;
-  color: #6b796b;
+  color: #616e61;
   white-space: nowrap;
   border-radius: 30px;
 }
@@ -594,7 +594,7 @@ em {
   align-items: center;
   border-top: 1px solid var(--line);
   gap: 20px;
-  color: #818c7e;
+  color: #697367;
   font-size: 10px;
 }
 .footer .brand {
@@ -625,7 +625,7 @@ em {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #687c64;
+  color: #63765f;
   margin: 6px 0 28px;
 }
 .page-heading {
@@ -641,7 +641,7 @@ em {
   font-weight: 650;
 }
 .page-heading .eyebrow {
-  color: #7d8c71;
+  color: #68745e;
 }
 
 /* Catálogo */
@@ -661,7 +661,7 @@ em {
 }
 .hero-copy .eyebrow {
   font-size: 9px;
-  color: #587448;
+  color: #546f45;
   letter-spacing: 0.18em;
 }
 .hero-copy h1 {
@@ -674,7 +674,7 @@ em {
 .hero-copy p {
   font-size: 12px;
   line-height: 1.8;
-  color: #718067;
+  color: #5e6b56;
 }
 .hero-note {
   display: flex;
@@ -732,7 +732,7 @@ em {
   top: 20px;
   font-size: 8px;
   letter-spacing: 0.14em;
-  color: #728667;
+  color: #5e6f55;
 }
 .visual-note {
   position: absolute;
@@ -757,7 +757,7 @@ em {
 }
 .fleet-heading .eyebrow {
   font-size: 8px;
-  color: #849174;
+  color: #69745c;
   letter-spacing: 0.17em;
 }
 .fleet-heading h2 {
@@ -768,7 +768,7 @@ em {
 }
 .results-count {
   font-size: 10px;
-  color: #839076;
+  color: #68735d;
   white-space: nowrap;
   padding-bottom: 3px;
 }
@@ -936,7 +936,7 @@ em {
   left: 16px;
   font-size: 7px;
   letter-spacing: 0.03em;
-  color: #8e9885;
+  color: #687161;
   z-index: 2;
 }
 .vehicle-card-body {
@@ -944,7 +944,7 @@ em {
 }
 .vehicle-brand {
   font-size: 9px;
-  color: #8b977e;
+  color: #6c7760;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -965,7 +965,7 @@ em {
   gap: 14px;
   margin: 16px 0;
   font-size: 10px;
-  color: #829076;
+  color: #6b7761;
 }
 .specs > span {
   display: flex;
@@ -983,7 +983,7 @@ em {
 .vehicle-card-bottom small {
   display: block;
   font-size: 8px;
-  color: #929c87;
+  color: #6d7762;
   margin-bottom: 4px;
 }
 .vehicle-card-bottom strong {
@@ -994,7 +994,7 @@ em {
 }
 .vehicle-card-bottom strong > span {
   font-size: 9px;
-  color: #8e9983;
+  color: #6d7762;
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -1017,7 +1017,7 @@ em {
   justify-content: space-between;
   margin: 25px 0 0;
   font-size: 10px;
-  color: #8b957f;
+  color: #6a735f;
 }
 .pagination > div {
   display: flex;
@@ -1066,14 +1066,14 @@ em {
 }
 .journey-strip p {
   font-size: 10px;
-  color: #849074;
+  color: #646d57;
   margin-top: 5px;
 }
 .journey-strip > span {
   margin-left: auto;
   font-size: 8px;
   letter-spacing: 0.13em;
-  color: #8b9b79;
+  color: #626f53;
   white-space: nowrap;
 }
 .skeleton-card {
@@ -1090,7 +1090,7 @@ em {
   align-items: center;
   flex-direction: column;
   gap: 18px;
-  color: #6d8061;
+  color: #637458;
 }
 .empty-state h2,
 .empty-state h3 {
@@ -1112,7 +1112,7 @@ em {
   align-items: start;
 }
 .detail-grid > section > .eyebrow {
-  color: #82946e;
+  color: #667456;
   font-size: 9px;
 }
 .detail-title {
@@ -1163,7 +1163,7 @@ em {
 }
 .detail-specs span {
   font-size: 9px;
-  color: #89967b;
+  color: #6c775f;
 }
 .detail-note {
   display: flex;
@@ -1180,7 +1180,7 @@ em {
 }
 .detail-note p > span {
   display: block;
-  color: #8b957f;
+  color: #6a735f;
   font-size: 10px;
   font-weight: 400;
   margin-top: 3px;
@@ -1194,7 +1194,7 @@ em {
 }
 .booking-panel > .eyebrow {
   font-size: 9px;
-  color: #859776;
+  color: #69795c;
 }
 .panel-price {
   display: flex;
@@ -1211,7 +1211,7 @@ em {
 }
 .panel-price span {
   font-size: 11px;
-  color: #8b957f;
+  color: #6a735f;
 }
 .booking-panel > .muted {
   font-size: 12px;
@@ -1235,7 +1235,7 @@ em {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  color: #81916e;
+  color: #6b785b;
   line-height: 1.5;
 }
 .quote-result {
@@ -1323,7 +1323,7 @@ em {
   flex-direction: column;
   gap: 7px;
   font-size: 10px;
-  color: #8c987e;
+  color: #69745d;
   min-width: 0;
 }
 .summary-facts strong {
@@ -1581,7 +1581,7 @@ em {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #577741;
+  color: #53723e;
   background: #eaf3df;
   border: 1px solid #dce7d0;
   border-radius: 30px;
