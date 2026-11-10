@@ -72,6 +72,6 @@ Correcciones aplicadas:
 - La etiqueta de la ilustración en la ficha medía 6 px en móvil: pasó a 9 px con mayor contraste.
 - Los contenedores de tablas con desplazamiento horizontal son enfocables (`tabIndex=0`, `role="region"` y etiqueta), para recorrerlos con teclado.
 
-El informe resumido está en [ui-review-2026-11-09.json](evidence/ui-review-2026-11-09.json). Las credenciales se pasaron por variables de entorno y no figuran en el informe. Para inyectar axe, la auditoría desactivó la CSP solo en el navegador de prueba. La política del sitio no se modificó.
+El informe resumido está en [ui-review-2026-11-09.json](evidence/ui-review-2026-11-09.json). La revisión se puede repetir con `npm --prefix scripts/ui-review ci` y `node scripts/ui-review/review.mjs`, indicando `BASE_URL`, `BROWSER`, `ADMIN_TOKEN` y `CLIENT_TOKEN` como variables de entorno. Termina con código 1 si encuentra problemas. Las credenciales se pasaron por variables de entorno y no figuran en el informe. Para inyectar axe, la auditoría desactivó la CSP solo en el navegador de prueba. La política del sitio no se modificó.
 
 Límites: axe detecta en forma automática alrededor de la mitad de los problemas de accesibilidad. No se probó con lector de pantalla ni en Safari o Firefox. El selector nativo de fecha y hora se muestra según el idioma del navegador.
