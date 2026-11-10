@@ -50,6 +50,6 @@ El corte documental inicial se conserva en el historial. El incremento actual im
 - **Revisión visual.** Se hizo en navegador real sobre 33 pantallas en escritorio y móvil, con axe WCAG 2.1 AA, scroll horizontal y teclado. Se corrigió el contraste de la paleta y el foco en las tablas desplazables; terminó con 0 violaciones.
 - **F3-04.** Se agregó el servicio `web` a `compose.deploy.yaml`, y el Caddyfile ahora enruta la interfaz y la API. También se corrigió que la regla de `/internal/*` nunca se alcanzaba. Se validó con `check-deploy-config.py`, `caddy validate`, `test-deploy-vm.sh` y un despliegue local con HTTPS.
 - **F3-05.** Se agregó `scripts/measure-cache.sh` (no necesita PowerShell 7) y se hicieron dos corridas, con caché caliente y con Redis detenido. Las limitaciones y la deuda técnica están en ARCHITECTURE §9.
-- **CI.** El trabajo Compose vuelca diagnóstico de los contenedores y los logs de MongoDB cuando falla el arranque.
+- **CI.** El trabajo Compose vuelca diagnóstico de los contenedores y los logs de MongoDB cuando falla el arranque. La primera ejecución mostró la causa: el runner usa kernel 7.0 y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores (ver ARCHITECTURE §9). Elegir la versión de MongoDB queda para el equipo, porque afecta los volúmenes existentes.
 
 Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud), el token y consumo del gimnasio, y la URL y clave del hospital.

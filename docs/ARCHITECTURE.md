@@ -217,7 +217,7 @@ Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila in
 | API incompleta | No hay listado general de reservas, ni edición/baja de clientes, ni consulta/cancelación de mantenimiento | Deuda aceptada | Consulta por código o ID; la interfaz no simula operaciones inexistentes |
 | Puntos únicos de falla | Una VM, un gateway, un balanceador y una instancia de cada almacén | Deuda aceptada (D13) | Dos réplicas de Flota; la alta disponibilidad queda fuera del laboratorio |
 | Observabilidad | Logs JSON, métricas y trazas HTTP; sin colector, tableros, alertas ni contexto de traza por AMQP | Pendiente para la defensa | D11 |
-| CI | El trabajo Compose falla desde el 28/10 al iniciar MongoDB en el runner; se agregó un volcado de diagnóstico | Pendiente | Corregir con los logs del runner |
+| CI y kernel | El trabajo Compose falla desde el 28/10. El diagnóstico agregado al workflow mostró que el runner `ubuntu-24.04` pasó al kernel `7.0.0-1017-azure` y que MongoDB 8.3.11 sale con «Linux kernel versions 6.19 and newer has a known incompatibility» ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912), [SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848)). No es una falla del código | Externa | Decisión del equipo: cambiar la versión de MongoDB (MongoDB 7.0 arranca en ese kernel, pero no lee volúmenes existentes de 8.x) o esperar el arreglo del proveedor. La VM debe usar un kernel menor que 6.19 ([DESPLIEGUE](DESPLIEGUE.md)) |
 | Operación | Sin respaldos, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
 | Evidencia | La caché se midió caliente y con Redis detenido; faltan la fase fría, la frescura de Solr desde el commit y carga sostenida | Pendiente | Ampliar en la defensa individual |
 
