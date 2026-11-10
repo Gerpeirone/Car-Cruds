@@ -1,5 +1,7 @@
 # Documento de arquitectura — Car Cruds
 
+> **Cierre de entrega 3 — 09/11/2026:** [F3-03](PERSONAL-OPERADOR.md) agrega al panel del operador empleados, informe de membresías del gimnasio y seguimiento de turnos médicos. La entrada pública de [DESPLIEGUE](DESPLIEGUE.md) sirve ahora la interfaz por Caddy y deriva `/v1/*` al gateway; se verificó con HTTPS local, sin VM pública todavía. La revisión en navegador real, la comparación de caché y las limitaciones actualizadas se registran en [EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre) y en la sección 9.
+
 > **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
 
 > **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
@@ -8,10 +10,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
-| Estado | Backend propio implementado; diseño externo y frontend pendientes |
-| Hito | Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.5 |
+| Fecha | 9 de noviembre de 2026 |
+| Estado | Backend, frontend de cliente/operador/personal y entrada pública preparados; VM pública y aceptación externa pendientes |
+| Hito | Presentación grupal — 11 o 13 de noviembre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
@@ -56,7 +58,8 @@ flowchart TB
     Gym["Gimnasio<br/>Consumo externo pendiente"]
     Clinic["Hospital<br/>Contrato pendiente"]
     subgraph System["Car Cruds"]
-        Web["Frontend web<br/>Pendiente"]
+        Edge["Caddy<br/>HTTPS público"]
+        Web["Frontend web<br/>React · NGINX"]
         GW["Gateway Go<br/>Autenticación y proxy"]
         Customers["Clientes · Go<br/>Capas"]
         Rentals["Alquileres · Go<br/>Hexagonal"]
@@ -71,7 +74,9 @@ flowchart TB
         EDB[("PostgreSQL Empleados")]
         FDB[("MongoDB Flota")]
 
-        Web -.->|"Previsto"| GW
+        Edge -->|"/v1/*"| GW
+        Edge -->|"Interfaz"| Web
+        Web -->|"/v1/* mismo origen"| GW
         GW --> Customers
         GW --> Rentals
         GW --> Employees
@@ -86,7 +91,7 @@ flowchart TB
         A --> FDB
         B --> FDB
     end
-    User -->|"HTTP local con Bearer"| GW
+    User -->|"HTTPS con Bearer"| Edge
     Gym -.->|"Lista propia; acceso por acordar"| GW
     Employees -.->|"Cliente observado; acceso compartido pendiente"| Clinic
     classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
@@ -95,13 +100,13 @@ flowchart TB
     classDef pending fill:#eee,color:#333,stroke:#888,stroke-dasharray:5 5;
     class GW,Customers,Rentals,Employees,A,B app;
     class CDB,RDB,EDB,FDB data;
-    class LB support;
-    class Web,Gym,Clinic pending;
+    class LB,Edge,Web support;
+    class Gym,Clinic pending;
 ```
 
 **Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. El hospital se consumirá directamente desde Empleados; no a través de frontend ni gateway propio.
 
-La entrada Docker está publicada únicamente en loopback. Las llamadas internas son HTTP/JSON autenticadas. HTTPS público se configurará antes de publicar la capacidad. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
+En local, gateway y web se publican únicamente en loopback. En la VM, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway y el resto a la interfaz estática. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
 
 ```mermaid
 flowchart TB
@@ -196,16 +201,25 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 
 [D13](adr/ADR-013-capacidad-costos.md) registra la primera carga de disponibilidad, el límite de admisión de gateway, una alternativa y estimación de laboratorio cloud. No extrapola el entorno local de 12 CPU a las VM propuestas.
 
-## 9. Aspectos por resolver
+## 9. Limitaciones conocidas y deuda técnica aceptada
 
-| Aspecto | Pendiente |
-| --- | --- |
-| Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
-| Integraciones | Aceptación y prueba conjunta; verificación de rama contra gateway de socios; pacientes reales, URL/clave y condiciones económicas |
-| Presentación | Frontend y acceso público HTTPS |
-| Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
-| Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |
-| Revisión | Aceptación del equipo y de cátedra; aprobación antes de integrar a main |
+Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila indica si es una limitación externa, una deuda aceptada conscientemente o un pendiente de operación.
+
+| Tema | Situación actual | Tipo | Mitigación o próximo paso |
+| --- | --- | --- | --- |
+| Publicación cloud | Caddy, interfaz y script de VM verificados con HTTPS local; no hay VM ni URL pública | Pendiente de infraestructura | Ejecutar [deploy-vm.sh](../scripts/deploy-vm.sh) en la VM de D13 y `checkshared` desde fuera |
+| Gimnasio | Lista propia, recepción de evidencia e informe implementados; sin consumo real ni contrato aceptado | Externa | Entregar URL y token del gimnasio por canal privado; registrar su consumo |
+| Hospital | Adaptador probado contra el código original del proveedor; sin URL, clave ni pacientes reales en un entorno compartido | Externa | Configurar `CLINIC_BASE_URL` y `CLINIC_API_KEY`; sin ellos el envío responde `503 NOT_CONFIGURED` y la interfaz lo informa |
+| Caída de Redis | Las lecturas siguen respondiendo desde MongoDB, pero con baja concurrencia cada una espera el deadline de 150 ms ([medición](evidence/cache-comparison-2026-11-09.json)) | Deuda aceptada | Circuit breaker en la caché de Flota (HU-27) |
+| Marcas de versión en Redis | No tienen TTL y crecen con la cantidad de vehículos | Deuda aceptada | Política de limpieza; aceptable con la flota de laboratorio |
+| Identidad | Tokens por aplicación (cliente, operador, gimnasio, servicio); no hay cuentas personales ni auditoría por persona | Deuda aceptada | Proveedor de identidad; la interfaz mantiene el token solo en memoria |
+| Escrituras sin idempotencia | Alta de empleado, alta de mantenimiento y edición de empleado (sin versión, último escritor gana) | Deuda aceptada | La interfaz bloquea reenvíos inciertos y pide verificar antes de repetir |
+| API incompleta | No hay listado general de reservas, ni edición/baja de clientes, ni consulta/cancelación de mantenimiento | Deuda aceptada | Consulta por código o ID; la interfaz no simula operaciones inexistentes |
+| Puntos únicos de falla | Una VM, un gateway, un balanceador y una instancia de cada almacén | Deuda aceptada (D13) | Dos réplicas de Flota; la alta disponibilidad queda fuera del laboratorio |
+| Observabilidad | Logs JSON, métricas y trazas HTTP; sin colector, tableros, alertas ni contexto de traza por AMQP | Pendiente para la defensa | D11 |
+| CI | El trabajo Compose falla desde el 28/10 al iniciar MongoDB en el runner; se agregó un volcado de diagnóstico | Pendiente | Corregir con los logs del runner |
+| Operación | Sin respaldos, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
+| Evidencia | La caché se midió caliente y con Redis detenido; faltan la fase fría, la frescura de Solr desde el commit y carga sostenida | Pendiente | Ampliar en la defensa individual |
 
 ## 10. Referencias e historial
 
@@ -218,3 +232,4 @@ Los ADR-001/003/005/008 conservan su cuerpo histórico y fueron reemplazados por
 | 0.1 | 7 de octubre de 2026 | Diseño inicial de tres servicios |
 | 0.2 | 10 de octubre de 2026 | Empleados, integración administrativa y balanceador |
 | 0.3 | 14 de octubre de 2026 | Arquitectura del backend implementado y límites de evidencia/operación |
+| 0.5 | 9 de noviembre de 2026 | Frontend completo, Caddy con interfaz y limitaciones/deuda técnica para la presentación grupal |
