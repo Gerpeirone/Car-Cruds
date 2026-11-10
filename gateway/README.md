@@ -29,3 +29,7 @@ La [referencia de endpoints](../docs/API.md) explica todas las rutas de negocio 
 `compose.yaml` configura los destinos en red privada y publica la entrada únicamente en loopback. [cmd/smoke](../cmd/smoke/README.md) ejercita el conjunto desde este punto de entrada. El recorrido, los roles y una traza real se registran en [ESTADO-IMPLEMENTACION](../docs/ESTADO-IMPLEMENTACION.md).
 
 Consultar [arquitectura](../docs/ARCHITECTURE.md), [D5](../docs/adr/ADR-016-comunicacion-v2.md), [D8](../docs/adr/ADR-017-contrato-empleados.md) y [balanceador](../load-balancer/README.md). Los directorios `src/` conservan la estructura documental inicial; el código operativo está en `cmd/gateway`.
+
+## Proyección de acceso
+
+`GET /v1/session`, autenticado, devuelve `role` y `customerId` únicamente para client, con `Cache-Control: no-store`. No expone credenciales ni crea cuentas personales. El panel del operador exige role=admin; los servicios mantienen su autorización. Contrato técnico 0.2.0 en [operations-openapi.json](../docs/contracts/operations-openapi.json).

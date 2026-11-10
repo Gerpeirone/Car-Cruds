@@ -1,6 +1,6 @@
 # Referencia de endpoints de Car Cruds
 
-**Fecha de revisión:** 28 de octubre de 2026. **Alcance:** 34 operaciones HTTP implementadas: 32 de negocio y 2 técnicas comunes. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
+**Fecha de revisión:** 8 de noviembre de 2026. **Alcance:** 35 operaciones HTTP implementadas: 32 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
 
 ## 1. Consultar la documentación con Swagger
 
@@ -123,12 +123,13 @@ El flujo es **vincular paciente → guardar intención → enviar → consultar/
 
 Cada acción explícita hace como máximo una llamada externa; no hay reintentos automáticos. El envío conserva clave y datos internos. Una solicitud terminal, con turno ya vinculado, conflicto idempotente o enviada con el contrato antiguo sin procedencia idempotente no genera otro POST. Una consulta externa `404` tampoco prueba ausencia: el proveedor puede ocultar turnos de otra aplicación. Ver [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) y [ADR-019](adr/ADR-019-consumo-turnos-socios.md).
 
-## 8. Rutas técnicas — 2 operaciones comunes
+## 8. Rutas técnicas — 2 operaciones comunes y sesión del gateway
 
-Contrato: [operations-openapi.json](contracts/operations-openapi.json). Implementación: `internal/platform/runtime.go`.
+Contrato: [operations-openapi.json](contracts/operations-openapi.json). Implementación: `internal/platform/runtime.go` y `cmd/gateway/main.go`.
 
 | Método y ruta | Finalidad y entradas | Resultado y permisos |
 | --- | --- | --- |
+| `GET /v1/session` | Rol validado por el servidor y `customerId` solo para cliente; sin credenciales ni perfil personal. Solo gateway | `200`, `role`, `customerId` opcional y `Cache-Control: no-store`; `401` si no hay acceso; todos los roles autenticados |
 | `GET /internal/ready` | Comprobación de disponibilidad de la instancia consultada | `200`, `status`, `service`, `instance`; `503` si no verifica la dependencia. `admin`, `service` |
 | `GET /internal/metrics` | Métricas Prometheus de la instancia; `Accept: text/plain` permite solicitar el formato textual | `200`, texto de métricas, no JSON. `admin`, `service` |
 

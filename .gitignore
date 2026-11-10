@@ -8,3 +8,8 @@ output/
 coverage.out
 *.exe
 .DS_Store
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo

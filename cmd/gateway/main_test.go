@@ -2,12 +2,55 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Gerpeirone/Car-Cruds/internal/platform"
 )
+
+func TestSessionReturnsOnlyAuthenticatedRoleAndCustomer(t *testing.T) {
+	h, _, err := handler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h = platform.AuthMiddleware(h, map[string]platform.Principal{
+		"admin-fixture":  {App: "operator", Role: "admin"},
+		"client-fixture": {App: "client", Role: "client", CustomerID: "cli-001"},
+		"gym-fixture":    {App: "gym", Role: "gym"},
+	})
+	for _, test := range []struct {
+		token, role, customer string
+		status                int
+	}{
+		{"", "", "", 401}, {"invalid", "", "", 401},
+		{"admin-fixture", "admin", "", 200}, {"client-fixture", "client", "cli-001", 200}, {"gym-fixture", "gym", "", 200},
+	} {
+		r := httptest.NewRequest(http.MethodGet, "/v1/session", nil)
+		r.Header.Set("Authorization", "Bearer "+test.token)
+		r.Header.Set("X-Role", "admin")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != test.status {
+			t.Fatalf("status=%d want=%d", w.Code, test.status)
+		}
+		if w.Code == 200 {
+			var value map[string]string
+			if err := json.Unmarshal(w.Body.Bytes(), &value); err != nil {
+				t.Fatal(err)
+			}
+			if value["role"] != test.role || value["customerId"] != test.customer || len(value) > 2 {
+				t.Fatalf("proyección incorrecta: %v", value)
+			}
+			if w.Header().Get("Cache-Control") != "no-store" {
+				t.Fatal("sesión cacheable")
+			}
+		}
+	}
+}
 
 // Cuatro dependencias sanas pueden consumir juntas más que el presupuesto
 // de la sonda. Deben verificarse en paralelo dentro de un mismo deadline.

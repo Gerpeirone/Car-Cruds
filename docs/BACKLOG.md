@@ -1,5 +1,9 @@
 # Backlog del producto — Car Cruds
 
+> **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+
 **Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`.
 
 La [revisión actual](REVISION-E2-2026-11-08.md) verifica dependencias reales, recepción propia de membresías y contrato hospitalario aislado. El gimnasio de Pablo consume la lista de empleados; Car Cruds consume los turnos del hospital de Octi. Acceso operativo, devolución aceptada por el gimnasio y ensayo conjunto siguen pendientes. La indicación médica proveniente del hospital requiere una capacidad externa todavía no publicada. Los [pendientes actuales](PENDIENTES-E2.md) precisan los aportes necesarios.

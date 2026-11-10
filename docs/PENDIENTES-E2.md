@@ -23,7 +23,7 @@ El gimnasio debe aceptar y producir la devolución de membresías, uso y gastos.
 
 ## 3. Presentación final y ampliaciones operativas
 
-El frontend completo y la publicación cloud con URL pública pertenecen al listado de presentación grupal del enunciado. Continúan pendientes de implementación/despliegue; no se consideran realizados mediante Swagger. El acceso del consumidor a la primera capacidad operativa sí debe resolverse conforme a 4.1.
+El frontend completo y la publicación cloud con URL pública pertenecen al listado de presentación grupal del enunciado. La entrega 3 implementa el frontend del alquiler y el panel del operador; la interfaz de personal y la publicación cloud continúan pendientes de implementación/despliegue; no se consideran realizados mediante Swagger. El acceso del consumidor a la primera capacidad operativa sí debe resolverse conforme a 4.1.
 
 También siguen pendientes tablero y alertas, propagación de trazas por mensajería, retención/respaldos, ampliación de carga y comparación de caché fría/sin dependencia, medición de frescura desde commit, ensayos externos y validación de escalado. Son trabajo técnico adicional; no todos dependen de aportes externos y no todos son exigencias específicas de 6.3. No se implementaron durante esta consolidación documental.
 

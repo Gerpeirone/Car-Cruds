@@ -1,5 +1,9 @@
 # Documento de arquitectura — Car Cruds
 
+> **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+
 > **Verificación — 08/11/2026:** [revisión actual](REVISION-E2-2026-11-08.md) sobre `main` (`19c4e06`): suite real, contrato hospitalario aislado y traza aprobados. La CI actual falla al iniciar MongoDB. Los diagramas representan fronteras y conexiones previstas; las conexiones externas aún no acreditan operación conjunta. [PENDIENTES-E2](PENDIENTES-E2.md) distingue bloqueos externos y trabajo posterior.
 
 **Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
@@ -8,7 +12,7 @@
 | --- | --- |
 | Versión documental | 0.5 |
 | Fecha de revisión | 8 de noviembre de 2026 |
-| Estado | Backend y adaptador hospitalario implementados y verificados localmente; operación conjunta y frontend pendientes |
+| Estado | Backend, adaptador hospitalario, frontend del alquiler y panel del operador implementados y verificados localmente; interfaz de personal, operación conjunta y publicación cloud pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
@@ -54,7 +58,7 @@ flowchart TB
     Gym["Gimnasio<br/>Consumo externo pendiente"]
     Clinic["Hospital<br/>Contrato pendiente"]
     subgraph System["Car Cruds"]
-        Web["Frontend web<br/>Pendiente"]
+        Web["Frontend web React<br/>Alquiler y operador"]
         GW["Gateway Go<br/>Autenticación y proxy"]
         Customers["Clientes · Go<br/>Capas"]
         Rentals["Alquileres · Go<br/>Hexagonal"]
@@ -69,7 +73,7 @@ flowchart TB
         EDB[("PostgreSQL Empleados")]
         FDB[("MongoDB Flota")]
 
-        Web -.->|"Previsto"| GW
+        Web -->|"/v1/* mismo origen"| GW
         GW --> Customers
         GW --> Rentals
         GW --> Employees

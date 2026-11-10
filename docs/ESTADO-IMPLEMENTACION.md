@@ -28,7 +28,7 @@ Actualización del 22 de octubre: Car Cruds dispone de recepción HTTP propia de
 
 Hospital, estado vigente: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el adaptador autenticado de Turnos para socios 1.0.0, con intención durable, idempotencia, recuperación y consulta. La prueba contra gateway y Turnos originales en `c0b65f4` aprobó en laboratorio el 8 de noviembre. El contrato y el adaptador ya están disponibles; faltan URL, clave privada, pacientes habilitados, médicos y aceptación conjunta para operación real. El adaptador sobre rutas internas del 22 de octubre es histórico.
 
-La interfaz web permanece pendiente. El endpoint general de estado conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; cada flujo utiliza sus rutas específicas y muestra solo evidencia verificada y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
+En este corte la interfaz web permanecía pendiente; la entrega 3 agrega el frontend del alquiler y el panel del operador ([ENTREGA-3](ENTREGA-3.md)), mientras la interfaz de personal sigue pendiente. El endpoint general de estado conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; cada flujo utiliza sus rutas específicas y muestra solo evidencia verificada y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
 
 ## 2. Evidencia histórica de octubre
 

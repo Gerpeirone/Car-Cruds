@@ -30,6 +30,16 @@ El número ADR identifica el registro histórico; **D1–D13** identifica la dec
 
 D4 no integra el listado específico de ADR de entrega 2, pero es obligatoria en el proyecto final y ya cuenta con implementación propia. [ESTADO-IMPLEMENTACION](../ESTADO-IMPLEMENTACION.md) concentra evidencia y límites; [ENTREGA-2](../ENTREGA-2.md) vincula las decisiones con el hito.
 
+## Propuestas para entrega 3
+
+| Registro | Alcance | Estado |
+| --- | --- | --- |
+| [ADR-020](ADR-020-frontend-alquiler.md) | SPA del alquiler, acceso de laboratorio y consumo por gateway | Implementado en la entrega 3 (PR #8); build y pruebas locales aprobados; revisión visual y publicación pendientes |
+
+## Panel del operador
+
+[ADR-021](ADR-021-panel-operador.md) documenta F3-02 y la proyección de sesión del gateway. Implementado en la entrega 3 (PR #8), con revisión visual y aceptación del equipo pendientes.
+
 ## Registros reemplazados
 
 | Registro histórico | Sucesor | Motivo |

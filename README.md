@@ -1,5 +1,9 @@
 # Car Cruds
 
+> **Panel del operador — 08/11/2026:** [F3-02](docs/PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](docs/EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
 Universidad Católica de Córdoba · Facultad de Ingeniería
@@ -33,7 +37,7 @@ La [revisión del 8 de noviembre](docs/REVISION-E2-2026-11-08.md) registra 155 p
 | Empleados | Servicio Go hexagonal; gestión de empleados, PostgreSQL propio y lista mínima de empleados activos |
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
-| Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
+| Interfaz web | Frontend del alquiler (F3-01) y panel del operador (F3-02) implementados en [`frontend/`](frontend/README.md) con pruebas locales; interfaz de personal, revisión visual en navegador y publicación cloud pendientes |
 | Integraciones externas | Gimnasio: lista y recepción de evidencia. Hospital: solicitud y seguimiento de turnos desde Empleados, con intención durable e informe; acuerdos y despliegue pendientes |
 | Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
