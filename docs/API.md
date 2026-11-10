@@ -115,7 +115,7 @@ Contrato: [clinic-integration-openapi.json](contracts/clinic-integration-openapi
 | `POST /v1/employees/clinic/requests/{requestId}/refresh` | Consulta turno conocido; cuerpo opcional con `appointmentId` para conciliación verificada | `200`, última evidencia local, que puede conservar incertidumbre. Solo `admin`; admite empleados inactivos |
 | `GET /v1/employees/reports/clinic` | Informe paginado con `personKind=employee` opcional, `page`, `pageSize` | `200`, última intención por empleado, incluidos inactivos; no enumera todos sus turnos externos. `admin`, `service` |
 
-Las cinco operaciones de administración individual rechazan parámetros de consulta. El informe admite únicamente su tipo y paginación, sin repeticiones. No existe API activa de candidatos.
+Las cinco operaciones de administración individual rechazan parámetros de consulta. El informe admite únicamente su tipo y paginación, sin repeticiones.
 
 El flujo es **vincular paciente → guardar intención → enviar → consultar/conciliar → informar**. Una referencia local estable recupera la intención correspondiente; reutilizarla con datos contradictorios produce conflicto. Para crear una nueva intención se requiere vínculo previo (`409 PATIENT_LINK_REQUIRED`); empleado inactivo produce `409 EMPLOYEE_INACTIVE` en las nuevas acciones correspondientes.
 

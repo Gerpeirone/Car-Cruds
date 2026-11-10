@@ -1,11 +1,13 @@
 # ADR-019 — Consumo de Turnos para socios
 
+> **Verificación posterior — 08/11/2026:** implementación integrada en `main` mediante PR #5. La suite real propia y la prueba del contrato contra el gateway original `c0b65f4` aprobaron localmente con detector de carreras; [revisión y límites](../REVISION-E2-2026-11-08.md). Los resultados del 23 de octubre conservan su fecha. La CI actual falla al arrancar MongoDB; URL, clave y aceptación conjunta siguen pendientes.
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D9: consumo del proveedor |
 | Decisiones complementadas | D5: comunicación; D10: resiliencia; D11: observabilidad |
 | Fecha | 23 de octubre de 2026 |
-| Estado | Implementado en rama de propuesta; pruebas locales parciales, dependencias reales/CI y revisión del equipo pendientes |
+| Estado | Integrado en main; dependencias reales y contrato aislado verificados localmente; CI actual y operación conjunta pendientes |
 | Sustituye | [ADR-009](ADR-009-consumo-clinica.md) en el consumo de Turnos |
 | Conserva | [ADR-018](ADR-018-empleados-sin-candidatos.md): empleados, conservación histórica y seguimiento de bajas |
 

@@ -1,5 +1,7 @@
 # Comunicación con el hospital de Octi
 
+> **Verificación — 08/11/2026:** adaptación integrada en `main` por PR #5. Prueba del contrato contra gateway y Turnos originales aprobada con carreras en laboratorio; [evidencia](REVISION-E2-2026-11-08.md). URL compartida, clave y pacientes/datos operativos siguen pendientes; [aportes necesarios](PENDIENTES-E2.md).
+
 Adaptación del 23 de octubre de 2026 a **Turnos para socios 1.0.0**, limitada a solicitar y consultar turnos para empleados. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) sustituye D9 anterior y complementa [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). No se modifica el repositorio del hospital.
 
 ## Contrato consumido y alcance de entrega 2
@@ -32,7 +34,7 @@ Sin URL, Empleados inicia y permite vínculos, intenciones y consultas locales; 
 
 ## Uso de nuestra API
 
-Contrato propio [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json), versión **0.3.0**. Las acciones requieren `Authorization: Bearer <AUTH_ADMIN_TOKEN>`, diferente de la credencial del hospital. `personKind` conserva únicamente `employee`; los candidatos históricos no tienen API activa.
+Contrato propio [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json), versión **0.3.0**. Las acciones requieren `Authorization: Bearer <AUTH_ADMIN_TOKEN>`, diferente de la credencial del hospital. `personKind` conserva únicamente `employee`.
 
 ### 1. Vincular empleado activo y paciente
 
@@ -84,11 +86,11 @@ El 200 propio informa el estado administrativo; no acredita reserva exitosa. Una
 
 Una versión atrasada no reemplaza otra nueva; igual versión con contenido diferente devuelve conflicto. Un fallo conserva `lastKnownAppointment` y su fecha, dejando pendiente la verificación; un fallo atrasado no sobrescribe una observación posterior. Las bajas permiten este seguimiento y no cancelan turnos.
 
-**Solicitudes antiguas:** una intención ya enviada sin procedencia y clave persistidas nunca vuelve a ejecutar POST. Agregar una clave retrospectiva no prueba que el proveedor la recibiera antes. La lectura/conciliación por ID requiere que la clínica asocie el turno al consumidor; un 404 no autoriza recrearlo. Migraciones y evidencia se conservan, sin eliminar ni promover datos de candidatos históricos.
+**Solicitudes antiguas:** una intención ya enviada sin procedencia y clave persistidas nunca vuelve a ejecutar POST. Agregar una clave retrospectiva no prueba que el proveedor la recibiera antes. La lectura/conciliación por ID requiere que la clínica asocie el turno al consumidor; un 404 no autoriza recrearlo. Se conservan migraciones y evidencia previa.
 
 ## Informe administrativo
 
-`GET /v1/employees/reports/clinic?page=1&pageSize=20`, roles `admin` o `service`. Incluye empleados activos e inactivos, no candidatos. Se admite `personKind=employee`; `candidate` se rechaza. Muestra la última intención por empleado, referencias, evidencia y fechas, sin consultar todos sus turnos en el hospital.
+`GET /v1/employees/reports/clinic?page=1&pageSize=20`, roles `admin` o `service`. Incluye empleados activos e inactivos. Se admite `personKind=employee`; Se rechazan otros tipos de persona. Muestra la última intención por empleado, referencias, evidencia y fechas, sin consultar todos sus turnos en el hospital.
 
 | Clasificación | Alcance |
 | --- | --- |

@@ -1,0 +1,658 @@
+{
+  "result": {
+    "resourceSpans": [
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.instance.id",
+              "value": {
+                "stringValue": "rentals"
+              }
+            },
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "rentals"
+              }
+            }
+          ]
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+              "version": "0.72.0"
+            },
+            "spans": [
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "c191030594ed0046",
+                "parentSpanId": "f733a84ca385bc56",
+                "flags": 257,
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": "1794167197085499459",
+                "endTimeUnixNano": "1794167197087969427",
+                "attributes": [
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "GET"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "200"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "customers"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.full",
+                    "value": {
+                      "stringValue": "http://customers:8080/v1/customers/smoke-cli-076abe503c1b486c9bd988e050ef1060"
+                    }
+                  }
+                ],
+                "status": {}
+              },
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "6db8c39e580be5e0",
+                "parentSpanId": "f733a84ca385bc56",
+                "flags": 257,
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": "1794167197088061243",
+                "endTimeUnixNano": "1794167197089390030",
+                "attributes": [
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "GET"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "200"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "fleet-lb"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.full",
+                    "value": {
+                      "stringValue": "http://fleet-lb:8080/v1/vehicles/smoke-076abe503c1b486c9bd988e050ef1060/quote"
+                    }
+                  }
+                ],
+                "status": {}
+              },
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "f733a84ca385bc56",
+                "parentSpanId": "9af2a7f3dbaa7c84",
+                "flags": 769,
+                "name": "POST /v1/reservations",
+                "kind": 2,
+                "startTimeUnixNano": "1794167197083916606",
+                "endTimeUnixNano": "1794167197098084396",
+                "attributes": [
+                  {
+                    "key": "client.address",
+                    "value": {
+                      "stringValue": "172.24.0.1"
+                    }
+                  },
+                  {
+                    "key": "http.request.body.size",
+                    "value": {
+                      "intValue": "186"
+                    }
+                  },
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "POST"
+                    }
+                  },
+                  {
+                    "key": "http.response.body.size",
+                    "value": {
+                      "intValue": "292"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "201"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "POST /v1/reservations"
+                    }
+                  },
+                  {
+                    "key": "network.peer.address",
+                    "value": {
+                      "stringValue": "172.24.0.15"
+                    }
+                  },
+                  {
+                    "key": "network.peer.port",
+                    "value": {
+                      "intValue": "53048"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "request.id",
+                    "value": {
+                      "stringValue": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "127.0.0.1"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.path",
+                    "value": {
+                      "stringValue": "/v1/reservations"
+                    }
+                  },
+                  {
+                    "key": "url.scheme",
+                    "value": {
+                      "stringValue": "http"
+                    }
+                  },
+                  {
+                    "key": "user_agent.original",
+                    "value": {
+                      "stringValue": "Go-http-client/1.1"
+                    }
+                  }
+                ],
+                "status": {}
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.instance.id",
+              "value": {
+                "stringValue": "gateway"
+              }
+            },
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "gateway"
+              }
+            }
+          ]
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+              "version": "0.72.0"
+            },
+            "spans": [
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "9af2a7f3dbaa7c84",
+                "parentSpanId": "068040bea0612492",
+                "flags": 257,
+                "name": "HTTP POST",
+                "kind": 3,
+                "startTimeUnixNano": "1794167197082949923",
+                "endTimeUnixNano": "1794167197098323821",
+                "attributes": [
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "POST"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "201"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "rentals"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.full",
+                    "value": {
+                      "stringValue": "http://rentals:8080/v1/reservations"
+                    }
+                  }
+                ],
+                "status": {}
+              },
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "068040bea0612492",
+                "flags": 257,
+                "name": "POST /v1/reservations",
+                "kind": 2,
+                "startTimeUnixNano": "1794167197082904997",
+                "endTimeUnixNano": "1794167197098410951",
+                "attributes": [
+                  {
+                    "key": "client.address",
+                    "value": {
+                      "stringValue": "172.24.0.1"
+                    }
+                  },
+                  {
+                    "key": "http.request.body.size",
+                    "value": {
+                      "intValue": "186"
+                    }
+                  },
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "POST"
+                    }
+                  },
+                  {
+                    "key": "http.response.body.size",
+                    "value": {
+                      "intValue": "292"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "201"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/v1/reservations"
+                    }
+                  },
+                  {
+                    "key": "network.peer.address",
+                    "value": {
+                      "stringValue": "172.24.0.1"
+                    }
+                  },
+                  {
+                    "key": "network.peer.port",
+                    "value": {
+                      "intValue": "46010"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "request.id",
+                    "value": {
+                      "stringValue": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "127.0.0.1"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.path",
+                    "value": {
+                      "stringValue": "/v1/reservations"
+                    }
+                  },
+                  {
+                    "key": "url.scheme",
+                    "value": {
+                      "stringValue": "http"
+                    }
+                  },
+                  {
+                    "key": "user_agent.original",
+                    "value": {
+                      "stringValue": "Go-http-client/1.1"
+                    }
+                  }
+                ],
+                "status": {}
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.instance.id",
+              "value": {
+                "stringValue": "fleet-b"
+              }
+            },
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "fleet"
+              }
+            }
+          ]
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+              "version": "0.72.0"
+            },
+            "spans": [
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "bc0b209065a5270e",
+                "parentSpanId": "6db8c39e580be5e0",
+                "flags": 769,
+                "name": "GET /v1/vehicles/{id}/quote",
+                "kind": 2,
+                "startTimeUnixNano": "1794167197088369259",
+                "endTimeUnixNano": "1794167197089063675",
+                "attributes": [
+                  {
+                    "key": "client.address",
+                    "value": {
+                      "stringValue": "172.24.0.11"
+                    }
+                  },
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "GET"
+                    }
+                  },
+                  {
+                    "key": "http.response.body.size",
+                    "value": {
+                      "intValue": "122"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "200"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "GET /v1/vehicles/{id}/quote"
+                    }
+                  },
+                  {
+                    "key": "network.peer.address",
+                    "value": {
+                      "stringValue": "172.24.0.11"
+                    }
+                  },
+                  {
+                    "key": "network.peer.port",
+                    "value": {
+                      "intValue": "55234"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "request.id",
+                    "value": {
+                      "stringValue": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "fleet"
+                    }
+                  },
+                  {
+                    "key": "url.path",
+                    "value": {
+                      "stringValue": "/v1/vehicles/smoke-076abe503c1b486c9bd988e050ef1060/quote"
+                    }
+                  },
+                  {
+                    "key": "url.scheme",
+                    "value": {
+                      "stringValue": "http"
+                    }
+                  },
+                  {
+                    "key": "user_agent.original",
+                    "value": {
+                      "stringValue": "Go-http-client/1.1"
+                    }
+                  }
+                ],
+                "status": {}
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.instance.id",
+              "value": {
+                "stringValue": "customers"
+              }
+            },
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "customers"
+              }
+            }
+          ]
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+              "version": "0.72.0"
+            },
+            "spans": [
+              {
+                "traceId": "fe8db5725630d5534c447e22ef010013",
+                "spanId": "a8866121b9564593",
+                "parentSpanId": "c191030594ed0046",
+                "flags": 769,
+                "name": "GET /v1/customers/{id}",
+                "kind": 2,
+                "startTimeUnixNano": "1794167197086478329",
+                "endTimeUnixNano": "1794167197087700200",
+                "attributes": [
+                  {
+                    "key": "client.address",
+                    "value": {
+                      "stringValue": "172.24.0.14"
+                    }
+                  },
+                  {
+                    "key": "http.request.method",
+                    "value": {
+                      "stringValue": "GET"
+                    }
+                  },
+                  {
+                    "key": "http.response.body.size",
+                    "value": {
+                      "intValue": "157"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "200"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "GET /v1/customers/{id}"
+                    }
+                  },
+                  {
+                    "key": "network.peer.address",
+                    "value": {
+                      "stringValue": "172.24.0.14"
+                    }
+                  },
+                  {
+                    "key": "network.peer.port",
+                    "value": {
+                      "intValue": "48728"
+                    }
+                  },
+                  {
+                    "key": "network.protocol.version",
+                    "value": {
+                      "stringValue": "1.1"
+                    }
+                  },
+                  {
+                    "key": "request.id",
+                    "value": {
+                      "stringValue": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a"
+                    }
+                  },
+                  {
+                    "key": "server.address",
+                    "value": {
+                      "stringValue": "customers"
+                    }
+                  },
+                  {
+                    "key": "server.port",
+                    "value": {
+                      "intValue": "8080"
+                    }
+                  },
+                  {
+                    "key": "url.path",
+                    "value": {
+                      "stringValue": "/v1/customers/smoke-cli-076abe503c1b486c9bd988e050ef1060"
+                    }
+                  },
+                  {
+                    "key": "url.scheme",
+                    "value": {
+                      "stringValue": "http"
+                    }
+                  },
+                  {
+                    "key": "user_agent.original",
+                    "value": {
+                      "stringValue": "Go-http-client/1.1"
+                    }
+                  }
+                ],
+                "status": {}
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

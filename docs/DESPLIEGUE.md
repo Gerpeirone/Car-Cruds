@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.1 |
-| Fecha | 15 de octubre de 2026 |
+| Versión documental | 0.2 |
+| Fecha de revisión | 8 de noviembre de 2026 |
 | Estado | Configuración preparada; VM y URL pública pendientes |
-| Objetivo | Publicar la lista de empleados para el gimnasio antes de la entrega 2 (23 de octubre) |
+| Objetivo | Dar acceso al gimnasio durante la evaluación y acreditar la publicación cloud exigida para la presentación grupal |
 
 ## 1. Topología
 
@@ -32,13 +32,13 @@ Internet ──HTTPS 443──> Caddy ──HTTP──> gateway ──> Clientes
 ```bash
 git clone https://github.com/Gerpeirone/Car-Cruds.git
 cd Car-Cruds
-git checkout entrega-2/cierre
+git checkout main
 bash scripts/deploy-vm.sh
 ```
 
 [deploy-vm.sh](../scripts/deploy-vm.sh) instala Docker si falta, genera `.env` con credenciales aleatorias (mediante `cmd/devsetup` dentro de un contenedor Go), define `PUBLIC_HOST` y levanta todo con `--wait`. Es repetible: conserva `.env` y los volúmenes de datos. Para actualizar, `git pull` y volver a ejecutarlo.
 
-La rama indicada contiene la preparación de E2. Cambiarla a `main` únicamente cuando el equipo haya aprobado e integrado la propuesta. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
+La preparación de E2 y las integraciones están integradas en `main`. Antes de publicar, revisar el commit elegido y el estado de CI: la ejecución de `19c4e06` falló al iniciar MongoDB. La [revisión](REVISION-E2-2026-11-08.md) describe el resultado local y sus límites. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
 Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (seis escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
 
