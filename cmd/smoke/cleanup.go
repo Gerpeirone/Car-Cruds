@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 )
 
 func (h *harness) cleanup(ctx context.Context) error {
@@ -91,13 +92,14 @@ func (h *harness) cleanup(ctx context.Context) error {
 			} else {
 				h.vehicle.Version, h.vehicle.Active = quote.Version, false
 				var inactive vehicle
+				deactivatedAt := time.Now()
 				if _, err := h.request(ctx, "desactivar_vehiculo_smoke", "PUT", "/v1/vehicles/"+h.vehicleID, h.admin, h.vehicle, "", 200, &inactive); err != nil {
 					failures = append(failures, err)
 				} else if inactive.ID != h.vehicleID || inactive.Active || inactive.Version != quote.Version+1 {
 					failures = append(failures, errors.New("vehículo no quedó inactivo con nueva versión"))
 				} else {
 					h.vehicle = inactive
-					if err := h.searchVisible(ctx, false); err != nil {
+					if err := h.searchVisible(ctx, "baja", false, deactivatedAt); err != nil {
 						failures = append(failures, err)
 					}
 				}

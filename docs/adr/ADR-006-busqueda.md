@@ -22,6 +22,10 @@ Las modificaciones de Flota generan `VehicleChanged.v1` mediante outbox. El inde
 
 Se conserva como **objetivo propuesto** un retraso máximo de 5 segundos en operación normal, desde el cambio durable en Flota hasta su visibilidad en consulta. No es una medición obtenida. Ante atrasos se observará backlog y antigüedad; se conserva la fuente para reconstrucción.
 
+### Medición reproducible de frescura
+
+El recorrido `go run ./cmd/smoke` mide por separado alta, actualización de versión/tarifa y baja lógica de un vehículo exclusivo. Para cada escritura inicia un reloj monotónico **antes** de enviar el POST/PUT al gateway, confirma la versión devuelta y consulta `/v1/vehicles/search` cada 200 ms hasta observar la versión esperada o su ausencia tras la baja. Exige que cada transición sea visible antes de 5 s desde el inicio de su escritura. Este intervalo incluye red, procesamiento y commit, por lo que es una **cota superior conservadora** del retraso real desde el commit; no se atribuye a MongoDB una marca de commit que la API no expone. Registrar revisión, entorno y los tres tiempos; cualquier exceso o error de búsqueda falla el recorrido. La medición de un vehículo en operación normal no demuestra un máximo universal bajo carga, caída del broker o reconstrucción.
+
 La reconstrucción prevé un índice nuevo, carga desde Flota, incorporación de cambios durante la carga, validación y cambio controlado. No debe eliminarse trabajo confirmado ni depender de datos del broker como única fuente.
 
 ## 3. Alternativas consideradas
