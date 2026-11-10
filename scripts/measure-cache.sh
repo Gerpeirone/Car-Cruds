@@ -30,7 +30,7 @@ metric() {
   done
   echo "$total"
 }
-counters() { printf '{"hit":%s,"miss":%s,"error":%s}' "$(metric hit)" "$(metric miss)" "$(metric error)"; }
+counters() { printf '{"hit":%s,"miss":%s,"error":%s,"bypass":%s}' "$(metric hit)" "$(metric miss)" "$(metric error)" "$(metric bypass)"; }
 phase() {
   local name=$1 before after
   before=$(counters)

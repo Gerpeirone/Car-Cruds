@@ -106,6 +106,7 @@ La herramienta exige HTTPS fuera de loopback, rechaza redirecciones y comprueba 
 | Estado | `docker compose -f compose.yaml -f compose.deploy.yaml ps` |
 | Registros de la entrada | `docker compose -f compose.yaml -f compose.deploy.yaml logs -f caddy gateway` |
 | Trazas (Jaeger) | Túnel SSH: `ssh -L 16686:127.0.0.1:16686 <vm>` y abrir `http://localhost:16686` |
+| Tablero y alertas | Agregar `-f compose.observability.yaml` a los comandos de Compose y `GRAFANA_ADMIN_PASSWORD` al `.env` (`openssl rand -hex 24`). Túnel `ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <vm>`: Grafana en `http://localhost:3000` y alertas en `http://localhost:9090/alerts` |
 | Detener | `docker compose -f compose.yaml -f compose.deploy.yaml down` (conserva datos) |
 
 La capacidad compartida debe permanecer accesible hasta finalizar la evaluación: no detener la VM sin acordarlo con el gimnasio.

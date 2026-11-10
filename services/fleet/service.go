@@ -2,18 +2,19 @@ package fleet
 
 import (
 	"context"
+	"errors"
 	"github.com/Gerpeirone/Car-Cruds/internal/platform"
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"time"
 )
 
-var cacheRequests = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "fleet_cache_requests_total", Help: "Cache hits, misses and errors."}, []string{"result"})
+var cacheRequests = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "fleet_cache_requests_total", Help: "Cache hits, misses, errors and breaker bypasses."}, []string{"result"})
 var sourceReads = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "fleet_source_reads_total", Help: "Authoritative repository reads."}, []string{"operation"})
 var cacheInvalidationFailures = prometheus.NewCounter(prometheus.CounterOpts{Name: "fleet_cache_invalidation_failures_total", Help: "Invalidation errors after durable writes."})
 
 func RegisterMetrics() {
-	platform.RegisterMetrics(cacheRequests, sourceReads, cacheInvalidationFailures, publishedEvents, indexedEvents, indexWriteDelay)
+	platform.RegisterMetrics(cacheRequests, sourceReads, cacheInvalidationFailures, cacheBreakerState, cacheBreakerOpenings, publishedEvents, indexedEvents, indexWriteDelay)
 }
 
 type Service struct {
@@ -52,6 +53,8 @@ func (s *Service) Get(ctx context.Context, id string) (Vehicle, error) {
 		v, hit, err := s.Cache.Get(cacheCtx, id)
 		cancel()
 		switch {
+		case errors.Is(err, ErrCacheBypassed):
+			cacheRequests.WithLabelValues("bypass").Inc()
 		case err != nil:
 			cacheRequests.WithLabelValues("error").Inc()
 		case hit:
@@ -70,7 +73,7 @@ func (s *Service) Get(ctx context.Context, id string) (Vehicle, error) {
 		cacheCtx, cancel := context.WithTimeout(ctx, 150*time.Millisecond)
 		err = s.Cache.Put(cacheCtx, v)
 		cancel()
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrCacheBypassed) {
 			cacheRequests.WithLabelValues("write_error").Inc()
 		}
 	}
