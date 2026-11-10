@@ -2,21 +2,22 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.1 |
-| Fecha | 15 de octubre de 2026 |
-| Estado | Configuración preparada; VM y URL pública pendientes |
-| Objetivo | Publicar la lista de empleados para el gimnasio antes de la entrega 2 (23 de octubre) |
+| Versión documental | 0.2 |
+| Fecha | 9 de noviembre de 2026 |
+| Estado | Configuración con interfaz web verificada con HTTPS local; VM y URL pública pendientes |
+| Objetivo | Publicar la interfaz completa y la capacidad compartida para la presentación grupal |
 
 ## 1. Topología
 
 Una VM Linux ejecuta el mismo `compose.yaml` del entorno local, más [compose.deploy.yaml](../compose.deploy.yaml), que agrega **Caddy** como única entrada pública:
 
 ```text
-Internet ──HTTPS 443──> Caddy ──HTTP──> gateway ──> Clientes / Flota (NGINX, 2 réplicas) / Alquileres / Empleados
+Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> Clientes / Flota (NGINX, 2 réplicas) / Alquileres / Empleados
+                               └─ resto  ──> web (NGINX, interfaz estática)
 ```
 
 - Caddy obtiene y renueva el certificado con Let's Encrypt para `PUBLIC_HOST` y redirige HTTP a HTTPS.
-- Las rutas `/internal/*` no se publican; el resto llega al gateway, que exige el token Bearer.
+- Las rutas `/internal/*` responden 404 en Caddy. `/v1/*` llega directo al gateway, que exige el token Bearer: gimnasio y hospital usan la misma URL que antes. Cualquier otra ruta la sirve el contenedor `web` (SPA del cliente, del operador y de personal), que no publica puertos propios.
 - PostgreSQL, MongoDB, Redis, RabbitMQ, Solr y Jaeger quedan ligados a `127.0.0.1` de la VM: no son accesibles desde Internet.
 - Es la configuración de laboratorio de [D13](adr/ADR-013-capacidad-costos.md): una VM, sin alta disponibilidad.
 
@@ -32,15 +33,27 @@ Internet ──HTTPS 443──> Caddy ──HTTP──> gateway ──> Clientes
 ```bash
 git clone https://github.com/Gerpeirone/Car-Cruds.git
 cd Car-Cruds
-git checkout entrega-2/cierre
+git checkout feature/entrega-3-pendientes
 bash scripts/deploy-vm.sh
 ```
 
 [deploy-vm.sh](../scripts/deploy-vm.sh) instala Docker si falta, genera `.env` con credenciales aleatorias (mediante `cmd/devsetup` dentro de un contenedor Go), define `PUBLIC_HOST` y levanta todo con `--wait`. Es repetible: conserva `.env` y los volúmenes de datos. Para actualizar, `git pull` y volver a ejecutarlo.
 
-La rama indicada contiene la preparación de E2. Cambiarla a `main` únicamente cuando el equipo haya aprobado e integrado la propuesta. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
+La rama indicada contiene la interfaz y la entrada pública de la entrega 3. Cambiarla a `main` únicamente cuando el equipo haya aprobado e integrado la propuesta. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
 Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (seis escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
+
+Verificación local de la topología, el 9 de noviembre, con `PUBLIC_HOST=localhost` (Caddy emite un certificado interno) y `docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait`:
+
+| Solicitud | Resultado |
+| --- | --- |
+| `https://localhost/` y `/operador/personal` (enlace directo) | 200, `index.html` de la SPA |
+| `https://localhost/v1/employees` sin token | 401 del gateway |
+| `https://localhost/v1/employees` con token del gimnasio | 200, lista mínima |
+| `https://localhost/internal/ready` | 404 de Caddy, sin cuerpo |
+| `http://localhost/` | 308 a HTTPS |
+
+La interfaz se revisó en navegador sobre esa misma entrada ([evidencia](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre)). Esto no acredita DNS público, un certificado de Let's Encrypt ni acceso desde Internet.
 
 Comprobación desde fuera de la VM:
 
