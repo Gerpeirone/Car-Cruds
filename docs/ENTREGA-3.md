@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 | --- | --- |
-| Fecha | 8 de noviembre de 2026 |
-| Rama | `feature/entrega-3` |
+| Fecha | 9 de noviembre de 2026 |
+| Rama | `feature/entrega-3-pendientes`, sobre `feature/entrega-3` |
 | Base | `main`, `19c4e06` |
-| Estado | F3-01 y F3-02 implementados y probados localmente; revisión visual y publicación pendientes |
+| Estado | F3-01 a F3-03 implementados y revisados en navegador; entrada pública verificada con HTTPS local; falta la VM pública y los accesos externos |
 | Referencia académica | [Enunciado](../Enunciado%20TP%20Final.md), presentación grupal |
 
 ## 1. Objetivo y alcance del hito
@@ -18,11 +18,11 @@ La presentación exige frontend completo, entrada única autenticada, servicios 
 
 | Etapa | Resultado | Estado |
 | --- | --- | --- |
-| F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Implementado; [evidencia](EVIDENCIA-FRONTEND.md), con revisión visual pendiente |
-| F3-02: operación administrativa | Flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento | [Implementado y probado con servicios reales](PANEL-OPERADOR.md); revisión visual pendiente |
-| F3-03: personal e integraciones | Empleados registrados, informes de membresías y seguimiento administrativo de turnos | Pendiente de especificación detallada y acuerdos operativos |
-| F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Requiere infraestructura, credenciales y coordinación |
-| F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | Pendiente de ejecución sobre el conjunto final |
+| F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Implementado; [evidencia](EVIDENCIA-FRONTEND.md) y [revisión en navegador](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre) sin violaciones WCAG AA |
+| F3-02: operación administrativa | Flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento | [Implementado y probado con servicios reales](PANEL-OPERADOR.md); revisado en navegador |
+| F3-03: personal e integraciones | Empleados registrados, informes de membresías y seguimiento administrativo de turnos | [Implementado](PERSONAL-OPERADOR.md) y probado contra Empleados real; gimnasio y hospital reales pendientes de acuerdos |
+| F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Caddy sirve la interfaz y deriva `/v1/*` al gateway; [verificado con HTTPS local](DESPLIEGUE.md). Falta crear la VM, el DNS y los accesos externos |
+| F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | [Comparación de caché](evidence/cache-comparison-2026-11-09.json) y [limitaciones y deuda técnica](ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada) actualizadas; repetir el recorrido sobre la URL pública |
 
 F3-01 incluye ahora código de interfaz, dependencias fijadas, build, pruebas y una entrada estática local con NGINX. Se conservan los endpoints de negocio existentes. No se incorporan pagos ni funciones ajenas al alquiler documentado.
 
@@ -43,3 +43,13 @@ La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y
 ## 5. Estado y verificación de esta etapa
 
 El corte documental inicial se conserva en el historial. El incremento actual implementa F3-01: build, 24 pruebas ordinarias, prueba React contra API real y servidor estático Docker verificados. La herramienta de navegador se bloqueó por no poder verificar la URL en Windows; no se declara aprobado el layout ni el recorrido visual/teclado en navegador. Ver [evidencia y pendientes](EVIDENCIA-FRONTEND.md).
+
+## 6. Cierre del 9 de noviembre
+
+- **F3-03.** La sección Personal del panel cubre empleados (lista, alta, edición, baja), el informe de membresías por período y las solicitudes de turno (vínculo, intención con referencia estable, envío explícito, conciliación e informe). Tiene siete pruebas nuevas y se ejercitó contra el servicio real. Ver [PERSONAL-OPERADOR](PERSONAL-OPERADOR.md).
+- **Revisión visual.** Se hizo en navegador real sobre 33 pantallas en escritorio y móvil, con axe WCAG 2.1 AA, scroll horizontal y teclado. Se corrigió el contraste de la paleta y el foco en las tablas desplazables; terminó con 0 violaciones.
+- **F3-04.** Se agregó el servicio `web` a `compose.deploy.yaml`, y el Caddyfile ahora enruta la interfaz y la API. También se corrigió que la regla de `/internal/*` nunca se alcanzaba. Se validó con `check-deploy-config.py`, `caddy validate`, `test-deploy-vm.sh` y un despliegue local con HTTPS.
+- **F3-05.** Se agregó `scripts/measure-cache.sh` (no necesita PowerShell 7) y se hicieron dos corridas, con caché caliente y con Redis detenido. Las limitaciones y la deuda técnica están en ARCHITECTURE §9.
+- **CI.** El trabajo Compose vuelca diagnóstico de los contenedores y los logs de MongoDB cuando falla el arranque.
+
+Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud), el token y consumo del gimnasio, y la URL y clave del hospital.
