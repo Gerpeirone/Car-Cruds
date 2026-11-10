@@ -2,7 +2,7 @@
 
 > **Panel del operador — 08/11/2026:** [F3-02](docs/PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](docs/EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](docs/EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
 
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
@@ -11,8 +11,8 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
-| Estado | Backend propio implementado y verificado localmente; integración externa pendiente |
+| Fecha de revisión | 8 de noviembre de 2026 |
+| Estado | Backend y contrato hospitalario verificados en laboratorio; CI y operación conjunta pendientes |
 | Hito | Entrega 2 — viernes 23 de octubre de 2026 |
 | Equipo | Alterman, Ivo · Peirone, German · Grbavac, Darko |
 | Repositorio | [Gerpeirone/Car-Cruds](https://github.com/Gerpeirone/Car-Cruds) |
@@ -21,9 +21,11 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 
 Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsqueda, disponibilidad, reserva, retiro y devolución. Alquileres controla la agenda, congela el precio acordado y evita asignaciones superpuestas. Un vehículo todavía no devuelto impide otro retiro, incluso después del fin planificado.
 
-La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
+La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. El contrato oficial del hospital está publicado y el adaptador funciona en laboratorio; acceso operativo y pruebas conjuntas siguen pendientes.
 
-La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
+Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
+
+La [revisión del 8 de noviembre](docs/REVISION-E2-2026-11-08.md) registra 155 pruebas/subpruebas reales sin omisiones, smoke de 67 solicitudes y contrato hospitalario aprobados. La CI de `19c4e06` falló al iniciar MongoDB. [PENDIENTES-E2](docs/PENDIENTES-E2.md) identifica los datos externos y verificaciones que faltan.
 
 ## Estado disponible
 
@@ -35,7 +37,7 @@ La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candi
 | Empleados | Servicio Go hexagonal; gestión de empleados, PostgreSQL propio y lista mínima de empleados activos |
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
-| Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
+| Interfaz web | Frontend del alquiler (F3-01) y panel del operador (F3-02) implementados en [`frontend/`](frontend/README.md) con pruebas locales; interfaz de personal, revisión visual en navegador y publicación cloud pendientes |
 | Integraciones externas | Gimnasio: lista y recepción de evidencia. Hospital: solicitud y seguimiento de turnos desde Empleados, con intención durable e informe; acuerdos y despliegue pendientes |
 | Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
@@ -96,7 +98,9 @@ Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/
 
 Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
 
-`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.3.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. El ID es estable y no se reasigna a otra persona. Gimnasio vincula manualmente al socio, completa DNI/email de su lado y envía evidencia a `POST /v1/employees/membership-evidence`. Puede verificar bajas mediante `GET /v1/employees/{id}/status`, que devuelve solo ID y estado laboral y no cancela membresías. No puede administrar empleados ni consultar informes internos.
+
+El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.4.0, es una propuesta propia provisional: agrega `/status` y conserva la lista y el cuerpo de evidencia de 0.3.0. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo; [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md) responde sus preguntas y propone el perfil mensual: ingresos efectivos, pagos del mes y costo neto por meses iguales. Meses parciales quedan en `null` hasta acordar su tratamiento. Se aceptan fotografías provisionales y correcciones históricas. La confirmación semántica bilateral, el acceso público y la prueba conjunta siguen pendientes.
 
 ## Documentación
 

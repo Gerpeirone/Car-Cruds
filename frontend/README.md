@@ -1,6 +1,6 @@
 # Frontend del alquiler
 
-Interfaz React/TypeScript/Vite de F3-01, implementada en `feature/entrega-3`. Acceso de laboratorio, búsqueda/filtros, ficha, disponibilidad, confirmación idempotente, recuperación, consulta por código y cancelación. Tipografías locales e ilustración vectorial neutra propia; diseño adaptable en CSS.
+Interfaz React/TypeScript/Vite de F3-01, implementada en la entrega 3 (PR #8). Acceso de laboratorio, búsqueda/filtros, ficha, disponibilidad, confirmación idempotente, recuperación, consulta por código y cancelación. Tipografías locales e ilustración vectorial neutra propia; diseño adaptable en CSS.
 
 ## Desarrollo local
 
@@ -69,6 +69,8 @@ Esta prueba solo admite loopback. Crea un vehículo ficticio exclusivo, usa el c
 
 La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. El [panel del operador](../docs/PANEL-OPERADOR.md) está implementado en `/operador/acceso`: usa exclusivamente `AUTH_ADMIN_TOKEN`, sin ID de cliente, y verifica `role=admin` por `/v1/session`. La interfaz de personal y cloud siguen pendientes.
 
+Criterio para la futura interfaz de personal: el informe de clínica distingue turno confirmado, ausencia confirmada y estado desconocido; el de gimnasio distingue uso, no uso e información faltante. La interfaz mostrará fecha/origen y condiciones pendientes; no tratará una falla externa como un resultado negativo ni generará tarifas o conclusiones médicas. Nuevas vinculaciones, intenciones y primer envío de turnos requieren empleado activo; la baja conserva seguimiento previo.
+
 - [Evidencia y limitación de revisión visual](../docs/EVIDENCIA-FRONTEND.md).
 - [Especificación de pantallas y criterios](../docs/FRONTEND-ALQUILER.md).
 - [Plan de entrega 3](../docs/ENTREGA-3.md).
@@ -77,3 +79,12 @@ La API no lista reservas: se consulta una propia por código. El precio/agenda/p
 ## Prueba real del operador
 
 `src/operator/operator.live.test.tsx` se activa con `OPERATOR_LIVE_TEST=true`, `OPERATOR_TEST_BASE_URL` de loopback y `OPERATOR_TEST_TOKEN` cargado privadamente. Registra fixtures propios de auto/cliente, opera retiro y devolución y crea mantenimiento. Desactiva su auto y conserva cliente y mantenimiento por falta de API de baja/eliminación. Ver [guía y evidencia](../docs/PANEL-OPERADOR.md).
+
+## Referencias
+
+- [SPEC.md — actores, alcance y reglas](../SPEC.md).
+- [Arquitectura del sistema](../docs/ARCHITECTURE.md).
+- [D1 vigente — alcance de personal](../docs/adr/ADR-018-empleados-sin-candidatos.md).
+- [D8 vigente — empleados](../docs/adr/ADR-017-contrato-empleados.md).
+- [Contrato histórico de reservas](../docs/contracts/RESERVAS.md).
+- [Historias y criterios de aceptación](../docs/BACKLOG.md).

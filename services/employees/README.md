@@ -5,13 +5,14 @@ La [referencia de endpoints y Swagger](../../docs/API.md) reúne administración
 | Campo | Valor |
 | --- | --- |
 | Fecha de alcance | 23 de octubre de 2026 |
-| Estado | Implementación propia con PostgreSQL; integración externa pendiente de aceptación |
+| Estado | Lista, estado laboral, recepción e informes implementados con PostgreSQL; aceptación y acceso externos pendientes |
 | Entrada ejecutable | [cmd/employees](../../cmd/employees/main.go) |
-| Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.3.0 |
+| Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.4.0; lista y evidencia compatibles con 0.3.0 |
 | Contrato administrativo de turnos | [OpenAPI 3.0.3](../../docs/contracts/clinic-integration-openapi.json), versión 0.3.0 |
-| Decisiones vigentes | [ADR-018 — Empleados sin candidatos](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
+| Acuerdo con el consumidor | Pendiente; población activa y operaciones son decisiones propias provisionales |
+| Decisiones vigentes | [ADR-018 — Alcance de Empleados](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
 
-Empleados administra el registro laboral de la concesionaria, la evidencia de membresías del gimnasio y el seguimiento administrativo de turnos médicos. El dominio activo contiene únicamente empleados; la gestión de candidatos fue retirada. La lista compartida con el gimnasio mantiene exclusivamente `employeeId` y `displayName` de empleados activos, sin cambios en su formato ni en el intercambio de membresías.
+Empleados administra el registro laboral de la concesionaria, la evidencia de membresías del gimnasio y el seguimiento administrativo de turnos médicos. El dominio comprende exclusivamente personal registrado. La lista compartida con el gimnasio mantiene exclusivamente `employeeId` y `displayName` de empleados activos, sin cambios en su formato ni en el intercambio de membresías. La consulta puntual `/status` permite además verificar el estado laboral de empleados registrados, incluidos inactivos. Ninguna de las dos expone clientes, credenciales, costos ni información clínica, y el alta administrativa es explícita.
 
 ## Arquitectura y persistencia
 
@@ -24,8 +25,6 @@ Empleados administra el registro laboral de la concesionaria, la evidencia de me
 
 El servicio conserva base y credenciales PostgreSQL propias; no consulta bases ajenas. Sus datos activos incluyen `employees`, evidencia de membresías, vínculos de pacientes, intenciones de turno e historia. La migración de inicio usa una transacción, registro de versión y bloqueo para coordinar arranques concurrentes.
 
-Las migraciones históricas y la tabla `candidates` permanecen para conservar instalaciones y referencias previas. Sus filas, vínculos y solicitudes no se borran ni se convierten automáticamente en empleados. La API activa no permite acceder a esos registros ni operarlos; un paciente ya vinculado a un registro histórico conserva esa vinculación y requiere revisión administrativa antes de cualquier reasignación futura. No se agregan candidatos a la siembra.
-
 Cada página utiliza `READ ONLY REPEATABLE READ`: conteo y registros pertenecen a la misma instantánea, ordenados por identificador. `page` comienza en 1 (predeterminado 1); `pageSize` admite 1–100 (predeterminado 20). Se rechaza un desplazamiento que no quepa en 64 bits. Entre páginas los datos pueden cambiar; una ausencia no acredita una baja laboral.
 
 Los nombres administrativos admiten de 1 a 150 caracteres Unicode, se normalizan quitando espacios de los extremos y rechazan controles. Las altas y actualizaciones requieren `active` explícito. La baja es lógica e idempotente: conserva historia y no cancela turnos ni membresías automáticamente.
@@ -37,6 +36,7 @@ Las operaciones usan autenticación Bearer de aplicación. El rol procede del mi
 | Ruta | Métodos | Roles y comportamiento |
 | --- | --- | --- |
 | `/v1/employees` | GET | `gym`, `service`, `admin`: lista activa mínima |
+| `/v1/employees/{id}/status` | GET | `gym`, `service`, `admin`: solo ID y estado laboral, incluidos inactivos; no cancela membresías |
 | `/v1/employees` | POST | `admin`: alta con `displayName` y `active` |
 | `/v1/admin/employees` | GET | `admin`: lista con activos e inactivos |
 | `/v1/employees/{id}` | GET / PUT / DELETE | `admin`: consulta, reemplazo y baja lógica |
@@ -50,7 +50,7 @@ Las operaciones usan autenticación Bearer de aplicación. El rol procede del mi
 | `/v1/employees/reports/clinic` | GET | `admin`, `service`: informe de empleados |
 | `/v1/employees/integrations` | GET | `admin`, `service`: estado general `503 NOT_CONFIGURED`, sin acreditar aceptación externa |
 
-Las rutas `/v1/candidates` y `/v1/candidates/{id}` se retiraron; con autenticación válida devuelven `404`, también para Administración. El middleware conserva el rechazo `401` de solicitudes sin autenticación. El rol `client` no accede a personal. El gimnasio no administra empleados ni consulta detalles administrativos o clínicos.
+El middleware conserva el rechazo `401` de solicitudes sin autenticación. El rol `client` no accede a personal. El gimnasio lista empleados, consulta el estado laboral puntual y escribe evidencia mediante su entrada autorizada; no administra empleados ni consulta detalles administrativos o clínicos. El ID no se reasigna al modificar, desactivar o reactivar; la baja es lógica y su consulta `/status` no cancela una membresía.
 
 Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, múltiples objetos y cuerpos de más de 1 MiB se rechazan. Los contratos describen API propias y no acreditan acuerdo bilateral ni despliegue público.
 
@@ -58,7 +58,7 @@ Los cuerpos requieren `Content-Type: application/json`; campos desconocidos, mú
 
 Nuevos vínculos, intenciones y cualquier envío que pueda crear turno, incluido el reintento incierto, exigen empleado existente y activo. Un empleado inexistente devuelve `404`; un inactivo, `409 EMPLOYEE_INACTIVE`. La validación y la escritura local se coordinan en PostgreSQL para no admitir una baja concurrente entre ambos pasos. No se mantiene una transacción durante HTTP.
 
-Se conservan `personKind` y `personId` en el formato clínico por compatibilidad, pero el único tipo admitido es `employee`. El informe puede consultarse sin selector; `personKind=employee` sigue siendo válido y `candidate` se rechaza. No incluye registros históricos de candidatos.
+Se conservan `personKind` y `personId` en el formato clínico por compatibilidad, pero el único tipo admitido es `employee`. El informe puede consultarse sin selector; `personKind=employee` sigue siendo válido y se rechazan otros valores.
 
 Una baja permite consultar/actualizar evidencia previa mediante `refresh`, sin cancelar automáticamente ni permitir otro POST incierto que pueda crear. Repetir la referencia administrativa recupera la intención original. Antes de HTTP se persisten procedencia `turnos-partner-v1` y clave igual a `requestId`. Cada acción explícita hace como máximo un intento; al vencer `nextAttemptAt` puede repetirse la misma clave/datos, sin trabajador automático. El reclamo y el enfriamiento mínimo duran diez segundos; 429 amplía la espera con `Retry-After`. Conflicto idempotente requiere revisión. Solicitudes terminales/con turno y solicitudes antiguas ya enviadas sin procedencia idempotente nunca se reenvían como POST.
 
@@ -69,7 +69,7 @@ Una baja permite consultar/actualizar evidencia previa mediante `refresh`, sin c
 | `DATABASE_URL` | Base exclusiva de Empleados; obligatoria |
 | `AUTH_ADMIN_TOKEN` | Aplicación administrativa; obligatoria |
 | `AUTH_SERVICE_TOKEN` | Aplicación interna; obligatoria |
-| `AUTH_GYM_TOKEN` | Aplicación del gimnasio; obligatoria para este servicio |
+| `AUTH_GYM_TOKEN` | Aplicación del gimnasio: lista, estado laboral y envío de evidencia; obligatoria para este servicio |
 | `AUTH_CLIENT_TOKEN` | Identidad de cliente optativa; sin permisos sobre personal |
 | `HTTP_ADDR` | Dirección de escucha; predeterminado `:8080` |
 | `SEED_DEMO` | `true` carga empleados ficticios; predeterminado `false` |
@@ -97,13 +97,15 @@ Invoke-RestMethod -Headers $gymHeaders -Uri "$employeesBase/v1/employees?page=1&
 
 En la distribución completa se accede mediante el gateway. Las guías de [gimnasio](../../docs/COMUNICACION-GIMNASIO.md) y [hospital](../../docs/COMUNICACION-HOSPITAL.md) documentan cuerpos, permisos, correcciones, incertidumbre y límites. Los acuerdos operativos se siguen en [INTEGRACIONES](../../docs/INTEGRACIONES.md).
 
+El flujo comunicado por el gimnasio es lista → vinculación manual → evidencia. [ACUERDO-GIMNASIO](../../docs/ACUERDO-GIMNASIO.md) responde sus preguntas y define el perfil mensual propuesto: ingresos efectivos, pagos del mes y costo neto por meses iguales; meses parciales pendientes, con `null` hasta acordarlos. No se crea un socio ni se envían DNI/email desde Car Cruds. `GET /v1/employees/integrations` conserva el estado general de acuerdos externos pendientes y no es una comprobación de conectividad. El [borrador anterior](../../docs/contracts/employees-openapi-draft.json) es histórico, no el contrato que debe implementar el gimnasio.
+
 ## Verificación
 
 ```powershell
 go test ./services/employees/... ./cmd/employees
 ```
 
-Las pruebas del servicio cubren entradas, permisos, bajas y contratos propios. Las pruebas PostgreSQL requieren `TEST_DATABASE_URL`; sin ella se omiten explícitamente. Usan un esquema aislado para verificar migraciones, persistencia y paginación. Las verificaciones de esta revisión deben cubrir rechazo de candidatos, elegibilidad activa, conservación de registros históricos y seguimiento de inactivos.
+Las pruebas del servicio cubren entradas, permisos, bajas y contratos propios. Las pruebas PostgreSQL requieren `TEST_DATABASE_URL`; sin ella se omiten explícitamente. Usan un esquema aislado para verificar migraciones, persistencia y paginación. Las verificaciones de esta revisión deben cubrir permisos de personal, elegibilidad activa, conservación de evidencia y seguimiento de inactivos.
 
 ```powershell
 $env:TEST_DATABASE_URL = $env:DATABASE_URL

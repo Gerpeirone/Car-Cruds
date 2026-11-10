@@ -2,18 +2,16 @@
 
 > **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
 
-**Revisión vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retira candidatos, conservando RF-10 como retirado y datos históricos sin API activa. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta RF-15/RF-16/RF-17 a Turnos para socios 1.0.0: autenticación privada, idempotencia persistida y recuperación explícita con espera durable. Nuevos vínculos, intenciones y cualquier POST que pueda crear exigen empleado activo; consulta/actualización previa admite inactivos. Las matrices históricas conservan sus cortes; la evidencia nueva se registra por separado.
+**Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`.
 
-**Cobertura ampliada del 22/10/2026:** RF-15/RF-16/RF-17 cuentan con solicitud, conciliación por referencia externa e informe de la última intención, con persistencia, incertidumbre explícita y permisos. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) distingue código implementado, API observada y acuerdos pendientes. RF-19 sigue pendiente de una capacidad real de indicaciones del hospital; no se inventa información clínica. Aceptación externa y operación pública no se deducen de estas pruebas. Se preservan los requisitos salvo la reducción de alcance registrada el 23 de octubre.
-
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+La [revisión actual](REVISION-E2-2026-11-08.md) verifica dependencias reales, recepción propia de membresías y contrato hospitalario aislado. El gimnasio de Pablo consume la lista de empleados; Car Cruds consume los turnos del hospital de Octi. Acceso operativo, devolución aceptada por el gimnasio y ensayo conjunto siguen pendientes. La indicación médica proveniente del hospital requiere una capacidad externa todavía no publicada. Los [pendientes actuales](PENDIENTES-E2.md) precisan los aportes necesarios.
 
 | Campo | Valor |
 | --- | --- |
-| Versión | 0.4 |
-| Fecha | 23 de octubre de 2026 |
+| Versión | 0.5 |
+| Fecha de revisión | 8 de noviembre de 2026 |
 | Estado | Requerimientos vigentes con cobertura parcial verificada |
 | Hito objetivo | 23 de octubre de 2026 |
 | Relación con el alcance | Alquileres como negocio principal; Clientes, Flota, Alquileres y Empleados |
@@ -22,18 +20,20 @@
 
 Los requerimientos funcionales expresan capacidades del sistema y los no funcionales establecen garantías y condiciones de operación verificables. Los identificadores RF-01 a RF-22 y RNF-01 a RNF-12 se mantienen estables para trazar implementación, pruebas y cambios. La metodología se completa con [BACKLOG.md](BACKLOG.md), cuyas historias incluyen criterios Dado/Cuando/Entonces, y con las reglas de [SPEC.md](../SPEC.md).
 
-La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados; el alcance anterior de candidatos quedó retirado por ADR-018. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La versión 0.3 registra la implementación del backend propio y su evidencia local. El mock de entrega 1 se conserva separado; los contratos y adaptadores externos continúan pendientes.
+La versión 0.2 incorpora personal, la lista de empleados consumida por el gimnasio, el seguimiento del uso de membresía y el consumo de turnos del hospital para empleados registrados. Empleados conserva estas responsabilidades y Alquileres conserva reservas, agenda, retiro y devolución. La versión 0.3 registra la implementación del backend propio y su evidencia local. El mock de entrega 1 se conserva separado. El contrato oficial y adaptador hospitalarios están disponibles y verificados de forma aislada; acceso y aceptación conjuntos siguen pendientes.
 
-Los acuerdos con los otros grupos aún no fijan contratos, campos, protocolos ni mecanismos de devolución. El comportamiento esperado se especifica sin imponer esas decisiones externas. Los informes permiten seguimiento y decisiones humanas; no determinan aptitud médica, contratación automática ni gastos monetarios a partir de tarifas inexistentes en los acuerdos.
+El hospital ya fijó su contrato publicado; su operación compartida y la aceptación del mecanismo de devolución del gimnasio siguen pendientes de acuerdo. El comportamiento esperado se especifica sin imponer esas decisiones externas. Los informes permiten seguimiento y decisiones humanas; no determinan aptitud médica, contratación automática ni gastos monetarios a partir de tarifas inexistentes en los acuerdos.
 
 ## 2. Cobertura de los requerimientos
 
-| Identificadores | Estado al 14 de octubre | Evidencia o limitación |
+| Identificadores | Estado al 8 de noviembre de 2026 | Evidencia o limitación |
 | --- | --- | --- |
 | RF-01 a RF-09 | Backend propio implementado | Pruebas reales y recorrido local; alcance de Clientes limitado a registro/consulta |
-| RF-11 | Gestión propia de empleados; RF-10 retirado por ADR-018 | Bajas y paginación; la matriz histórica no verifica la revisión del 23 de octubre |
+| RF-11 | Gestión propia de empleados; RF-10 retirado por ADR-018 | Bajas, paginación y elegibilidad activa verificadas por suite real y smoke actuales |
 | RF-12 | Lista propia activa implementada provisionalmente | Formato mínimo y permisos verificados; acuerdo/publicación/consumo externo pendientes |
-| RF-13 a RF-17 y RF-19 | Pendientes de contrato externo | Sin membresías, tarifas, turnos ni resultados inventados |
+| RF-13/RF-14 | Recepción, historia e informe de membresías, uso y gastos implementados y verificados localmente | Faltan aceptación y evidencia del gimnasio; no se inventan costos |
+| RF-15 a RF-17 | Solicitud, recuperación, consulta e informe implementados; contrato oficial verificado en laboratorio | Faltan acceso y ensayo conjuntos con el hospital |
+| RF-19 | Indicación administrativa local disponible | Indicación proveniente del hospital pendiente de capacidad publicada |
 | RF-18 | Acceso por aplicaciones y roles implementado parcialmente | 401/403 y ámbito de recurso verificados; no gestión de cuentas personales |
 | RF-20 | Mensajería propia implementada | Finalización y efecto único en Clientes verificados; recuperación/reproceso ampliados pendientes |
 | RF-21 | Búsqueda derivada implementada | Actualización y reconstrucción inicial verificadas; frescura desde commit e índice sombra pendientes |
@@ -115,10 +115,6 @@ El sistema deberá registrar bloqueos de mantenimiento en Alquileres, comproband
 **Verificación:** Bloqueo válido impide reservas; conflicto no cancela registros existentes.
 
 **Trazabilidad:** HU-09; RN-03, RN-11. **Estado:** Cobertura parcial del backend; ver matriz.
-
-### RF-10 — Registrar posibles incorporaciones — retirado
-
-**Estado:** Retirado del alcance el 23 de octubre de 2026 por [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). Se conserva la trazabilidad con HU-10 y el identificador histórico. La API activa no ofrece CRUD ni turnos de candidatos; las migraciones y referencias previas permanecen sin borrado ni promoción automática.
 
 ### RF-11 — Gestionar empleados
 

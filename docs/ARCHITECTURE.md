@@ -2,15 +2,17 @@
 
 > **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
 
-**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: se retiran candidatos del dominio y de la API, conservando tablas, migraciones y referencias históricas sin acceso activo. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
+> **Verificación — 08/11/2026:** [revisión actual](REVISION-E2-2026-11-08.md) sobre `main` (`19c4e06`): suite real, contrato hospitalario aislado y traza aprobados. La CI actual falla al iniciar MongoDB. Los diagramas representan fronteras y conexiones previstas; las conexiones externas aún no acreditan operación conjunta. [PENDIENTES-E2](PENDIENTES-E2.md) distingue bloqueos externos y trabajo posterior.
+
+**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
-| Estado | Backend propio implementado; diseño externo y frontend pendientes |
+| Versión documental | 0.5 |
+| Fecha de revisión | 8 de noviembre de 2026 |
+| Estado | Backend, adaptador hospitalario, frontend del alquiler y panel del operador implementados y verificados localmente; interfaz de personal, operación conjunta y publicación cloud pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
@@ -56,7 +58,7 @@ flowchart TB
     Gym["Gimnasio<br/>Consumo externo pendiente"]
     Clinic["Hospital<br/>Contrato pendiente"]
     subgraph System["Car Cruds"]
-        Web["Frontend web<br/>Pendiente"]
+        Web["Frontend web React<br/>Alquiler y operador"]
         GW["Gateway Go<br/>Autenticación y proxy"]
         Customers["Clientes · Go<br/>Capas"]
         Rentals["Alquileres · Go<br/>Hexagonal"]
@@ -71,7 +73,7 @@ flowchart TB
         EDB[("PostgreSQL Empleados")]
         FDB[("MongoDB Flota")]
 
-        Web -.->|"Previsto"| GW
+        Web -->|"/v1/* mismo origen"| GW
         GW --> Customers
         GW --> Rentals
         GW --> Employees
@@ -138,7 +140,7 @@ flowchart TB
 | Clientes | Perfil, licencia/estado, inbox e historial | Habilitación e historial deduplicado |
 | Flota | Ficha, tarifa, versión y eventos pendientes | Documento/outbox atómicos |
 | Alquileres | Agenda, reserva, precio, idempotencia y outbox | Exclusión de períodos y un alquiler activo por auto |
-| Empleados | Empleados, membresías, vínculos de pacientes, intenciones y evidencia de turnos | Baja lógica, lista mínima y trazabilidad; datos históricos de candidatos sin API activa |
+| Empleados | Empleados, membresías, vínculos de pacientes, intenciones y evidencia de turnos | Baja lógica, lista mínima y trazabilidad |
 
 **Alquileres es la única autoridad sobre disponibilidad temporal.** Flota no duplica esa verdad con un booleano. Solr y Redis no autorizan el precio de confirmación. Un cambio de tarifa no modifica una reserva ya confirmada.
 
@@ -176,7 +178,7 @@ La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo
 
 Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).
 
-El flujo clínico conserva vínculo explícito con paciente, intención durable, solicitud, consulta e informe. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta POST/GET a `/v1` con clave privada de consumidor e idempotencia. Antes de la red se guardan contrato, clave estable igual a `requestId` y espera durable. Cada acción explícita realiza como máximo un intento HTTP; no hay reintentos automáticos. Los recuperables reutilizan clave/datos al vencer `nextAttemptAt`; 429 respeta `Retry-After`. El vínculo, la intención y cada POST que pueda crear comprueban empleado activo en la transacción local. Una baja permite consulta y `refresh` de evidencia anterior sin cancelar. Las intenciones antiguas enviadas sin procedencia idempotente jamás se reenvían; su lectura exige pertenencia verificable al consumidor. `personKind` conserva únicamente `employee`; candidatos históricos permanecen sin acceso activo. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) detalla incertidumbre, errores operativos e historia. La adaptación no incorpora catálogo, cancelación saliente, facturación, frontend ni despliegue.
+El flujo clínico conserva vínculo explícito con paciente, intención durable, solicitud, consulta e informe. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta POST/GET a `/v1` con clave privada de consumidor e idempotencia. Antes de la red se guardan contrato, clave estable igual a `requestId` y espera durable. Cada acción explícita realiza como máximo un intento HTTP; no hay reintentos automáticos. Los recuperables reutilizan clave/datos al vencer `nextAttemptAt`; 429 respeta `Retry-After`. El vínculo, la intención y cada POST que pueda crear comprueban empleado activo en la transacción local. Una baja permite consulta y `refresh` de evidencia anterior sin cancelar. Las intenciones antiguas enviadas sin procedencia idempotente jamás se reenvían; su lectura exige pertenencia verificable al consumidor. `personKind` conserva únicamente `employee`. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) detalla incertidumbre, errores operativos e historia. La adaptación no incorpora catálogo, cancelación saliente, facturación, frontend ni despliegue.
 
 ## 7. Mensajería, índice y caché
 
@@ -201,7 +203,7 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 | Aspecto | Pendiente |
 | --- | --- |
 | Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
-| Integraciones | Aceptación y prueba conjunta; verificación de rama contra gateway de socios; pacientes reales, URL/clave y condiciones económicas |
+| Integraciones | Prueba aislada contra gateway de socios aprobada el 8 de noviembre; faltan aceptación conjunta, pacientes reales, URL/clave y condiciones económicas |
 | Presentación | Frontend y acceso público HTTPS |
 | Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
 | Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |

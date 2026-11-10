@@ -4,6 +4,16 @@
 
 > **Revisión de alcance — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) retira candidatos y limita nuevas vinculaciones, intenciones y primer envío de turnos a empleados activos; conserva historia y seguimiento previo de inactivos. Los cuerpos y resultados siguientes mantienen sus fechas históricas. Los contratos propios actuales son personal/gimnasio 0.3.0 y clínica 0.2.0; la lista y membresías del gimnasio no cambian. La migración al contrato Turnos para socios publicado posteriormente por el hospital queda pendiente.
 
+> **Complemento — consulta de estado laboral:** la sección siguiente lleva el contrato de personal/gimnasio a 0.4.0 al agregar `/status`; lista y membresías conservan el formato de 0.3.0.
+
+## Revisión del 23 de octubre: vinculación y bajas
+
+El gimnasio comunicó el flujo confirmado por el profesor: consulta de empleados, vinculación manual con socio y envío de evidencia. Se conserva la proyección mínima de lista; no se agrega DNI/email ni un alta automática. El ID no cambia por edición, baja lógica o reactivación y no se reasigna por la API.
+
+Para evitar inferir bajas de un recorrido paginado se agrega GET `/v1/employees/{id}/status`, limitado a identidad y estado laboral, con acceso gym/admin/service. No concede acceso administrativo ni cancela una membresía, y es compatible con [ADR-018](ADR-018-empleados-sin-candidatos.md): solo concierne a empleados registrados, activos o inactivos. OpenAPI 0.4.0 es una extensión compatible de la lista y la evidencia de 0.3.0. Se eligió esta consulta acotada antes que exponer toda la administración o exigir eventos externos aún no acordados.
+
+[ACUERDO-GIMNASIO](../ACUERDO-GIMNASIO.md) registra el perfil mensual propuesto y la elección del responsable de Car Cruds: costo neto repartido por meses contratados, con meses parciales pendientes. Car Cruds no calcula tarifas ni convierte desconocidos en cero; conserva fechas, historia y correcciones. Las definiciones semánticas y el acceso requieren confirmación del gimnasio, sin atribuir aprobación inexistente.
+
 ## Actualización del 22 de octubre de 2026
 
 Se conserva el sentido original: gimnasio consume la lista de Car Cruds y proporciona membresías, uso y gastos. Se retiró el alta saliente al gimnasio agregada posteriormente, por solicitud del responsable del proyecto. No se modifica el repositorio del otro equipo ni se implementa el hospital en esta etapa.

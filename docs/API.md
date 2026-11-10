@@ -88,6 +88,7 @@ Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementa
 | `GET /v1/employees` | Lista compartida de activos con `page` y `pageSize` | `200`, exclusivamente `employeeId`, `displayName` y metadatos de página. `admin`, `gym`, `service` |
 | `POST /v1/employees` | Alta laboral explícita con `displayName` y `active` | `201`, registro completo y encabezado `Location`. Solo `admin` |
 | `GET /v1/admin/employees` | Lista administrativa de activos e inactivos; paginada | `200`, ítems con `employeeId`, `displayName`, `active`. Solo `admin` |
+| `GET /v1/employees/{id}/status` | Estado laboral puntual de un empleado registrado, incluidos inactivos; sin parámetros de consulta | `200`, solo `employeeId` y `active`; `404` si no es un empleado registrado. `admin`, `gym`, `service`; no cancela membresías |
 | `GET /v1/employees/{id}` | Consulta administrativa individual | `200`, registro completo; `404` si no existe. Solo `admin` |
 | `PUT /v1/employees/{id}` | Sustituye `displayName` y `active`, ambos obligatorios | `200`, registro actualizado. Solo `admin` |
 | `DELETE /v1/employees/{id}` | Baja lógica repetible; conserva historia | `200`, registro con `active=false`. Solo `admin`; no cancela turnos ni membresías automáticamente |
@@ -114,7 +115,7 @@ Contrato: [clinic-integration-openapi.json](contracts/clinic-integration-openapi
 | `POST /v1/employees/clinic/requests/{requestId}/refresh` | Consulta turno conocido; cuerpo opcional con `appointmentId` para conciliación verificada | `200`, última evidencia local, que puede conservar incertidumbre. Solo `admin`; admite empleados inactivos |
 | `GET /v1/employees/reports/clinic` | Informe paginado con `personKind=employee` opcional, `page`, `pageSize` | `200`, última intención por empleado, incluidos inactivos; no enumera todos sus turnos externos. `admin`, `service` |
 
-Las cinco operaciones de administración individual rechazan parámetros de consulta. El informe admite únicamente su tipo y paginación, sin repeticiones. No existe API activa de candidatos.
+Las cinco operaciones de administración individual rechazan parámetros de consulta. El informe admite únicamente su tipo y paginación, sin repeticiones.
 
 El flujo es **vincular paciente → guardar intención → enviar → consultar/conciliar → informar**. Una referencia local estable recupera la intención correspondiente; reutilizarla con datos contradictorios produce conflicto. Para crear una nueva intención se requiere vínculo previo (`409 PATIENT_LINK_REQUIRED`); empleado inactivo produce `409 EMPLOYEE_INACTIVE` en las nuevas acciones correspondientes.
 

@@ -1,18 +1,16 @@
 # Especificación de alcance y requisitos
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en rama; [evidencia y límites de verificación](docs/EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](docs/EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
 
-**Revisión de alcance — 23/10/2026:** Empleados administra únicamente empleados. Se retira candidatos según [ADR-018](docs/adr/ADR-018-empleados-sin-candidatos.md); RF-10 y HU-10 conservan su identificador como retirados. Nuevos vínculos, intenciones y envíos que puedan crear turnos requieren empleado activo. La baja conserva historia y permite consultar/actualizar evidencia previa, sin cancelación automática. Los candidatos históricos se conservan sin API activa. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta solicitud y consulta a Turnos para socios 1.0.0, con clave privada, idempotencia persistida, recuperación explícita y esperas acotadas; no amplía el producto hacia frontend, facturación ni operaciones clínicas adicionales.
+**Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`.
 
-**Actualización de implementación — 22/10/2026:** la recepción e informe del gimnasio se describen en [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md). La solicitud y consulta de turnos del hospital, con vínculo de pacientes, intención persistente e informe, se implementan según [COMUNICACION-HOSPITAL](docs/COMUNICACION-HOSPITAL.md). La revisión del 23 de octubre indicada arriba sustituye el alcance de candidatos; aceptación externa, autenticación del hospital, pacientes reales e indicaciones provenientes del hospital siguen pendientes. Los estados históricos de cobertura de las secciones siguientes deben leerse con esta actualización.
-
-**Equipos externos:** gimnasio del grupo de Pablo (consume nuestra lista de empleados) y hospital del grupo de Octi (Car Cruds consume su API). Las referencias a “Clínica” en el diseño identifican al hospital de Octi. Contratos, entornos y credenciales siguen pendientes de acuerdo.
+La [revisión actual](docs/REVISION-E2-2026-11-08.md) verifica dependencias reales, recepción propia de membresías y contrato hospitalario aislado. El gimnasio de Pablo consume la lista de empleados; Car Cruds consume los turnos del hospital de Octi. Acceso operativo, devolución aceptada por el gimnasio y ensayo conjunto siguen pendientes. La indicación médica proveniente del hospital requiere una capacidad externa todavía no publicada. Los [pendientes actuales](docs/PENDIENTES-E2.md) precisan los aportes necesarios.
 
 | Campo | Valor |
 | --- | --- |
 | Proyecto | Car Cruds |
-| Versión documental | 0.4 |
-| Fecha | 23 de octubre de 2026 |
+| Versión documental | 0.5 |
+| Fecha de revisión | 8 de noviembre de 2026 |
 | Estado | Especificación vigente con cobertura parcial verificada del backend |
 | Hito | Entrega 2: 23 de octubre de 2026 |
 

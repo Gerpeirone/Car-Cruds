@@ -1,16 +1,18 @@
 # Estado de implementación de la entrega 2
 
+> **Corte vigente — 08/11/2026:** `main` en `19c4e06` incluye PR #5 y #6. La [revisión actual](REVISION-E2-2026-11-08.md) aprobó 155 pruebas/subpruebas propias con dependencias reales y carreras, sin omisiones ni fallos; smoke de 67 solicitudes, checkshared, contrato aislado del hospital y nueva traza de siete spans satisfactorios. La CI actual falla en el arranque de MongoDB y la operación conjunta externa sigue pendiente. [PENDIENTES-E2](PENDIENTES-E2.md) concentra las condiciones de cierre. Los cortes fechados siguientes conservan su evidencia histórica y no sustituyen este estado.
+
 > **Documentación posterior a E2 — 28/10/2026:** [API.md](API.md) y el visor Swagger local (`go run ./cmd/apidocs`) reúnen 34 operaciones HTTP implementadas: 32 de negocio y 2 técnicas comunes. Se agregan contratos de Clientes, Flota y operación técnica y se completan ejemplos y explicaciones de los contratos propios existentes, sin cambiar sus versiones funcionales ni las copias históricas/del proveedor. La validación local aprobó estructura OpenAPI, referencias, cobertura de rutas y 218 ejemplos; los recursos oficiales de Swagger UI 5.34.0 se verificaron por integridad. La suite propia `go test -race -count=1 -timeout 120s ./...` y `go vet ./...` finalizaron satisfactoriamente en Windows; las pruebas condicionadas por dependencias externas no configuradas se omiten y no acreditan integración real. Docker no estaba iniciado. El visor se comprobó en navegador con los seis contratos. Esta ampliación documental no constituye frontend de negocio, despliegue público ni aceptación externa.
 
 > **Adaptación clínica — 23/10/2026:** [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente al contrato Turnos para socios 1.0.0 fijado a `c0b65f4`: autenticación, idempotencia/procedencia persistidas, recuperación explícita, espera durable y códigos operativos desconocidos. Nuevas acciones y reintentos que puedan crear exigen empleado activo; evidencia anterior de inactivos y registros históricos se conservan. API administrativa clínica 0.3.0, personal/gimnasio 0.3.0 sin cambio. El corte local Windows ejecutó `go test -count=1 -json -timeout 120s ./...`: **127 pruebas/subpruebas aprobadas, 29 omitidas y ninguna fallida**; `go vet ./...` y pruebas/análisis del mock histórico satisfactorios. Las omisiones corresponden a dependencias reales no configuradas; con `CGO_ENABLED=0`, sin GCC ni Docker, no se verificaron detector de carreras, persistencia/concurrencia SQL ni gateway original. La suite de contrato compiló; su ejecución y las pruebas reales quedan para CI y no se presentan como aprobadas. Ninguna cifra histórica acredita socios 1.0.0. URL compartida, clave, pacientes reales, condiciones económicas y aceptación conjunta permanecen pendientes.
 
-> **Corte anterior de alcance — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) retiró candidatos y exigió empleado activo para nuevo vínculo, intención y primer envío; preservó historia y seguimiento de inactivos. Ese corte local obtuvo 107 pruebas/subpruebas aprobadas, 20 omitidas y ninguna fallida, Go 1.26.4 Windows sin detector de carreras, con análisis estático satisfactorio. Esos resultados no verifican ADR-019; la nota anterior presenta el corte de adaptación actual. El cuerpo siguiente conserva los resultados originales del 13/14/22 de octubre con sus límites.
+> **Corte anterior de alcance — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) limitó el servicio a empleados registrados y exigió empleado activo para nuevo vínculo, intención y primer envío; preservó historia y seguimiento de inactivos. Ese corte local obtuvo 107 pruebas/subpruebas aprobadas, 20 omitidas y ninguna fallida, Go 1.26.4 Windows sin detector de carreras, con análisis estático satisfactorio. Esos resultados no verifican ADR-019; la nota anterior presenta el corte de adaptación actual. El cuerpo siguiente conserva los resultados originales del 13/14/22 de octubre con sus límites.
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.3 |
-| Fecha de corte | 14 de octubre de 2026 |
-| Rama de trabajo | `features`; correcciones de cierre en `entrega-2/cierre` (PR #3) |
+| Versión documental | 0.4 |
+| Fecha de corte vigente | 8 de noviembre de 2026; evidencia histórica fechada por ensayo |
+| Base evaluada | `main`, `19c4e06`; PR #3, #5 y #6 integrados |
 | Estado | Backend propio verificado en entorno local; aceptación e integración externas pendientes |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 
@@ -20,15 +22,17 @@ Clientes y Flota aplican una organización por capas; Alquileres y Empleados sep
 
 El gateway autentica aplicaciones, encamina llamadas y limita concurrencia. NGINX distribuye solicitudes internas entre `fleet-a` y `fleet-b`. Redis almacena fichas exploratorias; Solr ofrece búsqueda derivada. RabbitMQ transporta cambios de vehículos y finalizaciones de alquiler mediante outbox y consumidores idempotentes. Jaeger recibe las trazas HTTP instrumentadas.
 
-Empleados implementa administración de personal y candidatos independientes. La lista activa pública para consumidores autorizados contiene exclusivamente `employeeId` y `displayName`, con paginación y conteo dentro de la misma instantánea de PostgreSQL. Es una API propia provisional, todavía sin aceptación ni acceso público acordados con el gimnasio.
+Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. La lista activa pública para consumidores autorizados contiene exclusivamente `employeeId` y `displayName`, con paginación y conteo dentro de la misma instantánea de PostgreSQL. Es una API propia provisional, todavía sin aceptación ni acceso público acordados con el gimnasio.
 
-Actualización del 22 de octubre: Car Cruds dispone de recepción HTTP propia de membresías, uso y gastos del gimnasio, persistencia con historia y deduplicación e informe administrativo por período y moneda. [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md) describe el contrato provisional 0.2.0 y sus límites. Se retiró el alta saliente al gimnasio por no corresponder al diseño original. La aceptación bilateral, el consumo real y el despliegue público permanecen pendientes; no se modificó el proyecto del gimnasio.
+Actualización del 22 de octubre: Car Cruds dispone de recepción HTTP propia de membresías, uso y gastos del gimnasio, persistencia con historia y deduplicación e informe administrativo por período y moneda. [COMUNICACION-GIMNASIO](COMUNICACION-GIMNASIO.md) describe el contrato propio 0.3.0 y sus límites; la versión 0.2.0 corresponde al corte histórico del 22 de octubre. Se retiró el alta saliente al gimnasio por no corresponder al diseño original. La aceptación bilateral, el consumo real y el despliegue público permanecen pendientes; no se modificó el proyecto del gimnasio.
 
-Hospital, ampliación del 22 de octubre: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el adaptador HTTP sobre las operaciones de Turnos observadas en `feature/entrega-2`, con vínculo de pacientes, intenciones durables, envío único, conciliación, historia e informe. Se agrega un escenario de contrato contra su código original fijado por commit, en un entorno aislado; la evidencia de ejecución se identifica separadamente en el PR. Identificación real de pacientes, contrato público de Turnos, autenticación y aceptación externas siguen pendientes.
+Hospital, estado vigente: [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) describe el adaptador autenticado de Turnos para socios 1.0.0, con intención durable, idempotencia, recuperación y consulta. La prueba contra gateway y Turnos originales en `c0b65f4` aprobó en laboratorio el 8 de noviembre. El contrato y el adaptador ya están disponibles; faltan URL, clave privada, pacientes habilitados, médicos y aceptación conjunta para operación real. El adaptador sobre rutas internas del 22 de octubre es histórico.
 
-La interfaz web permanece pendiente. El endpoint general de estado conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; cada flujo utiliza sus rutas específicas y muestra solo evidencia verificada y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
+En este corte la interfaz web permanecía pendiente; la entrega 3 agrega el frontend del alquiler y el panel del operador ([ENTREGA-3](ENTREGA-3.md)), mientras la interfaz de personal sigue pendiente. El endpoint general de estado conserva `503 NOT_CONFIGURED` porque no acredita acuerdos ni conexión externa; cada flujo utiliza sus rutas específicas y muestra solo evidencia verificada y faltantes. El mock histórico de alquileres continúa en su módulo independiente.
 
-## 2. Evidencia local registrada
+## 2. Evidencia histórica de octubre
+
+La evidencia vigente de noviembre se enlaza al inicio y en [EVIDENCIA-E2](EVIDENCIA-E2.md). La tabla siguiente conserva las mediciones originales.
 
 | Evidencia | Fecha | Resultado y alcance |
 | --- | --- | --- |
@@ -48,7 +52,7 @@ La interfaz web permanece pendiente. El endpoint general de estado conserva `503
 
 La suite final y el nuevo recorrido se ejecutaron después de la corrección Redis y la reconstrucción del entorno, sobre la revisión `8327268`. Las pruebas de presión utilizaron además `TEST_REDIS_EVICTION_ADDR` y `TEST_REDIS_EVICTION_PASSWORD`, con Redis separado. El recorrido anterior de 75 solicitudes y la traza del 13 de octubre se conservan como antecedentes.
 
-El recorrido verifica respuestas `401/403`, permisos de gimnasio y cliente, exclusión de candidatos, ambas réplicas de Flota, actualización de caché/búsqueda, idempotencia y cancelación persistentes. Dos reservas concurrentes produjeron una confirmación `201` y un conflicto `409`. Retiro y devolución resultaron repetibles; `RentalCompleted` terminó publicado en outbox y aplicado una sola vez en inbox/historial de Clientes.
+El recorrido verifica respuestas `401/403`, permisos de gimnasio y cliente, ambas réplicas de Flota, actualización de caché/búsqueda, idempotencia y cancelación persistentes. Dos reservas concurrentes produjeron una confirmación `201` y un conflicto `409`. Retiro y devolución resultaron repetibles; `RentalCompleted` terminó publicado en outbox y aplicado una sola vez en inbox/historial de Clientes.
 
 La actualización de Solr se observó en 1265 ms **desde el primer sondeo**. Ese intervalo no mide desde el commit de MongoDB y no acredita el objetivo de frescura extremo a extremo de D6.
 
@@ -86,7 +90,7 @@ La publicación de la lista para el gimnasio se prepara en [DESPLIEGUE](DESPLIEG
 La [revisión de cierre del 15 de octubre](REVISION-E2-2026-10-15.md) registra los cambios posteriores a este corte: validación remota de reservas fuera de transacción, verificador de la lista propia y correcciones del despliegue. Sus pruebas y limitaciones se presentan por separado de la evidencia del 13/14 de octubre.
 
 1. Acordar población, identificadores, contrato, credenciales y acceso de la lista con el gimnasio; comprobar su consumo real y mantener la capacidad accesible durante la evaluación.
-2. Obtener los contratos y accesos de gimnasio/hospital para implementar gastos, uso, necesidad de consulta, turnos y conciliación. Registrar información desconocida sin inferir resultados negativos.
+2. Acordar la devolución del gimnasio y recibir acceso/datos operativos del hospital. Recepción de gastos, solicitud y consulta de turnos ya están implementadas; la indicación externa de necesidad médica requiere una capacidad del hospital aún no publicada. Ver [PENDIENTES-E2](PENDIENTES-E2.md).
 3. Ampliar los ensayos locales de fallas/carga y la comparación de caché (fría y sin dependencia), validar la alternativa de escala y completar retención, alertas y operación conforme D10/D12/D13.
 4. Completar interfaz web, observabilidad operativa y condiciones de publicación cloud. Revisar la cobertura de las historias con el equipo y presentar la propuesta mediante pull request.
 5. Obtener aprobación antes de integrar en `main`; la verificación local no equivale a aceptación del consumidor ni de la cátedra.

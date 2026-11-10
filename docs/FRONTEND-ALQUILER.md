@@ -4,7 +4,7 @@
 | --- | --- |
 | Versión | 0.2 |
 | Fecha | 8 de noviembre de 2026 |
-| Estado | Implementado en rama; pruebas locales aprobadas; revisión visual pendiente |
+| Estado | Implementado en la entrega 3 (PR #8); pruebas locales aprobadas; revisión visual pendiente |
 | Hito | [Entrega 3](ENTREGA-3.md), primera etapa |
 | Actor | Cliente de laboratorio vinculado a un conductor existente |
 | Decisión técnica | [ADR-020](adr/ADR-020-frontend-alquiler.md) |

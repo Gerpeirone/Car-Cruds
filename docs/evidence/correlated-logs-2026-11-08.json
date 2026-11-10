@@ -1,0 +1,42 @@
+[
+  {
+    "service": "rentals",
+    "instance": "rentals",
+    "method": "POST",
+    "route": "POST /v1/reservations",
+    "status": 201,
+    "request_id": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a",
+    "trace_id": "fe8db5725630d5534c447e22ef010013",
+    "span_id": "f733a84ca385bc56"
+  },
+  {
+    "service": "customers",
+    "instance": "customers",
+    "method": "GET",
+    "route": "GET /v1/customers/{id}",
+    "status": 200,
+    "request_id": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a",
+    "trace_id": "fe8db5725630d5534c447e22ef010013",
+    "span_id": "a8866121b9564593"
+  },
+  {
+    "service": "fleet",
+    "instance": "fleet-b",
+    "method": "GET",
+    "route": "GET /v1/vehicles/{id}/quote",
+    "status": 200,
+    "request_id": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a",
+    "trace_id": "fe8db5725630d5534c447e22ef010013",
+    "span_id": "bc0b209065a5270e"
+  },
+  {
+    "service": "gateway",
+    "instance": "gateway",
+    "method": "POST",
+    "route": "/v1/reservations",
+    "status": 201,
+    "request_id": "2ed6ae58-302e-4c3e-89dc-47d90f78a72a",
+    "trace_id": "fe8db5725630d5534c447e22ef010013",
+    "span_id": "068040bea0612492"
+  }
+]
