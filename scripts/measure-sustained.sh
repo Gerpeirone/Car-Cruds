@@ -79,8 +79,15 @@ phase() {
 }
 
 # La marca de generación se conserva; solo se fuerza una carga fría del dato.
-docker compose exec -T redis sh -c \
-  'redis-cli --no-auth-warning -a "${REDIS_PASSWORD:?}" DEL "fleet:vehicle:{auto-001}:data" >/dev/null'
+# El prefijo debe coincidir con cmd/fleet: fleet:v1:<MONGODB_DATABASE>.
+database=$(docker compose exec -T fleet-a sh -c 'printf %s "${MONGODB_DATABASE:-fleet}"')
+if [[ ! $database =~ ^[A-Za-z0-9_-]+$ ]]; then
+  echo "MONGODB_DATABASE no es seguro para construir la clave de caché" >&2
+  exit 2
+fi
+cache_data_key="fleet:v1:${database}:vehicle:{auto-001}:data"
+docker compose exec -T -e CACHE_DATA_KEY="$cache_data_key" redis sh -c \
+  'redis-cli --no-auth-warning -a "${REDIS_PASSWORD:?}" DEL "$CACHE_DATA_KEY" >/dev/null'
 phase cold
 
 # La fase anterior deja la entrada vigente; una lectura explícita confirma el preflight caliente.

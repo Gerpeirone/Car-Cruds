@@ -1,6 +1,6 @@
 # Referencia de endpoints de Car Cruds
 
-**Fecha de revisión:** 8 de noviembre de 2026. **Alcance:** 35 operaciones HTTP implementadas: 32 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
+**Fecha de revisión:** 10 de noviembre de 2026. **Alcance:** 36 operaciones HTTP implementadas: 33 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
 
 ## 1. Consultar la documentación con Swagger
 
@@ -79,7 +79,7 @@ La creación exige una clave de 1 a 128 caracteres ASCII visibles, sin espacios 
 
 El precio queda congelado al reservar. Llegar a `endsOn` no devuelve el auto: un alquiler `ACTIVE` sigue impidiendo otro retiro hasta registrar su devolución. La cancelación solo aplica antes del retiro. Consultar primero no garantiza confirmar después; la transacción vuelve a validar agenda y condiciones.
 
-## 6. Empleados y gimnasio — 9 operaciones
+## 6. Empleados y gimnasio — 10 operaciones
 
 Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementación: `services/employees/adapters/httpapi/handler.go` y `memberships.go`.
 
@@ -89,6 +89,7 @@ Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementa
 | `POST /v1/employees` | Alta laboral explícita con `displayName` y `active` | `201`, registro completo y encabezado `Location`. Solo `admin` |
 | `GET /v1/admin/employees` | Lista administrativa de activos e inactivos; paginada | `200`, ítems con `employeeId`, `displayName`, `active`. Solo `admin` |
 | `GET /v1/employees/{id}` | Consulta administrativa individual | `200`, registro completo; `404` si no existe. Solo `admin` |
+| `GET /v1/employees/{id}/status` | Consulta puntual del estado laboral, incluidos empleados inactivos; no expone nombre, membresías ni datos clínicos | `200`, exclusivamente `employeeId` y `active`. `admin`, `gym`, `service`; `404` si no existe |
 | `PUT /v1/employees/{id}` | Sustituye `displayName` y `active`, ambos obligatorios | `200`, registro actualizado. Solo `admin` |
 | `DELETE /v1/employees/{id}` | Baja lógica repetible; conserva historia | `200`, registro con `active=false`. Solo `admin`; no cancela turnos ni membresías automáticamente |
 | `GET /v1/employees/integrations` | Marcador general de acuerdos/acceso externos pendientes | Siempre `503 NOT_CONFIGURED` en esta versión. `admin`, `service`; no sustituye las rutas específicas implementadas |

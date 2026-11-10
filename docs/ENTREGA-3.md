@@ -67,3 +67,14 @@ Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hos
 ## 8. Frescura de búsqueda — 9 de noviembre de 2026
 
 El recorrido `cmd/smoke` ahora mide alta, actualización de tarifa/versión y baja lógica desde antes de cada escritura hasta que la búsqueda refleja el cambio. En la [CI de la revisión `2dc9c61`](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42745574484/job/129597135342) las tres transiciones cumplieron la cota de 5 s. El método, sus límites y la evidencia figuran en [D6](adr/ADR-006-busqueda.md#medición-de-operación-normal--9-de-noviembre-de-2026). Falta ampliar a carga sostenida y recuperación.
+
+## 9. Criterio de cierre de evidencia del sistema
+
+El requisito «decisiones verificadas mediante evidencia del sistema» se considera cumplido en una revisión únicamente cuando coinciden estos cuatro controles:
+
+1. contratos OpenAPI, ejemplos, inventario de `API.md` y rutas implementadas sin diferencias;
+2. pruebas y análisis estático del backend sin fallos ni omisiones de las integraciones configuradas;
+3. Compose con dependencias reales, recorrido persistente, caché fría/caliente/fallback y frescura de Solr bajo carga satisfactorios;
+4. pruebas, build y revisión reproducible del frontend satisfactorios.
+
+La evidencia histórica conserva su revisión y alcance. No se traslada automáticamente a un commit nuevo: la ejecución de CI de esa revisión debe quedar enlazada aquí antes de declarar el punto cerrado. La publicación cloud y las pruebas con equipos externos siguen siendo requisitos separados.
