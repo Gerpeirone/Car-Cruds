@@ -772,3 +772,89 @@
     font-size: 16px;
   }
 }
+.operator-dashboard > .operator-task:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.operator-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 21px;
+}
+.operator-subnav a {
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.operator-subnav a.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+.operator-subnav a:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: 2px;
+}
+.operator-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+  margin-bottom: 21px;
+}
+.operator-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+}
+.operator-summary small {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #81996b;
+}
+.operator-summary strong {
+  font-size: 24px;
+  color: var(--ink);
+}
+.operator-subtitle {
+  margin: 36px 0 16px;
+  font-size: 20px;
+  color: var(--ink);
+}
+.operator-inline-field {
+  max-width: 420px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+.status-clinic-booked {
+  color: #4f7a35;
+  background: #edf5e5;
+  border-color: #dbe8ce;
+}
+.status-clinic-unknown {
+  color: #8a6a1f;
+  background: #f8f0dc;
+  border-color: #ecdfbd;
+}
+.status-clinic-rejected,
+.status-clinic-cancelled {
+  color: #8d7863;
+  background: #f2ece5;
+  border-color: #e6ded3;
+}
+@media (max-width: 560px) {
+  .operator-subnav a {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  .operator-summary strong {
+    font-size: 20px;
+  }
+}
