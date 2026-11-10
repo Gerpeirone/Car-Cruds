@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Empleados: API propia implementada",
-    "version": "0.3.0",
-    "description": "API propia provisional de Car Cruds, actualizada el 23 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación. La administración vigente gestiona únicamente empleados; las rutas de candidatos fueron retiradas y responden 404."
+    "version": "0.4.0",
+    "description": "API propia provisional de Car Cruds, actualizada el 23 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación. La administración vigente gestiona únicamente empleados; las rutas de candidatos fueron retiradas y responden 404. La versión 0.4.0 agrega la lectura puntual del estado laboral por ID (`GET /v1/employees/{id}/status`), propuesta propia pendiente de confirmación del gimnasio; conserva sin cambios la lista y el cuerpo de evidencia."
   },
   "x-contract-status": "implemented-own-api-not-externally-agreed",
   "security": [
@@ -1055,6 +1055,134 @@
           "Gimnasio"
         ]
       }
+    },
+    "/v1/employees/{id}/status": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Identificador estable del empleado en Car Cruds.",
+          "example": "employee-001"
+        }
+      ],
+      "get": {
+        "operationId": "getEmployeeEmploymentStatus",
+        "summary": "Estado laboral de un empleado conocido",
+        "description": "Solo gym, admin o service; sin parámetros de consulta. Incluye empleados inactivos y devuelve únicamente employeeId y active. Un 404 o un error técnico no prueban una baja, y active=false no cancela ni desvincula una membresía. La ausencia en una página de la lista no sustituye esta consulta.",
+        "responses": {
+          "200": {
+            "description": "Estado laboral explícito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeStatus"
+                },
+                "example": {
+                  "employeeId": "employee-001",
+                  "active": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Consulta inválida."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticación ausente o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "Autenticación ausente o inválida."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso para la capacidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "Rol sin permiso para la capacidad."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El identificador no corresponde a un empleado conocido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Empleado inexistente."
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Solo GET.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "METHOD_NOT_ALLOWED",
+                  "message": "Método no permitido."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible; conservar la incertidumbre.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAVAILABLE",
+                  "message": "Persistencia no disponible."
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "admin",
+          "gym",
+          "service"
+        ],
+        "tags": [
+          "Empleados"
+        ]
+      }
     }
   },
   "components": {
@@ -1618,6 +1746,28 @@
             }
           ],
           "totals": []
+        }
+      },
+      "EmployeeStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "active"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "description": "Identificador estable, no reasignado por la API a otra persona; se conserva al cambiar nombre, dar de baja o reactivar."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Estado laboral en Car Cruds; false no cancela una membresía automáticamente."
+          }
+        },
+        "example": {
+          "employeeId": "employee-001",
+          "active": false
         }
       }
     }

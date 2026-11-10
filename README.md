@@ -100,7 +100,7 @@ Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/
 
 Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
 
-`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.3.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes.
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. Gimnasio puede leer esa lista y enviar evidencia a `POST /v1/employees/membership-evidence`; no puede administrar empleados ni consultar informes internos. El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.4.0, es una propuesta propia provisional. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo. El acuerdo bilateral y el acceso público siguen pendientes. Puede verificar una baja con `GET /v1/employees/{id}/status`, que devuelve solo `employeeId` y `active` (incluye inactivos) y no cancela membresías; es una propuesta de Car Cruds descrita en [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md), pendiente de confirmación del gimnasio.
 
 ## Documentación
 

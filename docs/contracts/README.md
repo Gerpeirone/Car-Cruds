@@ -28,7 +28,7 @@ Empleados concentra la integración con el gimnasio del grupo de Pablo y el hosp
 
 | Artefacto | Capacidad | Estado |
 | --- | --- | --- |
-| [employees-openapi.json](employees-openapi.json) | Lista de empleados activos, administración de empleados y evidencia/informe de membresías | Contrato OpenAPI 3.0.3 de la API propia implementada, versión 0.3.0 provisional |
+| [employees-openapi.json](employees-openapi.json) | Lista de empleados activos, estado laboral por ID, administración de empleados y evidencia/informe de membresías | Contrato OpenAPI 3.0.3 de la API propia implementada, versión 0.4.0 provisional |
 | [employees-openapi-draft.json](employees-openapi-draft.json) y [EMPLOYEES.md](EMPLOYEES.md) | Propuesta inicial de lista compartida | Antecedente de diseño; no es un acuerdo externo ni la referencia completa del servicio actual |
 | [rentals-openapi.json](rentals-openapi.json) | Disponibilidad, reservas, mantenimiento, retiro y devolución | Contrato del backend propio implementado; revisar junto con [su guía](../../services/rentals/README.md) |
 | [openapi-v1.json](openapi-v1.json) y [RESERVAS.md](RESERVAS.md) | Disponibilidad/reservas de entrega 1 | Contrato histórico 1.0.0 del mock; conservado sin cambiar su significado |

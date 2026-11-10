@@ -1,5 +1,7 @@
 # Integraciones de personal — Car Cruds
 
+> **Propuesta de bajas — gimnasio:** `GET /v1/employees/{id}/status` (contrato 0.4.0) permite comprobar la baja de un empleado ya vinculado sin cancelar membresías; es propuesta propia, ver [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md). Su aceptación sigue en EXT-01 y EXT-03.
+
 > **Estado operativo — 08/11/2026:** contrato y adaptador hospitalarios integrados y probados en laboratorio. Acceso compartido, aceptación del gimnasio y ensayo conjunto siguen abiertos; [PENDIENTES-E2](PENDIENTES-E2.md) enumera los aportes necesarios sin exponer credenciales.
 
 **Revisión vigente — 23/10/2026:** Empleados administra exclusivamente personal registrado; [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, fijado a `c0b65f4`. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; evidencia previa de inactivos se conserva. La adaptación agrega clave privada, idempotencia persistida, recuperación explícita y espera durable sin ampliar el producto hacia otras operaciones clínicas. La validación de la rama y la aceptación conjunta se registran por separado.
@@ -95,7 +97,7 @@ Estos son estados administrativos internos propuestos. No representan nombres de
 | --- | --- | --- | --- |
 | EXT-01 | Población de empleados compartida, activos/inactivos y cambios de altas/bajas | Gimnasio y responsable de personal | Define qué lista puede publicarse |
 | EXT-02 | Identificadores y vinculación de personas; campos mínimos y permisos | Ambos equipos externos | Evita vincular información a la persona incorrecta |
-| EXT-03 | Aceptar contrato propio 0.3.0, paginación y compatibilidad de la lista | Gimnasio | Contrato implementado y verificado; aceptación bilateral pendiente |
+| EXT-03 | Aceptar contrato propio 0.4.0, paginación, compatibilidad de la lista y consulta de estado laboral `/status` | Gimnasio | Contrato implementado y verificado; aceptación bilateral pendiente |
 | EXT-04 | Aceptar mecanismo y contrato propios de devolución de membresías, uso y costos | Gimnasio | Recepción implementada; falta productor del gimnasio y ensayo conjunto |
 | EXT-05 | Significado de uso/no uso, período, evidencia y correcciones | Gimnasio | Permite interpretar el informe sin inferencias |
 | EXT-06 | Costos individuales, gastos por empleado, totales, moneda, período y reglas de imputación | Gimnasio y empresa | Informe propio implementado; faltan datos y semántica aceptados para acreditar gastos reales |

@@ -7,7 +7,7 @@ La [referencia de endpoints y Swagger](../../docs/API.md) reúne administración
 | Fecha de alcance | 23 de octubre de 2026 |
 | Estado | Implementación propia con PostgreSQL; integración externa pendiente de aceptación |
 | Entrada ejecutable | [cmd/employees](../../cmd/employees/main.go) |
-| Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.3.0 |
+| Contrato de personal y gimnasio | [OpenAPI 3.0.3](../../docs/contracts/employees-openapi.json), versión 0.4.0 |
 | Contrato administrativo de turnos | [OpenAPI 3.0.3](../../docs/contracts/clinic-integration-openapi.json), versión 0.3.0 |
 | Decisiones vigentes | [ADR-018 — Alcance de Empleados](../../docs/adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019 — Turnos para socios](../../docs/adr/ADR-019-consumo-turnos-socios.md) |
 
@@ -35,6 +35,7 @@ Las operaciones usan autenticación Bearer de aplicación. El rol procede del mi
 | Ruta | Métodos | Roles y comportamiento |
 | --- | --- | --- |
 | `/v1/employees` | GET | `gym`, `service`, `admin`: lista activa mínima |
+| `/v1/employees/{id}/status` | GET | `gym`, `service`, `admin`: solo ID y estado laboral, incluidos inactivos |
 | `/v1/employees` | POST | `admin`: alta con `displayName` y `active` |
 | `/v1/admin/employees` | GET | `admin`: lista con activos e inactivos |
 | `/v1/employees/{id}` | GET / PUT / DELETE | `admin`: consulta, reemplazo y baja lógica |
