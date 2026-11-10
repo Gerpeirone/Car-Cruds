@@ -187,8 +187,12 @@ export function moment(iso: string | null | undefined) {
   if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat("es-AR", {
     timeZone: "America/Buenos_Aires",
-    dateStyle: "short",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
   }).format(date);
 }
 export function currentPeriod() {
