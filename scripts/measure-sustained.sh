@@ -20,8 +20,12 @@ done
 [[ -f .env ]] || { echo "Falta .env; ejecutar go run ./cmd/devsetup" >&2; exit 2; }
 
 mkdir -p output tmp
-bin="tmp/sustained-load$( [[ "${OS:-}" == Windows_NT ]] && echo .exe )"
+suffix=$( [[ "${OS:-}" == Windows_NT ]] && echo .exe )
+bin="tmp/sustained-load$suffix"
+smoke="tmp/sustained-smoke$suffix"
 go build -mod=readonly -o "$bin" ./cmd/load
+# Compilar antes de iniciar la carga: con caché fría, `go run` consumiría la ventana de búsqueda.
+go build -mod=readonly -o "$smoke" ./cmd/smoke
 route=/v1/vehicles/auto-001
 redis_restored=false
 search_pid=
@@ -101,7 +105,7 @@ search_seconds=30
   -concurrency "$concurrency" -duration "${search_seconds}s" > output/sustained-search.json &
 search_pid=$!
 sleep 1
-go run ./cmd/smoke -history | tee output/sustained-smoke.log
+"$smoke" -history | tee output/sustained-smoke.log
 kill -0 "$search_pid" 2>/dev/null || { echo "La carga de búsqueda terminó antes que el recorrido de frescura" >&2; exit 1; }
 wait "$search_pid"
 search_pid=
