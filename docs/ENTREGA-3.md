@@ -53,3 +53,13 @@ El corte documental inicial se conserva en el historial. El incremento actual im
 - **CI.** El trabajo Compose vuelca diagnóstico de los contenedores y los logs de MongoDB cuando falla el arranque. La primera ejecución mostró la causa: el runner usa kernel 7.0 y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores (ver ARCHITECTURE §9). Elegir la versión de MongoDB queda para el equipo, porque afecta los volúmenes existentes.
 
 Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud), el token y consumo del gimnasio, y la URL y clave del hospital.
+
+## 7. Ampliación del 9 de noviembre (noche)
+
+- **CI en verde.** La CI usa MongoDB 7.0 solo en el runner ([compose.ci.yaml](../compose.ci.yaml)) y los tres trabajos aprobaron, incluido el contrato con el hospital. Local y VM siguen con MongoDB 8.
+- **Circuit breaker de caché (HU-27).** Con Redis detenido, la ficha pasó de p50 155 ms a 1,6 ms con concurrencia 1, y el breaker se cerró solo al volver Redis ([evidencia](evidence/cache-breaker-2026-11-09.json)).
+- **Tablero y alertas (HU-20, D11).** [compose.observability.yaml](../compose.observability.yaml) agrega Prometheus y Grafana con cinco alertas; hay [simulacro con captura](evidence/alert-drill-2026-11-09.json).
+- **Revisión de interfaz reproducible.** [scripts/ui-review](../scripts/ui-review/review.mjs) recorre 33 pantallas contra cualquier URL y falla si encuentra problemas.
+- **Guion.** [GUION-PRESENTACION](GUION-PRESENTACION.md) incluye el recorrido, los requisitos con su evidencia, preguntas probables y plan B.
+
+Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hospital.
