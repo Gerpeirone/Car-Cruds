@@ -3,9 +3,9 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D6: búsqueda |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
-| Estado | Índice operativo; frescura y reconstrucción avanzada pendientes |
+| Versión documental | 0.4 |
+| Fecha | 9 de noviembre de 2026 |
+| Estado | Índice operativo; frescura normal medida en CI; reconstrucción avanzada pendiente |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto
@@ -20,7 +20,7 @@ Flota ofrece una abstracción de búsqueda y traduce filtros/orden hacia Solr en
 
 Las modificaciones de Flota generan `VehicleChanged.v1` mediante outbox. El indexador interno aplica upsert con identificador estable y comparación atómica de versión: duplicados o versiones anteriores no revierten la proyección. Se incluyen modificaciones y bajas, con tratamiento de eliminación por definir. El índice se actualiza aunque no haya búsquedas de usuarios.
 
-Se conserva como **objetivo propuesto** un retraso máximo de 5 segundos en operación normal, desde el cambio durable en Flota hasta su visibilidad en consulta. No es una medición obtenida. Ante atrasos se observará backlog y antigüedad; se conserva la fuente para reconstrucción.
+Se conserva un objetivo de retraso máximo de 5 segundos en operación normal, desde el cambio durable en Flota hasta su visibilidad en consulta. Ante atrasos se observará backlog y antigüedad; se conserva la fuente para reconstrucción. La primera medición reproducible de este objetivo se registra abajo; no sustituye una distribución bajo carga.
 
 ### Medición reproducible de frescura
 
@@ -42,6 +42,10 @@ Validar filtros, paginación y orden; duplicados, desorden, bajas y reconstrucci
 
 Solr implementa filtros, orden y paginación; VehicleChanged se publica ante cambios. El indexador lee la versión vigente de MongoDB y aplica actualización condicional de Solr para impedir retroceso. Las bajas son lógicas y dejan de aparecer como activas. El recorrido observó una actualización en 1265 ms desde el primer sondeo; no mide el objetivo de 5 s desde commit. La reconstrucción inicial vuelve a encolar la fuente hacia el mismo core: la solicitud responde 202 pendiente y una comparación posterior verificó dos documentos activos y versiones iguales. La propuesta de índice nuevo con intercambio controlado sigue sin implementar. Ver [persistencia/reindexación](../evidence/runtime-persistence.json).
 
+## Medición de operación normal — 9 de noviembre de 2026
+
+El [trabajo Compose de CI](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42745574484/job/129597135342), revisión `2dc9c61`, terminó correctamente. El paso «Verificar API y publicación de historial» ejecutó el recorrido `cmd/smoke` con PostgreSQL, MongoDB, RabbitMQ, Solr, gateway y Flota reales. El nuevo control falla si alta, actualización o baja superan individualmente 5 s desde antes de su escritura HTTP; las tres pasaron, por lo que cada cota observada fue **menor que 5 s**. Los milisegundos exactos están en los logs del trabajo; no se copiaron a este documento porque la API pública de logs respondió 403 sin autenticación. Este resultado no prueba un máximo bajo carga sostenida, recuperación del broker ni reconstrucción del índice.
+
 ## 5. Referencias e historial
 
 Material en `clases.zip`: `teoria/05-motores-de-busqueda.md` y `practica/clase-5-solr.md`. [D3](ADR-015-persistencia-v2.md), [D5](ADR-016-comunicacion-v2.md).
@@ -50,3 +54,4 @@ Material en `clases.zip`: `teoria/05-motores-de-busqueda.md` y `practica/clase-5
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera propuesta de búsqueda y actualización del índice |
 | 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |
+| 0.4 | 9 de noviembre de 2026 | Método y primera medición de frescura desde la escritura en CI |

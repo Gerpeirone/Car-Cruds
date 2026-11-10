@@ -63,3 +63,7 @@ Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud),
 - **Guion.** [GUION-PRESENTACION](GUION-PRESENTACION.md) incluye el recorrido, los requisitos con su evidencia, preguntas probables y plan B.
 
 Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hospital.
+
+## 8. Frescura de búsqueda — 9 de noviembre de 2026
+
+El recorrido `cmd/smoke` ahora mide alta, actualización de tarifa/versión y baja lógica desde antes de cada escritura hasta que la búsqueda refleja el cambio. En la [CI de la revisión `2dc9c61`](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42745574484/job/129597135342) las tres transiciones cumplieron la cota de 5 s. El método, sus límites y la evidencia figuran en [D6](adr/ADR-006-busqueda.md#medición-de-operación-normal--9-de-noviembre-de-2026). Falta ampliar a carga sostenida y recuperación.
