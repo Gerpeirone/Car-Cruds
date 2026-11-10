@@ -1,0 +1,240 @@
+{
+  "date": "2026-11-09",
+  "change": "Circuit breaker de la caché de Flota (services/fleet/breaker.go): 5 fallas consecutivas lo abren por 2 s; luego una sola sonda; Invalidate nunca se omite",
+  "tool": "bash scripts/measure-cache.sh 5",
+  "environment": "Docker Desktop local (Windows 11, 20 CPU lógicas), compose.yaml completo; generador y servicios en el mismo equipo",
+  "route": "/v1/vehicles/auto-001 por gateway, rol client",
+  "comparisonFallback": {
+    "withoutBreaker": [
+      [
+        {
+          "concurrency": 1,
+          "rps": 6.4,
+          "p50Ms": 154.942,
+          "p95Ms": 161.022
+        },
+        {
+          "concurrency": 8,
+          "rps": 2819.5,
+          "p50Ms": 2.282,
+          "p95Ms": 3.424
+        }
+      ],
+      [
+        {
+          "concurrency": 1,
+          "rps": 6.5,
+          "p50Ms": 154.924,
+          "p95Ms": 156.991
+        },
+        {
+          "concurrency": 8,
+          "rps": 2754,
+          "p50Ms": 2.53,
+          "p95Ms": 3.605
+        }
+      ]
+    ],
+    "withBreaker": [
+      [
+        {
+          "concurrency": 1,
+          "rps": 396.7,
+          "p50Ms": 1.579,
+          "p95Ms": 2.763
+        },
+        {
+          "concurrency": 8,
+          "rps": 3315.1,
+          "p50Ms": 2.178,
+          "p95Ms": 3.256
+        }
+      ],
+      [
+        {
+          "concurrency": 1,
+          "rps": 405.9,
+          "p50Ms": 1.57,
+          "p95Ms": 2.639
+        },
+        {
+          "concurrency": 8,
+          "rps": 3419.7,
+          "p50Ms": 2.15,
+          "p95Ms": 3.188
+        }
+      ]
+    ]
+  },
+  "runs": [
+    {
+      "measuredAt": "2026-11-10T02:32:18.284Z",
+      "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+      "workingTreeDirty": true,
+      "phases": [
+        {
+          "name": "warm",
+          "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 22217,
+            "miss": 0,
+            "error": 0
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 3212,
+              "rps": 642.1,
+              "p50Ms": 1.438,
+              "p95Ms": 2.459,
+              "p99Ms": 3.872,
+              "httpStatuses": {
+                "200": 3212
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 19004,
+              "rps": 3799.8,
+              "p50Ms": 2.13,
+              "p95Ms": 3.029,
+              "p99Ms": 3.747,
+              "httpStatuses": {
+                "200": 19004
+              },
+              "transportErrors": 0
+            }
+          ]
+        },
+        {
+          "name": "fallback",
+          "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 0,
+            "miss": 0,
+            "error": 18
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 1984,
+              "rps": 396.7,
+              "p50Ms": 1.579,
+              "p95Ms": 2.763,
+              "p99Ms": 5.934,
+              "httpStatuses": {
+                "200": 1984
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 16649,
+              "rps": 3315.1,
+              "p50Ms": 2.178,
+              "p95Ms": 3.256,
+              "p99Ms": 4.206,
+              "httpStatuses": {
+                "200": 16649
+              },
+              "transportErrors": 0
+            }
+          ]
+        }
+      ],
+      "redisRestored": true
+    },
+    {
+      "measuredAt": "2026-11-10T02:33:10.127Z",
+      "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+      "workingTreeDirty": true,
+      "phases": [
+        {
+          "name": "warm",
+          "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 22419,
+            "miss": 2,
+            "error": 0,
+            "bypass": 0
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 3264,
+              "rps": 652.8,
+              "p50Ms": 1.426,
+              "p95Ms": 2.567,
+              "p99Ms": 4.434,
+              "httpStatuses": {
+                "200": 3264
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 19156,
+              "rps": 3829.9,
+              "p50Ms": 2.119,
+              "p95Ms": 2.942,
+              "p99Ms": 3.737,
+              "httpStatuses": {
+                "200": 19156
+              },
+              "transportErrors": 0
+            }
+          ]
+        },
+        {
+          "name": "fallback",
+          "revision": "19dff9b107fd3c5512187819ab8b7fdb36b7d398",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 0,
+            "miss": 0,
+            "error": 18,
+            "bypass": 19117
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 2030,
+              "rps": 405.9,
+              "p50Ms": 1.57,
+              "p95Ms": 2.639,
+              "p99Ms": 3.994,
+              "httpStatuses": {
+                "200": 2030
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 17104,
+              "rps": 3419.7,
+              "p50Ms": 2.15,
+              "p95Ms": 3.188,
+              "p99Ms": 3.821,
+              "httpStatuses": {
+                "200": 17104
+              },
+              "transportErrors": 0
+            }
+          ]
+        }
+      ],
+      "redisRestored": true
+    }
+  ],
+  "recovery": "Tras restaurar Redis, una carga de 3 s llevó fleet_cache_breaker_state a 0 en ambas réplicas (log fleet cache breaker closed); fleet_cache_breaker_openings_total=2 en fleet-a durante las dos corridas.",
+  "observations": [
+    "Con Redis detenido y concurrencia 1 la ficha pasó de unas 6,5 req/s con p50 155 ms a unas 400 req/s con p50 1,6 ms.",
+    "Solo 18 lecturas intentaron Redis durante la fase sin caché (las que abren el breaker y las sondas); 19117 se derivaron directo a MongoDB (bypass).",
+    "La fase caliente no cambió: el breaker no agrega costo con Redis sano."
+  ],
+  "limits": "Medición local, corta y con datos demo; no es capacidad de producción ni incluye fase fría ni duración sostenida."
+}
