@@ -1136,6 +1136,7 @@ em {
 }
 .detail-car .illustration-label {
   font-size: 8px;
+  color: #56604d;
 }
 .detail-specs {
   display: grid;
@@ -2252,7 +2253,7 @@ em {
     padding-bottom: 22px;
   }
   .detail-car .illustration-label {
-    font-size: 6px;
+    font-size: 9px;
   }
   .detail-specs {
     gap: 8px;
