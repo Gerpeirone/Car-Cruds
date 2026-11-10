@@ -24,12 +24,31 @@ Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> C
 ## 2. Requisitos de la VM
 
 - **Kernel Linux menor que 6.19.** MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores por un error de TCMalloc/rseq ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). La excepción para 7.0.14+ no se aplica en Ubuntu, porque `uname -r` informa `7.0.0` ([SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848), abierto). Usar Ubuntu 24.04 con su kernel estándar 6.8, sin HWE, y no Ubuntu 26.04. Comprobar con `uname -r` antes de desplegar.
-- Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo (la base de D13, USD 44/mes en Lightsail). Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
+- Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo. Lightsail figura en D13 como una estimación de laboratorio, no como proveedor obligatorio; el enunciado no fija proveedor. Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
 - Puertos abiertos en el firewall del proveedor: 22 (SSH), 80 y 443. No abrir otros.
 - Un nombre DNS que apunte a la IP pública. Sin dominio propio sirve `sslip.io`: la IP `203.0.113.10` se publica como `203-0-113-10.sslip.io`. El script lo configura solo si `PUBLIC_HOST` está vacío.
 - IP estática (en Lightsail, "Static IP"), para que la URL no cambie al reiniciar.
 
 ## 3. Puesta en marcha
+
+### Criterios de aceptación de la VM
+
+Antes de ejecutar el script, registrar proveedor, tamaño, versión de Ubuntu, resultado de `uname -r`, IP fija y nombre DNS. El despliegue se considera **publicado** solo cuando, desde una red externa a la VM:
+
+1. `https://<PUBLIC_HOST>/` y `/operador/personal` devuelven la interfaz con certificado TLS válido.
+2. `http://<PUBLIC_HOST>/` redirige a HTTPS; `/internal/ready` no expone información interna.
+3. `/v1/employees` sin token devuelve 401 y `go run ./cmd/checkshared -url https://<PUBLIC_HOST>` con `AUTH_GYM_TOKEN` en el entorno termina correctamente.
+4. Un recorrido de reserva y una operación del panel funcionan con los servicios y datos persistidos; `docker compose ... ps` muestra los contenedores saludables.
+5. Tras reiniciar la VM, la entrada HTTPS y los datos siguen disponibles. Registrar fecha, revisión Git, URL, comandos y resultados, sin copiar tokens ni datos sensibles.
+
+Estos controles verifican nuestra publicación. El consumo del Gimnasio y el acceso al Hospital se registrarán por separado cuando ambos grupos estén listos.
+
+### Secuencia
+
+1. Crear Ubuntu 24.04 con IP fija, 8 GB de RAM y al menos 2 vCPU. Comprobar `uname -r` antes de instalar: el script rechaza kernels 6.19 o superiores.
+2. Abrir 22 solo para administración y 80/443 para acceso público; apuntar el DNS a la IP fija.
+3. Clonar la revisión aprobada para el ensayo y ejecutar el script. Mientras la propuesta esté en revisión, usar `feature/entrega-3-pendientes`; la versión evaluable final debe quedar en `main`.
+4. Ejecutar los criterios de aceptación desde otra red y registrar la evidencia en este documento.
 
 ```bash
 git clone https://github.com/Gerpeirone/Car-Cruds.git
@@ -42,7 +61,7 @@ bash scripts/deploy-vm.sh
 
 La rama indicada contiene la interfaz y la entrada pública de la entrega 3. Cambiarla a `main` únicamente cuando el equipo haya aprobado e integrado la propuesta. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
-Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (seis escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
+Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (siete escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
 
 Verificación local de la topología, el 9 de noviembre, con `PUBLIC_HOST=localhost` (Caddy emite un certificado interno) y `docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait`:
 
