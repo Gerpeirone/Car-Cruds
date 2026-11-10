@@ -43,6 +43,8 @@ Antes de ejecutar el script, registrar proveedor, tamaño, versión de Ubuntu, r
 
 Estos controles verifican nuestra publicación. El consumo del Gimnasio y el acceso al Hospital se registrarán por separado cuando ambos grupos estén listos.
 
+Desde una máquina externa, ejecutar `bash scripts/check-public.sh https://<PUBLIC_HOST>`. El control verifica TLS, redirección HTTP, rutas de la interfaz, cierre de `/internal/*` y autenticación de la API. Si `AUTH_GYM_TOKEN` está definido **en el entorno de esa máquina**, también ejecuta `cmd/checkshared` para validar lista y permisos; no es necesario copiar el `.env` de la VM. Un código de salida cero acredita solamente las comprobaciones ejecutadas, y la salida indica si se omitió el contrato autenticado.
+
 ### Secuencia
 
 1. Crear Ubuntu 24.04 con IP fija, 8 GB de RAM y al menos 2 vCPU. Comprobar `uname -r` antes de instalar: el script rechaza kernels 6.19 o superiores.
