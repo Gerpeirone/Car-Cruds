@@ -32,6 +32,7 @@ export async function request<T>(
         ...init.headers,
       },
     });
+    if (response.status === 204) return undefined as T;
     let data: unknown;
     try {
       data = await response.json();
