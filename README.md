@@ -1,5 +1,11 @@
 # Car Cruds
 
+> **Cierre de entrega 3 — 09/11/2026:** [F3-03](docs/PERSONAL-OPERADOR.md) suma al panel la gestión de personal, membresías y turnos; la interfaz se revisó en navegador real sin violaciones WCAG AA; Caddy publica la interfaz y la API ([despliegue](docs/DESPLIEGUE.md)); la caché se midió caliente y con Redis detenido; las limitaciones están en [ARCHITECTURE §9](docs/ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada). Estado por etapa en [ENTREGA-3](docs/ENTREGA-3.md). Además: circuit breaker de caché medido, tablero y alertas ([compose.observability.yaml](compose.observability.yaml)) y [guion de la presentación](docs/GUION-PRESENTACION.md).
+
+> **Panel del operador — 08/11/2026:** [F3-02](docs/PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Planificación de entrega 3 — 08/11/2026:** [etapas](docs/ENTREGA-3.md) y [especificación F3-01](docs/FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 a F3-03 están implementados y se revisaron en navegador real el 09/11 ([evidencia](docs/EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre)). La publicación cloud y los accesos externos siguen pendientes.
+
 **Sistema de gestión de alquiler de vehículos**<br/>
 Trabajo Práctico Integrador · Arquitectura de Software 2026<br/>
 Universidad Católica de Córdoba · Facultad de Ingeniería

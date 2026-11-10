@@ -1,0 +1,180 @@
+{
+  "date": "2026-11-09",
+  "tool": "bash scripts/measure-cache.sh 5 (cmd/load, closed-loop GET, concurrencias 1 y 8, 5 s por etapa)",
+  "environment": "Docker Desktop local (Windows 11, 20 CPU lógicas), compose.yaml completo; generador y servicios en el mismo equipo",
+  "route": "/v1/vehicles/auto-001 por gateway, rol client",
+  "phases": {
+    "warm": "Redis saludable y clave caliente tras 1 s de calentamiento",
+    "fallback": "Redis detenido con docker compose stop; Flota lee MongoDB"
+  },
+  "runs": [
+    {
+      "measuredAt": "2026-11-10T01:56:38.909Z",
+      "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+      "workingTreeDirty": true,
+      "phases": [
+        {
+          "name": "warm",
+          "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 22035,
+            "miss": 0,
+            "error": 0
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 3269,
+              "rps": 653.5,
+              "p50Ms": 1.49,
+              "p95Ms": 2.374,
+              "p99Ms": 3.44,
+              "httpStatuses": {
+                "200": 3269
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 18765,
+              "rps": 3751,
+              "p50Ms": 2.133,
+              "p95Ms": 3.08,
+              "p99Ms": 3.813,
+              "httpStatuses": {
+                "200": 18765
+              },
+              "transportErrors": 0
+            }
+          ]
+        },
+        {
+          "name": "fallback",
+          "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 0,
+            "miss": 0,
+            "error": 14136
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 33,
+              "rps": 6.4,
+              "p50Ms": 154.942,
+              "p95Ms": 161.022,
+              "p99Ms": 161.408,
+              "httpStatuses": {
+                "200": 33
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 14102,
+              "rps": 2819.5,
+              "p50Ms": 2.282,
+              "p95Ms": 3.424,
+              "p99Ms": 4.593,
+              "httpStatuses": {
+                "200": 14102
+              },
+              "transportErrors": 0
+            }
+          ]
+        }
+      ],
+      "redisRestored": true
+    },
+    {
+      "measuredAt": "2026-11-10T01:57:28.443Z",
+      "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+      "workingTreeDirty": true,
+      "phases": [
+        {
+          "name": "warm",
+          "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 22059,
+            "miss": 0,
+            "error": 0
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 3323,
+              "rps": 664.4,
+              "p50Ms": 1.394,
+              "p95Ms": 2.334,
+              "p99Ms": 3.223,
+              "httpStatuses": {
+                "200": 3323
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 18735,
+              "rps": 3746.7,
+              "p50Ms": 2.136,
+              "p95Ms": 3.11,
+              "p99Ms": 3.828,
+              "httpStatuses": {
+                "200": 18735
+              },
+              "transportErrors": 0
+            }
+          ]
+        },
+        {
+          "name": "fallback",
+          "revision": "10c7219d4588bdfd1685349b92cd809c2dbfbf12",
+          "workingTreeDirty": true,
+          "cacheCounterDelta": {
+            "hit": 0,
+            "miss": 0,
+            "error": 13807
+          },
+          "stages": [
+            {
+              "concurrency": 1,
+              "requests": 33,
+              "rps": 6.5,
+              "p50Ms": 154.924,
+              "p95Ms": 156.991,
+              "p99Ms": 157.272,
+              "httpStatuses": {
+                "200": 33
+              },
+              "transportErrors": 0
+            },
+            {
+              "concurrency": 8,
+              "requests": 13773,
+              "rps": 2754,
+              "p50Ms": 2.53,
+              "p95Ms": 3.605,
+              "p99Ms": 5.055,
+              "httpStatuses": {
+                "200": 13773
+              },
+              "transportErrors": 0
+            }
+          ]
+        }
+      ],
+      "redisRestored": true
+    }
+  ],
+  "observations": [
+    "Con caché caliente todas las lecturas fueron hits (22035 y 22059): MongoDB no recibió lecturas de la ficha durante la fase.",
+    "Sin Redis, cada lectura cayó a MongoDB (contador error: 14136 y 13807) y todas respondieron 200: la caché no es un punto único de falla.",
+    "Con concurrencia 1 y Redis detenido cada solicitud esperó el deadline de 150 ms de la caché (p50 155 ms, unas 6,5 req/s). El log de Flota muestra lookup redis: i/o timeout.",
+    "Con concurrencia 8 el pool de go-redis informó failed to dial after 5 attempts y falló rápido; la latencia volvió a unos 2,5 ms y el rendimiento fue un 25 % menor que con caché.",
+    "Conclusión: la caché elimina las lecturas a MongoDB de la ficha y mejora el rendimiento; ante una caída de Redis el costo depende del modo de falla. Un circuit breaker evitaría pagar el deadline en cada lectura (HU-27, pendiente)."
+  ],
+  "limits": "Medición local, corta y con datos demo; no es capacidad de producción ni incluye fase fría ni duración sostenida."
+}

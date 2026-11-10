@@ -3,31 +3,54 @@
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.2 |
-| Fecha de revisión | 8 de noviembre de 2026 |
-| Estado | Configuración preparada; VM y URL pública pendientes |
-| Objetivo | Dar acceso al gimnasio durante la evaluación y acreditar la publicación cloud exigida para la presentación grupal |
+| Fecha de revisión | 9 de noviembre de 2026 |
+| Estado | Configuración con interfaz web verificada con HTTPS local; VM y URL pública pendientes |
+| Objetivo | Publicar la interfaz completa y la capacidad compartida, dar acceso al gimnasio durante la evaluación y acreditar la publicación cloud exigida para la presentación grupal |
 
 ## 1. Topología
 
 Una VM Linux ejecuta el mismo `compose.yaml` del entorno local, más [compose.deploy.yaml](../compose.deploy.yaml), que agrega **Caddy** como única entrada pública:
 
 ```text
-Internet ──HTTPS 443──> Caddy ──HTTP──> gateway ──> Clientes / Flota (NGINX, 2 réplicas) / Alquileres / Empleados
+Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> Clientes / Flota (NGINX, 2 réplicas) / Alquileres / Empleados
+                               └─ resto  ──> web (NGINX, interfaz estática)
 ```
 
 - Caddy obtiene y renueva el certificado con Let's Encrypt para `PUBLIC_HOST` y redirige HTTP a HTTPS.
-- Las rutas `/internal/*` no se publican; el resto llega al gateway, que exige el token Bearer.
+- Las rutas `/internal/*` responden 404 en Caddy. `/v1/*` llega directo al gateway, que exige el token Bearer: gimnasio y hospital usan la misma URL que antes. Cualquier otra ruta la sirve el contenedor `web` (SPA del cliente, del operador y de personal), que no publica puertos propios.
 - PostgreSQL, MongoDB, Redis, RabbitMQ, Solr y Jaeger quedan ligados a `127.0.0.1` de la VM: no son accesibles desde Internet.
 - Es la configuración de laboratorio de [D13](adr/ADR-013-capacidad-costos.md): una VM, sin alta disponibilidad.
 
 ## 2. Requisitos de la VM
 
-- Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo (la base de D13, USD 44/mes en Lightsail). Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
+- **Kernel Linux menor que 6.19.** MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores por un error de TCMalloc/rseq ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). La excepción para 7.0.14+ no se aplica en Ubuntu, porque `uname -r` informa `7.0.0` ([SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848), abierto). Usar Ubuntu 24.04 con su kernel estándar 6.8, sin HWE, y no Ubuntu 26.04. Comprobar con `uname -r` antes de desplegar.
+- Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo. Lightsail figura en D13 como una estimación de laboratorio, no como proveedor obligatorio; el enunciado no fija proveedor. Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
 - Puertos abiertos en el firewall del proveedor: 22 (SSH), 80 y 443. No abrir otros.
 - Un nombre DNS que apunte a la IP pública. Sin dominio propio sirve `sslip.io`: la IP `203.0.113.10` se publica como `203-0-113-10.sslip.io`. El script lo configura solo si `PUBLIC_HOST` está vacío.
 - IP estática (en Lightsail, "Static IP"), para que la URL no cambie al reiniciar.
 
 ## 3. Puesta en marcha
+
+### Criterios de aceptación de la VM
+
+Antes de ejecutar el script, registrar proveedor, tamaño, versión de Ubuntu, resultado de `uname -r`, IP fija y nombre DNS. El despliegue se considera **publicado** solo cuando, desde una red externa a la VM:
+
+1. `https://<PUBLIC_HOST>/` y `/operador/personal` devuelven la interfaz con certificado TLS válido.
+2. `http://<PUBLIC_HOST>/` redirige a HTTPS; `/internal/ready` no expone información interna.
+3. `/v1/employees` sin token devuelve 401 y `go run ./cmd/checkshared -url https://<PUBLIC_HOST>` con `AUTH_GYM_TOKEN` en el entorno termina correctamente.
+4. Un recorrido de reserva y una operación del panel funcionan con los servicios y datos persistidos; `docker compose ... ps` muestra los contenedores saludables.
+5. Tras reiniciar la VM, la entrada HTTPS y los datos siguen disponibles. Registrar fecha, revisión Git, URL, comandos y resultados, sin copiar tokens ni datos sensibles.
+
+Estos controles verifican nuestra publicación. El consumo del Gimnasio y el acceso al Hospital se registrarán por separado cuando ambos grupos estén listos.
+
+Desde una máquina externa, ejecutar `bash scripts/check-public.sh https://<PUBLIC_HOST>`. El control verifica TLS, redirección HTTP, rutas de la interfaz, cierre de `/internal/*` y autenticación de la API. Si `AUTH_GYM_TOKEN` está definido **en el entorno de esa máquina**, también ejecuta `cmd/checkshared` para validar lista y permisos; no es necesario copiar el `.env` de la VM. Un código de salida cero acredita solamente las comprobaciones ejecutadas, y la salida indica si se omitió el contrato autenticado.
+
+### Secuencia
+
+1. Crear Ubuntu 24.04 con IP fija, 8 GB de RAM y al menos 2 vCPU. Comprobar `uname -r` antes de instalar: el script rechaza kernels 6.19 o superiores.
+2. Abrir 22 solo para administración y 80/443 para acceso público; apuntar el DNS a la IP fija.
+3. Clonar la revisión aprobada para el ensayo y ejecutar el script. Mientras la propuesta esté en revisión, usar `codex/despliegue-vm-entrega-3` (contiene `feature/entrega-3` y `feature/entrega-3-pendientes`); la versión evaluable final debe quedar en `main`.
+4. Ejecutar los criterios de aceptación desde otra red y registrar la evidencia en este documento.
 
 ```bash
 git clone https://github.com/Gerpeirone/Car-Cruds.git
@@ -38,9 +61,21 @@ bash scripts/deploy-vm.sh
 
 [deploy-vm.sh](../scripts/deploy-vm.sh) instala Docker si falta, genera `.env` con credenciales aleatorias (mediante `cmd/devsetup` dentro de un contenedor Go), define `PUBLIC_HOST` y levanta todo con `--wait`. Es repetible: conserva `.env` y los volúmenes de datos. Para actualizar, `git pull` y volver a ejecutarlo.
 
-La preparación de E2 y las integraciones están integradas en `main`. Antes de publicar, revisar el commit elegido y el estado de CI: la ejecución de `19c4e06` falló al iniciar MongoDB. La [revisión](REVISION-E2-2026-11-08.md) describe el resultado local y sus límites. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
+La preparación de E2, las integraciones y la entrega 3 (interfaz, entrada pública y observabilidad) deben estar integradas en `main` antes de publicar; mientras el equipo no apruebe esa integración, usar la rama de la propuesta aprobada. Antes de publicar, revisar el commit elegido y el estado de CI: la ejecución de `19c4e06` falló al iniciar MongoDB 8 en el runner, y la CI de entrega 3 lo evita con MongoDB 7.0 ([compose.ci.yaml](../compose.ci.yaml)); la VM debe usar un kernel menor que 6.19. La [revisión](REVISION-E2-2026-11-08.md) describe el resultado local de E2 y sus límites. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
-Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (seis escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
+Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (siete escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
+
+Verificación local de la topología, el 9 de noviembre, con `PUBLIC_HOST=localhost` (Caddy emite un certificado interno) y `docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait`:
+
+| Solicitud | Resultado |
+| --- | --- |
+| `https://localhost/` y `/operador/personal` (enlace directo) | 200, `index.html` de la SPA |
+| `https://localhost/v1/employees` sin token | 401 del gateway |
+| `https://localhost/v1/employees` con token del gimnasio | 200, lista mínima |
+| `https://localhost/internal/ready` | 404 de Caddy, sin cuerpo |
+| `http://localhost/` | 308 a HTTPS |
+
+La interfaz se revisó en navegador sobre esa misma entrada ([evidencia](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre)). Esto no acredita DNS público, un certificado de Let's Encrypt ni acceso desde Internet.
 
 Comprobación desde fuera de la VM:
 
@@ -73,6 +108,7 @@ La herramienta exige HTTPS fuera de loopback, rechaza redirecciones y comprueba 
 | Estado | `docker compose -f compose.yaml -f compose.deploy.yaml ps` |
 | Registros de la entrada | `docker compose -f compose.yaml -f compose.deploy.yaml logs -f caddy gateway` |
 | Trazas (Jaeger) | Túnel SSH: `ssh -L 16686:127.0.0.1:16686 <vm>` y abrir `http://localhost:16686` |
+| Tablero y alertas | Agregar `-f compose.observability.yaml` a los comandos de Compose y `GRAFANA_ADMIN_PASSWORD` al `.env` (`openssl rand -hex 24`). Túnel `ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <vm>`: Grafana en `http://localhost:3000` y alertas en `http://localhost:9090/alerts` |
 | Detener | `docker compose -f compose.yaml -f compose.deploy.yaml down` (conserva datos) |
 
 La capacidad compartida debe permanecer accesible hasta finalizar la evaluación: no detener la VM sin acordarlo con el gimnasio.

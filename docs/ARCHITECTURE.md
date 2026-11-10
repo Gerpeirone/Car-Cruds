@@ -1,15 +1,21 @@
 # Documento de arquitectura — Car Cruds
 
-> **Verificación — 08/11/2026:** [revisión actual](REVISION-E2-2026-11-08.md) sobre `main` (`19c4e06`): suite real, contrato hospitalario aislado y traza aprobados. La CI actual falla al iniciar MongoDB. Los diagramas representan fronteras y conexiones previstas; las conexiones externas aún no acreditan operación conjunta. [PENDIENTES-E2](PENDIENTES-E2.md) distingue bloqueos externos y trabajo posterior.
+> **Verificación — 08/11/2026:** [revisión de E2](REVISION-E2-2026-11-08.md) sobre `main` (`19c4e06`): suite real, contrato hospitalario aislado y traza aprobados. La CI de esa revisión falló al iniciar MongoDB 8 en el runner; la entrega 3 lo corrige con MongoDB 7.0 solo en CI (sección 9). Los diagramas representan fronteras y conexiones previstas; las conexiones externas aún no acreditan operación conjunta. [PENDIENTES-E2](PENDIENTES-E2.md) distingue bloqueos externos y trabajo posterior.
 
-**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
+> **Cierre de entrega 3 — 09/11/2026:** [F3-03](PERSONAL-OPERADOR.md) agrega al panel del operador empleados, informe de membresías del gimnasio y seguimiento de turnos médicos. La entrada pública de [DESPLIEGUE](DESPLIEGUE.md) sirve ahora la interfaz por Caddy y deriva `/v1/*` al gateway; se verificó con HTTPS local, sin VM pública todavía. La revisión en navegador real, la comparación de caché y las limitaciones actualizadas se registran en [EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre) y en la sección 9.
+
+> **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Planificación de entrega 3 — 08/11/2026 (actualizada 09/11):** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el frontend del alquiler sobre la API vigente. La revisión visual en navegador se completó el 9 de noviembre; la publicación cloud sigue pendiente.
+
+**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos; las tablas, migraciones y referencias históricas se conservan sin acceso activo. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
 
 | Campo | Valor |
 | --- | --- |
 | Versión documental | 0.5 |
-| Fecha de revisión | 8 de noviembre de 2026 |
-| Estado | Backend y adaptador hospitalario implementados y verificados localmente; operación conjunta y frontend pendientes |
-| Hito | Entrega 2 — 23 de octubre de 2026 |
+| Fecha de revisión | 9 de noviembre de 2026 |
+| Estado | Backend, frontend de cliente/operador/personal y entrada pública preparados; VM pública y aceptación externa pendientes |
+| Hito | Presentación grupal — 11 o 13 de noviembre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
@@ -54,7 +60,8 @@ flowchart TB
     Gym["Gimnasio<br/>Consumo externo pendiente"]
     Clinic["Hospital<br/>Contrato pendiente"]
     subgraph System["Car Cruds"]
-        Web["Frontend web<br/>Pendiente"]
+        Edge["Caddy<br/>HTTPS público"]
+        Web["Frontend web<br/>React · NGINX"]
         GW["Gateway Go<br/>Autenticación y proxy"]
         Customers["Clientes · Go<br/>Capas"]
         Rentals["Alquileres · Go<br/>Hexagonal"]
@@ -69,7 +76,9 @@ flowchart TB
         EDB[("PostgreSQL Empleados")]
         FDB[("MongoDB Flota")]
 
-        Web -.->|"Previsto"| GW
+        Edge -->|"/v1/*"| GW
+        Edge -->|"Interfaz"| Web
+        Web -->|"/v1/* mismo origen"| GW
         GW --> Customers
         GW --> Rentals
         GW --> Employees
@@ -84,7 +93,7 @@ flowchart TB
         A --> FDB
         B --> FDB
     end
-    User -->|"HTTP local con Bearer"| GW
+    User -->|"HTTPS con Bearer"| Edge
     Gym -.->|"Lista propia; acceso por acordar"| GW
     Employees -.->|"Cliente observado; acceso compartido pendiente"| Clinic
     classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
@@ -93,13 +102,13 @@ flowchart TB
     classDef pending fill:#eee,color:#333,stroke:#888,stroke-dasharray:5 5;
     class GW,Customers,Rentals,Employees,A,B app;
     class CDB,RDB,EDB,FDB data;
-    class LB support;
-    class Web,Gym,Clinic pending;
+    class LB,Edge,Web support;
+    class Gym,Clinic pending;
 ```
 
 **Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. El hospital se consumirá directamente desde Empleados; no a través de frontend ni gateway propio.
 
-La entrada Docker está publicada únicamente en loopback. Las llamadas internas son HTTP/JSON autenticadas. HTTPS público se configurará antes de publicar la capacidad. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
+En local, gateway y web se publican únicamente en loopback. En la VM, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway y el resto a la interfaz estática. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
 
 ```mermaid
 flowchart TB
@@ -180,7 +189,7 @@ El flujo clínico conserva vínculo explícito con paciente, intención durable,
 
 Flota utiliza outbox embebido en el documento MongoDB, con máximo 128 pendientes: si está lleno se rechaza el cambio antes de confirmar. El indexador consulta la versión vigente y actualiza Solr condicionalmente; duplicados y mensajes atrasados no deben retroceder la proyección. Se configuraron colas y entrega durable; reproceso operativo y alertas requieren cierre.
 
-Solr se actualiza ante cambios sin esperar búsquedas. El objetivo de frescura de 5 s desde commit sigue pendiente de medición completa. La reconstrucción inicial reencola la fuente en el mismo core y se verificó su resultado; el índice nuevo con intercambio controlado permanece previsto.
+Solr se actualiza ante cambios sin esperar búsquedas. El [recorrido de CI](adr/ADR-006-busqueda.md#medición-de-operación-normal--9-de-noviembre-de-2026) midió alta, actualización y baja desde antes de cada escritura HTTP: las tres quedaron visibles en menos de 5 s, una cota superior del retraso desde commit en operación normal. Faltan distribuciones bajo carga y recuperación. La reconstrucción inicial reencola la fuente en el mismo core y se verificó su resultado; el índice nuevo con intercambio controlado permanece previsto.
 
 Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un llenado anterior tras invalidación exitosa y mientras Redis conserva la marca. `volatile-lru` protege las marcas de expulsión; una prueba real con 69 expulsiones preservó V2 y rechazó V1. Las marcas crecen en memoria: falta una política de limpieza. Pérdida/vaciado de Redis elimina esa garantía; OOM o indisponibilidad habilitan fallback acotado. La tarifa autoritativa sigue en MongoDB. La comparación caliente/fallback registró cero lecturas de ficha MongoDB durante 8461 hits y 7395 lecturas fuente con Redis detenido. Todas las respuestas fueron 200; la latencia no mejoró uniformemente. [D7](adr/ADR-007-cache.md) conserva método, números y pendientes de fase fría/línea base deshabilitada.
 
@@ -188,22 +197,32 @@ Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un 
 
 NGINX distribuye a dos réplicas con detección pasiva. Los tiempos e intentos están en [D12](adr/ADR-012-balanceo-carga.md); el límite de lectura del proxy mide inactividad, no un deadline total. Alquileres limita las validaciones internas de confirmación a 1 s por llamada y conserva el presupuesto propio. Dos réplicas no eliminan los puntos únicos de gateway, LB y fuentes.
 
-Se implementaron deadlines, bulkheads, pools, fallback y outbox. Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). Los proveedores externos no se ensayaron.
+Se implementaron deadlines, bulkheads, pools, fallback, outbox y un circuit breaker en la caché de Flota (cinco fallas consecutivas lo abren por 2 s; después pasa una sola sonda). Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). Los proveedores externos no se ensayaron.
 
-Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. Jaeger exportó una traza de reserva con siete spans en cuatro servicios. Las métricas tienen rutas estables y exposición interna; colector, tableros, alertas y contexto de traza por AMQP siguen pendientes. [D11](adr/ADR-011-observabilidad.md) diferencia instrumentación de operación.
+Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. Jaeger exportó una traza de reserva con siete spans en cuatro servicios. Las métricas tienen rutas estables y exposición interna. La superposición de observabilidad agrega Prometheus (recolección cada 5 s y cinco reglas de alerta) y un tablero de Grafana; el contexto de traza por AMQP sigue pendiente. [D11](adr/ADR-011-observabilidad.md) diferencia instrumentación de operación.
 
 [D13](adr/ADR-013-capacidad-costos.md) registra la primera carga de disponibilidad, el límite de admisión de gateway, una alternativa y estimación de laboratorio cloud. No extrapola el entorno local de 12 CPU a las VM propuestas.
 
-## 9. Aspectos por resolver
+## 9. Limitaciones conocidas y deuda técnica aceptada
 
-| Aspecto | Pendiente |
-| --- | --- |
-| Capacidad compartida | Contrato aceptado, identidad/población, URL y consumo real del gimnasio |
-| Integraciones | Prueba aislada contra gateway de socios aprobada el 8 de noviembre; faltan aceptación conjunta, pacientes reales, URL/clave y condiciones económicas |
-| Presentación | Frontend y acceso público HTTPS |
-| Operación | Respaldos, retención de marcas/eventos, métricas/tableros/alertas y reproceso |
-| Evidencia | Ampliar frescura, comparación fría/sin dependencia de caché y carga sostenida, fallas y alternativa de escala |
-| Revisión | Aceptación del equipo y de cátedra; aprobación antes de integrar a main |
+Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila indica si es una limitación externa, una deuda aceptada conscientemente o un pendiente de operación.
+
+| Tema | Situación actual | Tipo | Mitigación o próximo paso |
+| --- | --- | --- | --- |
+| Publicación cloud | Caddy, interfaz y script de VM verificados con HTTPS local; no hay VM ni URL pública | Pendiente de infraestructura | Ejecutar [deploy-vm.sh](../scripts/deploy-vm.sh) en la VM de D13 y `checkshared` desde fuera |
+| Gimnasio | Lista propia, recepción de evidencia e informe implementados; sin consumo real ni contrato aceptado | Externa | Entregar URL y token del gimnasio por canal privado; registrar su consumo |
+| Hospital | Adaptador probado contra el código original del proveedor; sin URL, clave ni pacientes reales en un entorno compartido; faltan aceptación conjunta y condiciones económicas | Externa | Configurar `CLINIC_BASE_URL` y `CLINIC_API_KEY`; sin ellos el envío responde `503 NOT_CONFIGURED` y la interfaz lo informa |
+| Caída de Redis | Las lecturas siguen respondiendo desde MongoDB. Un circuit breaker evita esperar el deadline de 150 ms en cada lectura: con concurrencia 1 pasó de p50 155 ms a 1,6 ms ([antes](evidence/cache-comparison-2026-11-09.json), [después](evidence/cache-breaker-2026-11-09.json)) | Resuelto | La invalidación no se omite nunca; alerta `CacheFlotaSinRedis` |
+| Marcas de versión en Redis | No tienen TTL y crecen con la cantidad de vehículos | Deuda aceptada | Política de limpieza; aceptable con la flota de laboratorio |
+| Identidad | Tokens por aplicación (cliente, operador, gimnasio, servicio); no hay cuentas personales ni auditoría por persona | Deuda aceptada | Proveedor de identidad; la interfaz mantiene el token solo en memoria |
+| Escrituras sin idempotencia | Alta de empleado, alta de mantenimiento y edición de empleado (sin versión, último escritor gana) | Deuda aceptada | La interfaz bloquea reenvíos inciertos y pide verificar antes de repetir |
+| API incompleta | No hay listado general de reservas, ni edición/baja de clientes, ni consulta/cancelación de mantenimiento | Deuda aceptada | Consulta por código o ID; la interfaz no simula operaciones inexistentes |
+| Puntos únicos de falla | Una VM, un gateway, un balanceador y una instancia de cada almacén | Deuda aceptada (D13) | Dos réplicas de Flota; la alta disponibilidad queda fuera del laboratorio |
+| Observabilidad | Logs JSON, trazas HTTP en Jaeger, Prometheus con cinco alertas y tablero de Grafana ([compose.observability.yaml](../compose.observability.yaml), [simulacro](evidence/alert-drill-2026-11-09.json)); no hay notificación saliente ni contexto de traza por AMQP | Deuda aceptada | Canal de notificación y propagación de trazas por mensajería (D11) |
+| CI y kernel | El runner `ubuntu-24.04` usa el kernel `7.0.0-1017-azure` y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912), [SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848)). La CI usa MongoDB 7.0 mediante [compose.ci.yaml](../compose.ci.yaml) y volvió a pasar completa | Externa, mitigada | La CI prueba una versión mayor distinta de la de local y VM; volver a 8 cuando MongoDB corrija la detección. La VM debe usar un kernel menor que 6.19 ([DESPLIEGUE](DESPLIEGUE.md)) |
+| Operación | Sin respaldos, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
+| Evidencia | La caché se midió caliente y con Redis detenido; Solr cumplió una cota de 5 s para alta, cambio y baja en CI; faltan fase fría y carga sostenida | Pendiente | Ampliar en la defensa individual |
+| Revisión | Aceptación del equipo y de la cátedra; toda integración a `main` requiere aprobación del equipo mediante pull request | Pendiente | Ver [AGENTS.md](../AGENTS.md) |
 
 ## 10. Referencias e historial
 
@@ -216,3 +235,4 @@ Los ADR-001/003/005/008 conservan su cuerpo histórico y fueron reemplazados por
 | 0.1 | 7 de octubre de 2026 | Diseño inicial de tres servicios |
 | 0.2 | 10 de octubre de 2026 | Empleados, integración administrativa y balanceador |
 | 0.3 | 14 de octubre de 2026 | Arquitectura del backend implementado y límites de evidencia/operación |
+| 0.5 | 9 de noviembre de 2026 | Frontend completo, Caddy con interfaz y limitaciones/deuda técnica para la presentación grupal |

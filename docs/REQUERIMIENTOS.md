@@ -1,6 +1,10 @@
 # Requerimientos del sistema — Car Cruds
 
-**Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`.
+**Alcance vigente — 08/11/2026:** Empleados administra exclusivamente personal registrado, membresías y seguimiento administrativo de turnos. Nuevos vínculos, intenciones y envíos que puedan crear requieren empleado activo; la baja permite consultar y actualizar evidencia previa, sin cancelación automática. El hospital publica Turnos para socios 1.0.0 y su adaptador autenticado e idempotente está integrado en `main`. Decisiones: [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) y [ADR-019](adr/ADR-019-consumo-turnos-socios.md).
+
+> **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
+
+> **Entrega 3 — 09/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el frontend del alquiler: acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 a F3-03 (alquiler, panel del operador y personal) están implementados y se revisaron en navegador real ([evidencia](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre)); la entrada pública se verificó con HTTPS local. La VM pública y los accesos externos siguen pendientes.
 
 La [revisión actual](REVISION-E2-2026-11-08.md) verifica dependencias reales, recepción propia de membresías y contrato hospitalario aislado. El gimnasio de Pablo consume la lista de empleados; Car Cruds consume los turnos del hospital de Octi. Acceso operativo, devolución aceptada por el gimnasio y ensayo conjunto siguen pendientes. La indicación médica proveniente del hospital requiere una capacidad externa todavía no publicada. Los [pendientes actuales](PENDIENTES-E2.md) precisan los aportes necesarios.
 

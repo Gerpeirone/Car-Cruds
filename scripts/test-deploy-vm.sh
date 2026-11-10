@@ -35,6 +35,10 @@ cat > "$root/bin/curl" <<'MOCK'
 #!/usr/bin/env bash
 printf '203.0.113.10\n'
 MOCK
+cat > "$root/bin/uname" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s\n' "${MOCK_KERNEL:-6.8.0-ubuntu}"
+MOCK
 chmod +x "$root/bin/"*
 export PATH="$root/bin:$PATH"
 
@@ -83,4 +87,10 @@ touch invalid-config
 if deploy; then fail 'se aceptó una configuración inválida'; fi
 ! grep -q 'up -d' docker-calls || fail 'se intentó desplegar una configuración inválida'
 
-printf 'PASS: seis escenarios del script con comandos falsos; sin instalaciones ni acceso externo\n'
+scenario incompatible-kernel
+export MOCK_KERNEL=7.0.0-azure
+if deploy; then fail 'se aceptó un kernel incompatible'; fi
+[[ ! -f docker-calls ]] || fail 'se invocó Docker con un kernel incompatible'
+unset MOCK_KERNEL
+
+printf 'PASS: siete escenarios del script con comandos falsos; sin instalaciones ni acceso externo\n'

@@ -52,6 +52,7 @@ def implemented_routes():
         "services/customers/presentation/http.go",
         "services/rentals/adapters/httpapi/handler.go",
         "internal/platform/runtime.go",
+        "cmd/gateway/main.go",
     ):
         text = (ROOT / name).read_text(encoding="utf-8")
         routes.update(re.findall(r'"(GET|POST|PUT|DELETE|PATCH) (/(?:v1|internal)/[^"\s]+)"', text))
