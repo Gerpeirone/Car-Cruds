@@ -72,7 +72,7 @@ func maxInFlight() (int, error) {
 func handler() (http.Handler, func(context.Context) error, error) {
 	mux := http.NewServeMux()
 	services := map[string]string{"customers": platform.Env("CUSTOMERS_URL", "http://customers:8080"), "fleet": platform.Env("FLEET_URL", "http://fleet-lb:8080"), "rentals": platform.Env("RENTALS_URL", "http://rentals:8080"), "employees": platform.Env("EMPLOYEES_URL", "http://employees:8080")}
-	routes := map[string]string{"/v1/customers": "customers", "/v1/vehicles": "fleet", "/v1/reservations": "rentals", "/v1/availability": "rentals", "/v1/maintenance": "rentals", "/v1/employees": "employees", "/v1/admin/employees": "employees", "/v1/candidates": "employees"}
+	routes := map[string]string{"/v1/customers": "customers", "/v1/vehicles": "fleet", "/v1/reservations": "rentals", "/v1/availability": "rentals", "/v1/maintenance": "rentals", "/v1/employees": "employees", "/v1/admin/employees": "employees"}
 	for path, name := range routes {
 		p, err := proxy(services[name])
 		if err != nil {

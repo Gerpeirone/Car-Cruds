@@ -18,11 +18,13 @@ La verificación de disponibilidad consulta en paralelo a los cuatro servicios c
 
 ## Alcance de acceso
 
-El gimnasio puede leer la lista mínima de empleados activos. Las operaciones administrativas, candidatos y datos de clientes no forman parte de ese permiso. Los acuerdos externos y el entorno público permanecen pendientes; los tokens identifican aplicaciones del laboratorio, no cuentas personales.
+El gimnasio puede leer la lista mínima de empleados activos. Las operaciones administrativas y datos de clientes no forman parte de ese permiso. Los acuerdos externos y el entorno público permanecen pendientes; los tokens identifican aplicaciones del laboratorio, no cuentas personales.
 
-La futura llamada al hospital saldrá directamente de Empleados mediante su adaptador. El gateway propio no actúa como proxy saliente al proveedor. No se implementó una interfaz HTML ni terminación TLS pública.
+La llamada al hospital sale directamente de Empleados mediante su adaptador. Las rutas de candidatos fueron retiradas del enrutamiento activo y, con autenticación válida, devuelven 404. El gateway propio no actúa como proxy saliente al proveedor. No se implementó una interfaz HTML ni terminación TLS pública.
 
 ## Ejecución y evidencia
+
+La [referencia de endpoints](../docs/API.md) explica todas las rutas de negocio encaminadas y las dos rutas técnicas propias del gateway. El visor Swagger se inicia por separado con `go run ./cmd/apidocs` en `http://127.0.0.1:8090/api/`, sin abrir excepciones a la autenticación del gateway.
 
 `compose.yaml` configura los destinos en red privada y publica la entrada únicamente en loopback. [cmd/smoke](../cmd/smoke/README.md) ejercita el conjunto desde este punto de entrada. El recorrido, los roles y una traza real se registran en [ESTADO-IMPLEMENTACION](../docs/ESTADO-IMPLEMENTACION.md).
 

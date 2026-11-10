@@ -46,7 +46,6 @@ type harness struct {
 	vehicle       vehicle
 	vehicleIntent bool
 	employeeID    string
-	candidateID   string
 	customerID    string
 	intents       []reservationIntent
 	completedID   string

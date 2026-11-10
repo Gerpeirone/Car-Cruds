@@ -12,7 +12,7 @@ Car Cruds garantiza por su API un `employeeId` estable: se genera al registrar, 
 
 ## 2. Perfil mensual propuesto
 
-La estructura de la evidencia 0.2.0 se conserva. OpenAPI 0.3.0 agrega únicamente la lectura puntual del estado laboral; no cambia los campos del POST. Este perfil concreta el significado que proponemos para el intercambio con Pablo. La API genérica conserva períodos opacos y monedas separadas: todavía no rechaza otros períodos/monedas válidos, y no calcula ni verifica tarifas del gimnasio.
+La estructura de la evidencia se conserva. OpenAPI 0.4.0 agrega únicamente la lectura puntual del estado laboral sobre la versión 0.3.0; no cambia los campos del POST. Este perfil concreta el significado que proponemos para el intercambio con Pablo. La API genérica conserva períodos opacos y monedas separadas: todavía no rechaza otros períodos/monedas válidos, y no calcula ni verifica tarifas del gimnasio.
 
 | Campo | Definición propuesta para este intercambio |
 | --- | --- |
@@ -62,7 +62,7 @@ Se agrega `GET /v1/employees/{employeeId}/status`, con el mismo Bearer. Respuest
 {"employeeId":"employee-001","active":false}
 ```
 
-Permite consultar un empleado conocido aunque ya no aparezca en la lista activa. Devuelve solamente identidad y estado laboral: no expone nombre, DNI, email, candidatos, informes ni información clínica. `404` significa que el identificador no corresponde a un empleado conocido; `503`, un problema técnico. Ninguno autoriza inferir una baja ni reutilizar el ID.
+Permite consultar un empleado conocido aunque ya no aparezca en la lista activa. Devuelve solamente identidad y estado laboral: no expone nombre, DNI, email, informes ni información clínica. `404` significa que el identificador no corresponde a un empleado conocido; `503`, un problema técnico. Ninguno autoriza inferir una baja ni reutilizar el ID.
 
 El gimnasio puede comprobar periódicamente los IDs que ya tiene vinculados, además de recorrer la lista. `active:false` informa una baja laboral; **no cancela ni desvincula automáticamente al socio o su membresía**. Esas decisiones corresponden a su administración. Una ausencia en cualquier página o incluso en recorridos concurrentes no sustituye esta consulta.
 
@@ -73,13 +73,13 @@ El gimnasio puede comprobar periódicamente los IDs que ya tiene vinculados, ade
 - **Paginación:** hasta 100 empleados por página; orden estable por ID, instantánea por página, no entre todas las páginas.
 - **Capacidad:** el gateway admite por defecto hasta 64 solicitudes simultáneas globales, compartidas con el resto del sistema y configurables. No es una cuota de solicitudes por segundo ni una reserva para el gimnasio. Hoy no existe un límite por minuto implementado ni un SLA de disponibilidad acordado.
 - **Consumo propuesto:** una solicitud a la vez para recorrer/vincular y entregar fotografías pendientes. Ante 503 o respuesta perdida, reintentar el mismo mensaje con espera creciente y variación aleatoria; tras intentos acotados conservarlo pendiente para el próximo ciclo. 400/404/409 requieren revisión; 401/403 requieren corregir credencial/permisos. No generar tráfico de carga sin coordinación.
-- **Datos ficticios:** con `SEED_DEMO=true`, `employee-001` y `employee-002` son empleados ficticios; `candidate-001` queda excluido. La siembra no reactiva filas existentes. Antes de la prueba comprobar la lista/estado y, si hace falta, crear otro empleado ficticio por el rol administrativo, conservando el ID devuelto.
+- **Datos ficticios:** con `SEED_DEMO=true`, `employee-001` y `employee-002` son empleados ficticios. La siembra no reactiva filas existentes. Antes de la prueba comprobar la lista/estado y, si hace falta, crear otro empleado ficticio por el rol administrativo, conservando el ID devuelto.
 
 La disponibilidad durante la evaluación debe coordinarse y mantenerse una vez publicado el servicio. La configuración preparada no acredita que ya exista un servidor compartido.
 
 ## 7. Prueba conjunta de aceptación
 
-1. Verificar acceso desde el backend del gimnasio: 401 sin token, 200 con su token y 403 para administración/candidatos/informes.
+1. Verificar acceso desde el backend del gimnasio: 401 sin token, 200 con su token y 403 para administración e informes.
 2. Leer el empleado ficticio y vincularlo manualmente con un socio del gimnasio, sin emparejar por nombre ni activar una membresía automáticamente.
 3. Enviar una fotografía mensual parcial con campos `null`; verificar estado desconocido en el informe administrativo de Car Cruds.
 4. Repetir exactamente esa versión y comprobar `applied:false`, sin doble importe.

@@ -39,7 +39,10 @@ func TestGymVerifiesInactiveEmployeeWithoutReusingIdentityOrLeakingDetails(t *te
 		t.Fatal(w.Code)
 	}
 	check("person-002", true)
-	request(h, "POST", "/v1/candidates", `{"displayName":"Candidato ficticio"}`, "test-admin")
+	// ADR-018 retiró candidatos: la ruta responde 404 y no crea registros consultables por /status.
+	if w := request(h, "POST", "/v1/candidates", `{"displayName":"Candidato ficticio"}`, "test-admin"); w.Code != 404 {
+		t.Fatalf("retired candidates route: %d %s", w.Code, w.Body)
+	}
 	for _, tc := range []struct {
 		method, path, token string
 		want                int

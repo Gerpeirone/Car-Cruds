@@ -14,6 +14,7 @@ import (
 	"github.com/Gerpeirone/Car-Cruds/services/employees/adapters/httpapi"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/adapters/postgres"
 	"github.com/Gerpeirone/Car-Cruds/services/employees/application"
+	"github.com/Gerpeirone/Car-Cruds/services/employees/domain"
 )
 
 func main() {
@@ -52,23 +53,27 @@ func main() {
 	}
 	startupCancel()
 	service := application.New(repository, platform.UUID).WithMembershipInbox(repository)
-	var provider application.Clinic
-	if base := os.Getenv("CLINIC_BASE_URL"); base != "" {
-		allowHTTP, parseErr := strconv.ParseBool(platform.Env("CLINIC_ALLOW_HTTP", "false"))
-		timeout, timeoutErr := time.ParseDuration(platform.Env("CLINIC_TIMEOUT", "2s"))
-		if parseErr != nil || timeoutErr != nil {
-			slog.Error("configuración del hospital inválida")
-			os.Exit(1)
-		}
-		provider, err = clinic.New(base, allowHTTP, timeout)
-		if err != nil {
-			slog.Error("URL o tiempo de espera del hospital inválidos")
-			os.Exit(1)
-		}
+	provider, err := configuredClinic()
+	if err != nil {
+		slog.Error("configuración del hospital inválida")
+		os.Exit(1)
 	}
 	service.WithClinic(repository, provider)
 	if err = platform.Run(ctx, "employees", httpapi.New(service), pool.Ping); err != nil {
 		slog.Error("Empleados finalizó con error", "cause", err)
 		os.Exit(1)
 	}
+}
+
+func configuredClinic() (application.Clinic, error) {
+	base := os.Getenv("CLINIC_BASE_URL")
+	if base == "" {
+		return nil, nil
+	}
+	allowHTTP, parseErr := strconv.ParseBool(platform.Env("CLINIC_ALLOW_HTTP", "false"))
+	timeout, timeoutErr := time.ParseDuration(platform.Env("CLINIC_TIMEOUT", "2s"))
+	if parseErr != nil || timeoutErr != nil {
+		return nil, domain.ErrInvalidInput
+	}
+	return clinic.New(base, os.Getenv("CLINIC_API_KEY"), allowHTTP, timeout)
 }

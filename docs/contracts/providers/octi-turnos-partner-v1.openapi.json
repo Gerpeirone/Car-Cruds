@@ -1,0 +1,243 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Portal paciente clinica - Turnos para socios",
+    "version": "1.0.0",
+    "summary": "Published capability: book, query and cancel medical appointments (e.g. pre-employment check-ups) and read the billing statement.",
+    "description": "Capability published by the clinic group for other groups. Every operation requires the consumer's X-API-Key. A consumer only sees and cancels the appointments it created. Each successful booking is billed at the unit price in force when it was created. See docs/contracts/README.md for the integration guide, examples and error handling."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8088",
+      "description": "Public listener of the gateway in the local docker compose stack. The public URL is shared with each consumer together with its key."
+    }
+  ],
+  "security": [{ "apiKey": [] }],
+  "paths": {
+    "/v1/doctors": {
+      "get": {
+        "operationId": "listDoctors",
+        "summary": "Doctors that accept appointments and their appointment length",
+        "responses": {
+          "200": {
+            "description": "Doctor catalog",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DoctorList" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/v1/appointments": {
+      "post": {
+        "operationId": "bookAppointment",
+        "summary": "Book an appointment (billed)",
+        "description": "Rules: startAt at least 24 hours ahead; the patient must be enabled by reception; no overlap with another active appointment of the doctor or the patient. The end is startAt plus the doctor's duration. Repeating the request with the same Idempotency-Key and the same data returns the same appointment with 201 and Idempotency-Replayed: true, and is not billed again. Business rejections are not stored under the key, so the key can be reused once the data is corrected.",
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BookingRequest" },
+              "example": { "patientId": "pat-001", "doctorId": "doc-001", "startAt": "2026-12-01T10:00:00Z" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Appointment booked, or the original appointment of a repeated key",
+            "headers": {
+              "Location": { "schema": { "type": "string" }, "description": "/v1/appointments/{id}" },
+              "Idempotency-Replayed": { "schema": { "type": "string", "enum": ["true", "false"] } }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "PATIENT_NOT_ENABLED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "UNKNOWN_DOCTOR or UNKNOWN_PATIENT", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "SLOT_UNAVAILABLE or IDEMPOTENCY_CONFLICT", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "415": { "description": "UNSUPPORTED_MEDIA_TYPE", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "LEAD_TIME_TOO_SHORT", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Unavailable" }
+        }
+      }
+    },
+    "/v1/appointments/{id}": {
+      "get": {
+        "operationId": "getAppointment",
+        "summary": "Current state of an appointment created by this consumer",
+        "parameters": [{ "$ref": "#/components/parameters/AppointmentId" }],
+        "responses": {
+          "200": { "description": "Appointment", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/v1/appointments/{id}/cancel": {
+      "post": {
+        "operationId": "cancelAppointment",
+        "summary": "Cancel an appointment created by this consumer",
+        "description": "Allowed up to 24 hours before startAt. No request body. Cancelling does not refund the booking charge.",
+        "parameters": [{ "$ref": "#/components/parameters/AppointmentId" }],
+        "responses": {
+          "200": { "description": "Cancelled appointment (status cancelled, version incremented)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Appointment" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "ALREADY_CANCELLED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "LEAD_TIME_TOO_SHORT", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Unavailable" }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "getUsage",
+        "summary": "Billing statement of this consumer for one calendar month (UTC)",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Month as YYYY-MM. Defaults to the current UTC month.",
+            "schema": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+            "example": "2026-10"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Statement", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Usage" } } } },
+          "400": { "description": "INVALID_PERIOD", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": { "type": "apiKey", "in": "header", "name": "X-API-Key", "description": "One key per consumer group, delivered privately. Keep it in the backend service, never in a frontend." }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "One key per logical booking, generated and stored by the consumer before calling. Scoped to the consumer and kept permanently.",
+        "schema": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+        "example": "carcruds-revision-personal-001"
+      },
+      "AppointmentId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+    },
+    "responses": {
+      "BadRequest": { "description": "INVALID_JSON, INVALID_REQUEST or INVALID_IDEMPOTENCY_KEY", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "UNAUTHORIZED: missing or invalid X-API-Key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "NOT_FOUND: the appointment does not exist or belongs to another consumer", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "RateLimited": {
+        "description": "RATE_LIMITED",
+        "headers": { "Retry-After": { "schema": { "type": "integer" }, "description": "Seconds to wait" } },
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unavailable": { "description": "UNAVAILABLE: the outcome could not be confirmed. Repeat the same request with the same Idempotency-Key, or query the appointment.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    },
+    "schemas": {
+      "BookingRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["patientId", "doctorId", "startAt"],
+        "properties": {
+          "patientId": { "type": "string", "minLength": 1 },
+          "doctorId": { "type": "string", "minLength": 1 },
+          "startAt": { "type": "string", "format": "date-time", "description": "RFC 3339 with offset" }
+        }
+      },
+      "Appointment": {
+        "type": "object",
+        "required": ["id", "patientId", "doctorId", "startAt", "endAt", "status", "version"],
+        "properties": {
+          "id": { "type": "string" },
+          "patientId": { "type": "string" },
+          "doctorId": { "type": "string" },
+          "startAt": { "type": "string", "format": "date-time" },
+          "endAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["booked", "cancelled"] },
+          "version": { "type": "integer", "minimum": 1, "description": "Grows on every change; a higher version is newer" },
+          "cancelReason": { "type": "string", "description": "Present when cancelled" }
+        }
+      },
+      "DoctorList": {
+        "type": "object",
+        "required": ["doctors"],
+        "properties": {
+          "doctors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "durationMinutes"],
+              "properties": { "id": { "type": "string" }, "durationMinutes": { "type": "integer", "minimum": 1 } }
+            }
+          }
+        }
+      },
+      "Money": {
+        "type": "object",
+        "required": ["amountCents", "currency"],
+        "properties": {
+          "amountCents": { "type": "integer", "minimum": 0, "description": "Amount in cents (2500000 = 25000.00)" },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217" }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "required": ["consumer", "period", "from", "to", "currentPrice", "totals", "items"],
+        "properties": {
+          "consumer": { "type": "string" },
+          "period": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+          "from": { "type": "string", "format": "date-time", "description": "Inclusive" },
+          "to": { "type": "string", "format": "date-time", "description": "Exclusive" },
+          "currentPrice": { "$ref": "#/components/schemas/Money" },
+          "totals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["currency", "bookings", "amountCents"],
+              "properties": {
+                "currency": { "type": "string" },
+                "bookings": { "type": "integer", "minimum": 0 },
+                "amountCents": { "type": "integer", "minimum": 0 }
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["appointmentId", "bookedAt", "priceCents", "currency", "status"],
+              "properties": {
+                "appointmentId": { "type": "string" },
+                "bookedAt": { "type": "string", "format": "date-time" },
+                "priceCents": { "type": "integer", "minimum": 0 },
+                "currency": { "type": "string" },
+                "status": { "type": "string", "enum": ["booked", "cancelled"] }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": { "code": { "type": "string" }, "message": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

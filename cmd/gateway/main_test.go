@@ -160,3 +160,29 @@ func TestProxyReturnsOnlyBackendCorrelationHeaders(t *testing.T) {
 		t.Fatalf("correlación ambigua: %v", values)
 	}
 }
+
+func TestRetiredCandidateRoutesNeverReachEmployees(t *testing.T) {
+	var calls atomic.Int32
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+	t.Setenv("EMPLOYEES_URL", backend.URL)
+	h, _, err := handler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/v1/candidates", "/v1/candidates/legacy-id"} {
+		for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete} {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, httptest.NewRequest(method, path, nil))
+			if w.Code != http.StatusNotFound {
+				t.Fatalf("%s %s: status=%d", method, path, w.Code)
+			}
+		}
+	}
+	if calls.Load() != 0 {
+		t.Fatal("ruta retirada enviada al servicio Empleados")
+	}
+}

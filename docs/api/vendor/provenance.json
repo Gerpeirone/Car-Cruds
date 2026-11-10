@@ -1,0 +1,14 @@
+{
+  "package": "swagger-ui-dist",
+  "version": "5.34.0",
+  "tarball": "https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.34.0.tgz",
+  "npmIntegrity": "sha512-H6tAIjr3XqE31PbkZl0OFya1ziRLDfTwh3J6OHdumPtPCLfjTnyLeagl/55kFNZcTOz9a9QI9WP0FXldwiGJag==",
+  "archiveSHA256": "15cdd55151558cf29ee70fb485332251a9911ebe27414b243ddd10fef9942394",
+  "filesSHA256": {
+    "swagger-ui.css": "c3cfe8248c4b0b89673600fb829924eafbac6de4bc4b2b06f5f5243483074d0a",
+    "swagger-ui-bundle.js": "3f6abf70480db7e07914df4c98a77385f22ea585eaf457a3e6415ba0eae2d167",
+    "swagger-ui-standalone-preset.js": "5243d492e14505e0cab87ac8b0195d0e615943e651743b2b698450a46eb470be",
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "NOTICE": "0d20d1adef18aee3f40dd258172155521ce702ac445cb5f7b7d60ed32dad2fb2"
+  }
+}

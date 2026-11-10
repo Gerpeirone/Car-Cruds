@@ -32,13 +32,39 @@ services:
       HTTP_ADDR: 0.0.0.0:8081
       TURNOS_DB_DSN: turnos:${CLINIC_TEST_DB_PASSWORD}@tcp(mysql:3306)/turnos
       RABBITMQ_URL: amqp://clinic-test:${CLINIC_TEST_DB_PASSWORD}@rabbitmq:5672/
+      TURNOS_PARTNER_KEYS: car-cruds-contract:${CLINIC_TEST_API_KEY:?Clave ficticia local},other-contract:${CLINIC_TEST_OTHER_API_KEY:?Segunda clave ficticia local}
+      # Precio ficticio para verificar que un reintento no duplique el efecto.
+      # No representa una tarifa acordada con el proveedor.
+      TURNOS_PARTNER_PRICE_CENTS: "12345"
+      TURNOS_PARTNER_CURRENCY: ARS
+      TURNOS_PARTNER_RATE: "60"
       OTEL_SDK_DISABLED: "true"
     depends_on:
       mysql: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
-    ports: ["127.0.0.1:58081:8081"]
     healthcheck:
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8081/healthz]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  gateway:
+    build:
+      context: ${CLINIC_PROVIDER_CHECKOUT:?Checkout del commit documentado}
+      dockerfile: infra/Dockerfile.backend
+      args: {SERVICE_PATH: ./gateway/cmd}
+    environment:
+      HTTP_ADDR: 0.0.0.0:8080
+      PUBLIC_HTTP_ADDR: 0.0.0.0:8088
+      TURNOS_URL: http://turnos:8081
+      # No se consume Notificaciones: ninguna operación de esta prueba lo requiere.
+      NOTIFICATIONS_URL: http://127.0.0.1:8085
+      OTEL_SDK_DISABLED: "true"
+    depends_on:
+      turnos: {condition: service_healthy}
+    # Se publica únicamente el listener público; no el interno ni Turnos.
+    ports: ["127.0.0.1:58088:8088"]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8088/healthz]
       interval: 3s
       timeout: 3s
       retries: 40

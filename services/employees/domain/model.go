@@ -8,22 +8,17 @@ import (
 )
 
 var (
-	ErrInvalidInput  = errors.New("datos de personal inválidos")
-	ErrNotFound      = errors.New("registro de personal inexistente")
-	ErrNotConfigured = errors.New("integración pendiente de contrato y configuración")
+	ErrInvalidInput     = errors.New("datos de personal inválidos")
+	ErrNotFound         = errors.New("registro de personal inexistente")
+	ErrNotConfigured    = errors.New("integración pendiente de contrato y configuración")
+	ErrEmployeeInactive = errors.New("el empleado no está activo")
 )
 
-// Employee and Candidate have different identities and lifecycles. Registering
-// a candidate never grants employee status or adds that person to the gym list.
+// Employee is the personnel population managed by this service.
 type Employee struct {
 	ID          string
 	DisplayName string
 	Active      bool
-}
-
-type Candidate struct {
-	ID          string
-	DisplayName string
 }
 
 type Page struct {

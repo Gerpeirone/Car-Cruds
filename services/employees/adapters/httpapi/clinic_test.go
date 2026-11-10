@@ -25,6 +25,9 @@ func TestClinicRoutesNeverExposePersonalEvidenceToGymOrCustomer(t *testing.T) {
 	}
 	for _, tc := range []struct{ method, path, body string }{
 		{"POST", "/v1/employees/clinic/requests", `{"personKind":"employee","personId":"e","localReference":"r","doctorId":"d","startAt":"2026-12-01T10:00:00.001Z"}`},
+		{"POST", "/v1/employees/clinic/patient-links", `{"personKind":"candidate","personId":"legacy","patientId":"p"}`},
+		{"POST", "/v1/employees/clinic/requests", `{"personKind":"candidate","personId":"legacy","localReference":"r","doctorId":"d","startAt":"2026-12-01T10:00:00Z"}`},
+		{"GET", "/v1/employees/reports/clinic?personKind=candidate", ""},
 		{"POST", "/v1/employees/clinic/patient-links", `{"personKind":"client","personId":"e","patientId":"p"}`},
 		{"POST", "/v1/employees/clinic/patient-links", `{"personKind":"employee","personId":"e","patientId":"p","diagnosis":"not allowed"}`},
 		{"POST", "/v1/employees/clinic/requests?patientId=p", `{}`},

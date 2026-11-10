@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Car Cruds · Documentación de API</title>
+  <link rel="stylesheet" href="./vendor/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #fafafa; }
+    .intro { padding: 20px max(20px, calc((100% - 1460px) / 2)); background: #172b42; color: white; font: 16px/1.6 system-ui, sans-serif; }
+    .intro h1 { margin: 0 0 8px; font-size: 24px; }
+    .intro p { margin: 6px 0; max-width: 1100px; }
+    .intro code { color: #c7e8ff; }
+    .status { color: #fff; padding: 12px; background: #9a3412; }
+    .swagger-ui .auth-wrapper, .swagger-ui .authorization__btn { display: none; }
+  </style>
+</head>
+<body>
+  <header class="intro">
+    <h1>Car Cruds · Documentación de endpoints</h1>
+    <p>Seleccione una API en el menú superior. Cada operación describe su propósito, permisos, parámetros, cuerpo, respuestas y ejemplos ficticios.</p>
+    <p>Visor de lectura. Para ejecutar solicitudes, utilice el gateway <code>http://127.0.0.1:8080</code> con la credencial del rol indicado. El visor no recibe tokens ni realiza operaciones de negocio.</p>
+    <p>Los contratos de gimnasio y clínica describen la implementación propia; la aceptación y el acceso externos continúan pendientes. Las rutas técnicas corresponden a la instancia consultada.</p>
+  </header>
+  <div id="swagger-ui" aria-label="Referencia de las API"></div>
+  <noscript>Este visor requiere JavaScript. Los contratos JSON están disponibles en docs/contracts/.</noscript>
+  <script src="./vendor/swagger-ui-bundle.js"></script>
+  <script src="./vendor/swagger-ui-standalone-preset.js"></script>
+  <script src="./swagger-initializer.js"></script>
+</body>
+</html>

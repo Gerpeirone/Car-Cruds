@@ -6,8 +6,8 @@ Universidad Católica de Córdoba · Facultad de Ingeniería
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 23 de octubre de 2026 |
 | Estado | Backend propio implementado y verificado localmente; integración externa pendiente |
 | Hito | Entrega 2 — viernes 23 de octubre de 2026 |
 | Equipo | Alterman, Ivo · Peirone, German · Grbavac, Darko |
@@ -19,6 +19,8 @@ Car Cruds administra el alquiler de autos de una concesionaria: catálogo, búsq
 
 La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El gimnasio del grupo de Pablo consumirá nuestra lista de empleados y aportará información de membresías y gastos. El hospital del grupo de Octi, denominado Clínica en el diseño, proveerá consultas y turnos. Esos contratos, accesos y pruebas con los otros equipos permanecen pendientes.
 
+La [revisión de alcance del 23 de octubre](docs/adr/ADR-018-empleados-sin-candidatos.md) retira candidatos. Solo empleados activos pueden iniciar vinculaciones, intenciones y envíos que puedan crear turnos; la baja preserva historia y seguimiento previo. Los datos históricos de candidatos se conservan sin acceso en la API activa. [ADR-019](docs/adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, sin incorporar nuevas funcionalidades de presentación final.
+
 ## Estado disponible
 
 | Componente | Implementación y alcance |
@@ -26,7 +28,7 @@ La ampliación de entrega 2 incorpora Empleados y un balanceador explícito. El 
 | Clientes | Servicio Go por capas; perfiles, habilitación e historial derivado en PostgreSQL propio |
 | Flota | Servicio Go por capas; catálogo versionado en MongoDB, caché Redis, eventos e índice Solr |
 | Alquileres | Servicio Go hexagonal; agenda, reservas, idempotencia durable, mantenimiento, retiro y devolución en PostgreSQL propio |
-| Empleados | Servicio Go hexagonal; empleados y candidatos separados, PostgreSQL propio y lista mínima de empleados activos |
+| Empleados | Servicio Go hexagonal; gestión de empleados, PostgreSQL propio y lista mínima de empleados activos |
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
 | Interfaz web | Pendiente; la ejecución actual se realiza por API y herramientas de verificación |
@@ -50,6 +52,16 @@ go run ./cmd/smoke -history
 La [herramienta de verificación](cmd/smoke/README.md) comprueba permisos, lista de empleados, dos réplicas, catálogo/caché/búsqueda, reservas concurrentes, retiro/devolución y publicación de historial. Utiliza registros ficticios identificables y realiza limpieza limitada a sus propios datos. No llama a los proveedores externos.
 
 `docker compose down` conserva los volúmenes. No utilizar `down -v` para una detención habitual, porque elimina los datos locales.
+
+## Documentación de endpoints y Swagger
+
+La [referencia completa de API](docs/API.md) explica las **34 operaciones HTTP implementadas**, sus permisos, entradas, respuestas, errores y flujos. Para abrir Swagger UI sin bases de datos ni credenciales:
+
+```powershell
+go run ./cmd/apidocs
+```
+
+Abrir [http://127.0.0.1:8090/api/](http://127.0.0.1:8090/api/). El menú reúne Clientes, Flota, Alquileres, Empleados/gimnasio, integración clínica y rutas técnicas. Incluye recursos locales y funciona sin conexión una vez disponible el código. Es un visor de lectura; los ejemplos se ejecutan por el gateway con el rol correspondiente. No constituye la interfaz de negocio pendiente ni acredita aceptación externa. [Contratos y ejemplos](docs/contracts/README.md).
 
 ## Pruebas y automatización
 
@@ -76,13 +88,13 @@ Las herramientas opcionales `go run ./cmd/messagecheck` y `pwsh -File ./scripts/
 | Clientes | Perfil y habilitación de conductor; historial de alquileres completados | [README](services/customers/README.md) |
 | Flota | Características, tarifa vigente y proyecciones de lectura | [README](services/fleet/README.md) |
 | Alquileres | Disponibilidad temporal, agenda y ciclo de vida | [README](services/rentals/README.md) |
-| Empleados | Personal y candidatos; integración administrativa prevista | [README](services/employees/README.md) |
+| Empleados | Empleados, membresías y seguimiento administrativo de turnos | [README](services/employees/README.md) |
 
 Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fechas y el precio autoritativo; repetir la misma clave y solicitud recupera el resultado persistido. Redis y Solr no autorizan la tarifa de confirmación ni la agenda.
 
-`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de activos. El ID es estable y no se reasigna a otra persona. Gimnasio vincula manualmente al socio, completa DNI/email de su lado y envía evidencia a `POST /v1/employees/membership-evidence`. Puede verificar bajas mediante `GET /v1/employees/{id}/status`, que devuelve solo ID/estado laboral y no cancela membresías. No puede administrar empleados ni consultar candidatos o informes internos.
+`GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. El ID es estable y no se reasigna a otra persona. Gimnasio vincula manualmente al socio, completa DNI/email de su lado y envía evidencia a `POST /v1/employees/membership-evidence`. Puede verificar bajas mediante `GET /v1/employees/{id}/status`, que devuelve solo ID y estado laboral y no cancela membresías. No puede administrar empleados ni consultar informes internos.
 
-El [contrato implementado](docs/contracts/employees-openapi.json) es 0.3.0: agrega `/status` y conserva lista/POST 0.2.0. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica transporte e informe; [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md) responde las preguntas de Pablo y propone el perfil mensual: ingresos efectivos, pagos del mes y costo neto por meses iguales. Meses parciales quedan en `null` hasta acordar su tratamiento. Se aceptan fotografías provisionales y correcciones históricas. La confirmación semántica bilateral, URL y prueba conjunta siguen pendientes.
+El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.4.0, es una propuesta propia provisional: agrega `/status` y conserva la lista y el cuerpo de evidencia de 0.3.0. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo; [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md) responde sus preguntas y propone el perfil mensual: ingresos efectivos, pagos del mes y costo neto por meses iguales. Meses parciales quedan en `null` hasta acordar su tratamiento. Se aceptan fotografías provisionales y correcciones históricas. La confirmación semántica bilateral, el acceso público y la prueba conjunta siguen pendientes.
 
 ## Documentación
 
@@ -90,8 +102,8 @@ El [contrato implementado](docs/contracts/employees-openapi.json) es 0.3.0: agre
 | --- | --- |
 | [Enunciado TP Final.md](Enunciado%20TP%20Final.md) y [clases.zip](clases.zip) | Requisitos y material de cátedra |
 | [SPEC.md](SPEC.md) | Alcance, reglas RN-01 a RN-22 y estados |
-| [BACKLOG.md](docs/BACKLOG.md) | 9 épicas y 28 historias, prioridades y cobertura |
-| [REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | 22 RF y 12 RNF con trazabilidad |
+| [BACKLOG.md](docs/BACKLOG.md) | 9 épicas; identificadores HU-01 a HU-28 conservados, HU-10 retirada |
+| [REQUERIMIENTOS.md](docs/REQUERIMIENTOS.md) | Identificadores RF-01 a RF-22 y 12 RNF; RF-10 retirado |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Servicios, estilos, datos y comunicaciones |
 | [Índice ADR](docs/adr/README.md) | D1 a D13, decisiones actuales e historial |
 | [ESTADO-IMPLEMENTACION.md](docs/ESTADO-IMPLEMENTACION.md) | Código disponible, pruebas y límites de la evidencia |
@@ -99,6 +111,7 @@ El [contrato implementado](docs/contracts/employees-openapi.json) es 0.3.0: agre
 | [ENTREGA-2.md](docs/ENTREGA-2.md) | Matriz de cumplimiento para el 23 de octubre |
 | [INTEGRACIONES.md](docs/INTEGRACIONES.md) | Acuerdos externos EXT-01 a EXT-15 |
 | [Contratos](docs/contracts/README.md) | API propias actuales y artefactos históricos |
+| [Referencia de endpoints y Swagger](docs/API.md) | 34 operaciones HTTP: permisos, entradas, respuestas, errores, ejemplos y visor local |
 | [ENTREGA-1.md](docs/ENTREGA-1.md) | Evidencia histórica de la primera entrega |
 
 ## Organización
@@ -121,6 +134,6 @@ Los cambios se presentan en ramas de trabajo y mediante pull request. Su integra
 
 El informe propio `GET /v1/employees/reports/memberships?period=2026-10` distingue afiliación, uso, costo por membresía, gastos por empleado y totales por período/moneda; solo administración y servicio pueden consultarlo. Una respuesta faltante no significa “no uso” ni costo cero.
 
-La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) implementa vínculo con paciente, intención durable, solicitud de turno y conciliación por la API observada en su rama `feature/entrega-2`. `GET /v1/employees/reports/clinic` muestra la última intención administrativa por persona. Configurar `CLINIC_BASE_URL` según la guía; sin URL, el envío permanece deshabilitado. Un timeout no prueba ausencia de turno y no genera otro POST. La API externa de Turnos todavía necesita contrato formal, autenticación y aceptación de Octi; su capacidad pública de Notificaciones es distinta.
+La [comunicación con el hospital de Octi](docs/COMUNICACION-HOSPITAL.md) mantiene vínculo, intención durable, solicitud y consulta por el contrato oficial Turnos para socios 1.0.0 fijado a `c0b65f4`. `GET /v1/employees/reports/clinic` muestra la última intención por empleado. Configurar `CLINIC_BASE_URL` terminada en `/v1` y `CLINIC_API_KEY` fuera de Git; sin URL el envío permanece deshabilitado. Un timeout conserva estado desconocido y permite recuperación explícita con la misma clave/datos, tras la espera durable. Solicitudes antiguas enviadas sin procedencia idempotente nunca se reenvían como POST. URL compartida, pacientes reales, condiciones económicas y aceptación conjunta siguen pendientes.
 
 Estas funciones corresponden a RN-15 a RN-22, RF-13 a RF-17/RF-19 y HU-13 a HU-17/HU-23. No se han implementado endpoints de otros grupos ni se han asignado tarifas o resultados médicos. La lista propia y los puertos permiten avanzar sin presentar acuerdos inexistentes.

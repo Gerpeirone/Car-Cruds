@@ -30,19 +30,38 @@ func (r *Repository) LinkClinicPatient(ctx context.Context, l domain.PatientLink
 	if !domain.ValidPersonKind(l.PersonKind) || !domain.ValidEvidenceKey(l.PersonID) || !domain.ValidEvidenceKey(l.PatientID) || !domain.ValidEvidenceKey(l.RegisteredBy) {
 		return domain.ErrInvalidInput
 	}
-	var employee, candidate *string
-	if l.PersonKind == "employee" {
-		employee = &l.PersonID
-	} else {
-		candidate = &l.PersonID
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
 	}
-	command, err := r.pool.Exec(ctx, `INSERT INTO clinic_patient_links(person_kind,person_id,patient_id,registered_by,employee_id,candidate_id) VALUES($1,$2,$3,$4,$5,$6)
-	ON CONFLICT(person_kind,person_id) DO UPDATE SET patient_id=clinic_patient_links.patient_id WHERE clinic_patient_links.patient_id=EXCLUDED.patient_id`, l.PersonKind, l.PersonID, l.PatientID, l.RegisteredBy, employee, candidate)
+	defer tx.Rollback(ctx)
+	if err = requireActiveEmployee(ctx, tx, l.PersonID); err != nil {
+		return err
+	}
+	command, err := tx.Exec(ctx, `INSERT INTO clinic_patient_links(person_kind,person_id,patient_id,registered_by,employee_id) VALUES('employee',$1,$2,$3,$1)
+	ON CONFLICT(person_kind,person_id) DO UPDATE SET patient_id=clinic_patient_links.patient_id WHERE clinic_patient_links.patient_id=EXCLUDED.patient_id`, l.PersonID, l.PatientID, l.RegisteredBy)
 	if err != nil {
 		return clinicStorageError(err)
 	}
 	if command.RowsAffected() == 0 {
 		return domain.ErrEvidenceConflict
+	}
+	return tx.Commit(ctx)
+}
+
+// Lock the employee until the local action commits, so a concurrent leave
+// cannot pass between checking eligibility and persisting the new action.
+func requireActiveEmployee(ctx context.Context, tx pgx.Tx, id string) error {
+	var active bool
+	err := tx.QueryRow(ctx, `SELECT active FROM employees WHERE employee_id=$1 FOR SHARE`, id).Scan(&active)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if !active {
+		return domain.ErrEmployeeInactive
 	}
 	return nil
 }
@@ -56,10 +75,13 @@ func decodeClinic(row pgx.Row) (domain.ClinicRequest, error) {
 		return request, err
 	}
 	err := json.Unmarshal(b, &request)
+	if err == nil && !domain.ValidPersonKind(request.PersonKind) {
+		return domain.ClinicRequest{}, domain.ErrNotFound
+	}
 	return request, err
 }
 func (r *Repository) GetClinicRequest(ctx context.Context, id string) (domain.ClinicRequest, error) {
-	return decodeClinic(r.pool.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1`, id))
+	return decodeClinic(r.pool.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 AND person_kind='employee'`, id))
 }
 func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicRequest) (domain.ClinicRequest, error) {
 	if err := s.ValidateInput(); err != nil {
@@ -73,7 +95,7 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,724105))`, s.LocalReference); err != nil {
 		return s, err
 	}
-	old, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE local_reference=$1`, s.LocalReference))
+	old, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE local_reference=$1 AND person_kind='employee'`, s.LocalReference))
 	if err == nil {
 		if old.PersonKind != s.PersonKind || old.PersonID != s.PersonID || old.DoctorID != s.DoctorID || !old.StartAt.Equal(s.StartAt) {
 			return old, domain.ErrEvidenceConflict
@@ -81,6 +103,9 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 		return old, tx.Commit(ctx)
 	}
 	if !errors.Is(err, domain.ErrNotFound) {
+		return s, err
+	}
+	if err = requireActiveEmployee(ctx, tx, s.PersonID); err != nil {
 		return s, err
 	}
 	err = tx.QueryRow(ctx, `SELECT patient_id FROM clinic_patient_links WHERE person_kind=$1 AND person_id=$2`, s.PersonKind, s.PersonID).Scan(&s.PatientID)
@@ -91,6 +116,12 @@ func (r *Repository) CreateClinicRequest(ctx context.Context, s domain.ClinicReq
 		return s, err
 	}
 	s.State = "ready"
+	if !domain.ValidClinicIdempotencyKey(s.ID) {
+		return s, domain.ErrInvalidInput
+	}
+	s.ProviderContract = domain.ClinicProviderContract
+	s.IdempotencyKey = s.ID
+	s.NextAttemptAt = nil
 	s.Revision = 1
 	s.CreatedAt = time.Now().UTC()
 	s.StartAt = s.StartAt.UTC()
@@ -111,7 +142,7 @@ func (r *Repository) mutateClinic(ctx context.Context, id string, change func(*d
 		return domain.ClinicRequest{}, err
 	}
 	defer tx.Rollback(ctx)
-	s, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 FOR UPDATE`, id))
+	s, err := decodeClinic(tx.QueryRow(ctx, `SELECT payload FROM clinic_review_requests WHERE request_id=$1 AND person_kind='employee' FOR UPDATE`, id))
 	if err != nil {
 		return s, err
 	}
@@ -133,12 +164,30 @@ func (r *Repository) mutateClinic(ctx context.Context, id string, change func(*d
 }
 func (r *Repository) ClaimClinicRequest(ctx context.Context, id string) (domain.ClinicRequest, bool, error) {
 	claimed := false
-	s, err := r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, _ pgx.Tx) error {
-		if s.AttemptedAt != nil {
+	s, err := r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, tx pgx.Tx) error {
+		// Evidence already known and definitive rejections are never POSTed again.
+		// Legacy uncertain requests cannot inherit the new provider's guarantees.
+		if s.Appointment != nil || (s.State != "ready" && s.State != "unknown") || s.FailureCode == "CLINIC_IDEMPOTENCY_CONFLICT" || (s.AttemptedAt != nil && (s.ProviderContract != domain.ClinicProviderContract || s.IdempotencyKey != s.ID)) {
 			return nil
 		}
 		now := time.Now().UTC()
-		s.AttemptedAt = &now
+		if err := requireActiveEmployee(ctx, tx, s.PersonID); err != nil {
+			return err
+		}
+		if s.NextAttemptAt != nil && now.Before(*s.NextAttemptAt) {
+			return nil
+		}
+		if !domain.ValidClinicIdempotencyKey(s.ID) {
+			return domain.ErrInvalidInput
+		}
+		// An unsent legacy intention can adopt v1; a sent one cannot.
+		s.ProviderContract = domain.ClinicProviderContract
+		s.IdempotencyKey = s.ID
+		if s.AttemptedAt == nil {
+			s.AttemptedAt = &now
+		}
+		next := now.Add(10 * time.Second)
+		s.NextAttemptAt = &next
 		s.State = "unknown"
 		s.FailureCode = "AWAITING_CONFIRMATION"
 		s.Revision++
@@ -147,9 +196,13 @@ func (r *Repository) ClaimClinicRequest(ctx context.Context, id string) (domain.
 	})
 	return s, claimed, err
 }
-func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision int64, code string, rejected bool) (domain.ClinicRequest, error) {
+func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision int64, code string, rejected bool, nextAttemptAt *time.Time) (domain.ClinicRequest, error) {
 	return r.mutateClinic(ctx, id, func(s *domain.ClinicRequest, _ pgx.Tx) error {
 		if s.Revision != revision {
+			return nil
+		}
+		if s.State == "rejected" || s.FailureCode == "CLINIC_IDEMPOTENCY_CONFLICT" {
+			// Failed reconciliation cannot make a terminal POST eligible again.
 			return nil
 		}
 		s.State = "unknown"
@@ -157,6 +210,19 @@ func (r *Repository) FailClinicRequest(ctx context.Context, id string, revision 
 			s.State = "rejected"
 		}
 		s.FailureCode = code
+		s.NextAttemptAt = nil
+		// Cooldown protects against bursts after a fast error as well as crashes.
+		// A conflict preserves uncertainty and requires manual reconciliation.
+		if !rejected && s.Appointment == nil && s.ProviderContract == domain.ClinicProviderContract && code != "CLINIC_IDEMPOTENCY_CONFLICT" {
+			next := time.Now().UTC().Add(10 * time.Second)
+			if nextAttemptAt != nil && nextAttemptAt.After(next) {
+				next = nextAttemptAt.UTC()
+			}
+			s.NextAttemptAt = &next
+		} else if !rejected && nextAttemptAt != nil && code == "CLINIC_RATE_LIMITED" {
+			next := nextAttemptAt.UTC()
+			s.NextAttemptAt = &next
+		}
 		s.Revision++
 		return nil
 	})
@@ -199,6 +265,7 @@ func (r *Repository) ObserveClinicAppointment(ctx context.Context, id string, a 
 		s.State = a.Status
 		s.ObservedAt = &now
 		s.FailureCode = ""
+		s.NextAttemptAt = nil
 		s.Revision++
 		return nil
 	})
@@ -210,13 +277,8 @@ func (r *Repository) ClinicReport(ctx context.Context, kind string, page domain.
 	if err := page.Validate(); err != nil {
 		return nil, 0, err
 	}
-	// Kind is allowlisted above; SQL identifiers are never supplied by callers.
-	population := `SELECT employee_id AS id,display_name,active FROM employees`
-	if kind == "candidate" {
-		population = `SELECT candidate_id AS id,display_name,NULL::boolean AS active FROM candidates`
-	}
-	rows, err := r.pool.Query(ctx, `SELECT p.id,p.display_name,p.active,r.payload FROM (`+population+`) p
-	LEFT JOIN LATERAL (SELECT payload FROM clinic_review_requests WHERE person_kind=$1 AND person_id=p.id ORDER BY created_at DESC,request_id DESC LIMIT 1) r ON true ORDER BY p.id`, kind)
+	rows, err := r.pool.Query(ctx, `SELECT p.employee_id,p.display_name,p.active,r.payload FROM employees p
+	LEFT JOIN LATERAL (SELECT payload FROM clinic_review_requests WHERE person_kind='employee' AND person_id=p.employee_id ORDER BY created_at DESC,request_id DESC LIMIT 1) r ON true ORDER BY p.employee_id`)
 	if err != nil {
 		return nil, 0, err
 	}

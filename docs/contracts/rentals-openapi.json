@@ -24,8 +24,8 @@
   },
   "servers": [
     {
-      "url": "/",
-      "description": "Entrada de la instalación propia. En desarrollo se utiliza el gateway local; no se publica una URL externa en este contrato."
+      "url": "http://127.0.0.1:8080",
+      "description": "Gateway local predeterminado; ajustar al entorno. No es una URL pública acordada."
     }
   ],
   "tags": [
@@ -159,6 +159,13 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateReservation"
+              },
+              "example": {
+                "vehicleId": "auto-001",
+                "customerId": "cli-001",
+                "startsOn": "2030-01-15",
+                "endsOn": "2030-01-18",
+                "expectedTotalMinor": 15000000
               }
             }
           }
@@ -710,6 +717,11 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateMaintenance"
+              },
+              "example": {
+                "vehicleId": "auto-001",
+                "startsOn": "2030-01-20",
+                "endsOn": "2030-01-22"
               }
             }
           }
@@ -989,7 +1001,19 @@
             ]
           }
         },
-        "description": "Precio congelado al confirmar. El cliente y vehículo son referencias a servicios propios; la aplicación propietaria no se expone. El objeto puede incorporar campos adicionales compatibles."
+        "description": "Precio congelado al confirmar. El cliente y vehículo son referencias a servicios propios; la aplicación propietaria no se expone. El objeto puede incorporar campos adicionales compatibles.",
+        "example": {
+          "id": "res-demo-001",
+          "status": "RESERVED",
+          "vehicleId": "auto-001",
+          "customerId": "cli-001",
+          "startsOn": "2030-01-15",
+          "endsOn": "2030-01-18",
+          "days": 3,
+          "dailyRateMinor": 5000000,
+          "totalMinor": 15000000,
+          "currency": "ARS"
+        }
       },
       "Availability": {
         "type": "object",
@@ -1081,7 +1105,17 @@
             }
           }
         ],
-        "description": "Consulta informativa: puede informar indisponibilidad con precio válido; una dependencia fallida devuelve 503 en lugar de available=false."
+        "description": "Consulta informativa: puede informar indisponibilidad con precio válido; una dependencia fallida devuelve 503 en lugar de available=false.",
+        "example": {
+          "vehicleId": "auto-001",
+          "startsOn": "2030-01-15",
+          "endsOn": "2030-01-18",
+          "days": 3,
+          "dailyRateMinor": 5000000,
+          "totalMinor": 15000000,
+          "currency": "ARS",
+          "available": true
+        }
       },
       "CreateMaintenance": {
         "type": "object",
@@ -1139,6 +1173,12 @@
           "endsOn": {
             "$ref": "#/components/schemas/Date"
           }
+        },
+        "example": {
+          "id": "maintenance-demo-001",
+          "vehicleId": "auto-001",
+          "startsOn": "2030-01-20",
+          "endsOn": "2030-01-22"
         }
       },
       "Error": {

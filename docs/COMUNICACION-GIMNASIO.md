@@ -4,7 +4,7 @@ Actualización del 23 de octubre de 2026: el grupo del gimnasio comunicó que el
 
 ## Dirección y alcance
 
-1. **Gimnasio → Car Cruds:** consulta `GET /v1/employees?page=1&pageSize=20`, con `Authorization: Bearer <AUTH_GYM_TOKEN>`. Obtiene activos con `employeeId` estable y `displayName`; candidatos excluidos. `pageSize` máximo 100.
+1. **Gimnasio → Car Cruds:** consulta `GET /v1/employees?page=1&pageSize=20`, con `Authorization: Bearer <AUTH_GYM_TOKEN>`. Obtiene activos con `employeeId` estable y `displayName`; sin registros ajenos a empleados activos. `pageSize` máximo 100.
 2. **Gimnasio → Car Cruds:** entrega una instantánea por empleado y período mediante `POST /v1/employees/membership-evidence`, con el mismo token y `Content-Type: application/json`. Car Cruds almacena afiliación, uso, costo y gasto informados por el gimnasio.
 3. **Administración de Car Cruds:** consulta `GET /v1/employees/reports/memberships?period=2026-10&page=1&pageSize=20` con token administrativo o de servicio. Ve hechos individuales, faltantes, origen y totales por moneda. El gimnasio no puede leer este informe ni administrar empleados.
 
@@ -12,7 +12,7 @@ Se retiró el envío desde Car Cruds a `POST /api/v1/integraciones/empleados` de
 
 ## Contrato propio de devolución — pendiente de aceptación
 
-El transporte de tres pasos coincide con lo confirmado por el profesor según el mensaje del gimnasio. OpenAPI 3.0.3, versión 0.3.0: [employees-openapi.json](contracts/employees-openapi.json). Agrega `GET /v1/employees/{id}/status`; la lista y el POST de evidencia 0.2.0 conservan sus campos y comportamiento. La semántica detallada propuesta está en [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md), pendiente de confirmación bilateral.
+El diseño original exige recibir evidencia y evitar duplicados, pero deja abierto el transporte. Se ofrece una entrada HTTP **de Car Cruds**; no se atribuye este endpoint al gimnasio ni se presenta como acuerdo bilateral. El transporte de tres pasos (lista → vinculación manual → evidencia) coincide con lo confirmado por el profesor según el mensaje del gimnasio. OpenAPI 3.0.3, versión 0.4.0: [employees-openapi.json](contracts/employees-openapi.json). Agrega `GET /v1/employees/{id}/status`; la lista y las membresías conservan el formato y comportamiento de 0.3.0. La semántica detallada propuesta está en [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md), pendiente de confirmación bilateral.
 
 Ejemplo exclusivamente ficticio de cuerpo:
 
@@ -31,8 +31,8 @@ Ejemplo exclusivamente ficticio de cuerpo:
 }
 ```
 
-- `employeeId` debe existir como empleado. Se admite evidencia tardía de inactivos para conservar gastos históricos. Un candidato o identificador desconocido obtiene 404; no crea personas ni asociaciones automáticamente.
-- `period` y `sourceReference` admiten 1–100 caracteres sin controles ni espacios exteriores. El perfil propuesto para Pablo utiliza mes calendario `AAAA-MM` en `America/Argentina/Buenos_Aires`; la API genérica conserva períodos opacos por compatibilidad. La referencia permanece estable para ese empleado y período.
+- `employeeId` debe existir como empleado. Se admite evidencia tardía de inactivos para conservar gastos históricos. Un identificador que no corresponde a un empleado obtiene 404; no crea personas ni asociaciones automáticamente.
+- `period` y `sourceReference` son identificadores opacos de 1–100 caracteres, sin controles ni espacios exteriores; la API genérica conserva períodos opacos por compatibilidad. El perfil propuesto para Pablo utiliza mes calendario `AAAA-MM` en `America/Argentina/Buenos_Aires`; su delimitación y vigencia deben acordarse con Pablo. La referencia permanece estable para ese empleado y período.
 - `member`, `used`, `costMinor` y `spendingMinor` son independientes. Ausencia o `null` significa desconocido; `false` y `0` son hechos explícitos. Un afiliado puede no haber usado el gimnasio y tener costo. No se inventan tarifas, asistencia, compras, pagos ni facturas.
 - Los importes son enteros no negativos hasta el máximo `int64`, con moneda obligatoria cuando hay importes. Para Pablo se propone ARS en centavos: `costMinor` corresponde al costo neto imputable al mes completo, por meses iguales; meses parciales quedan en `null` hasta acordar la regla. `spendingMinor` corresponde a pagos efectivos del mes. Se muestran por separado y no se suman entre sí. La API genérica conserva monedas separadas por compatibilidad.
 - `version` es entero positivo creciente por empleado/período. Se envía una instantánea completa; omitir un hecho en una corrección vuelve a dejarlo desconocido. `observedAt` es fecha RFC3339, normalizada a UTC y microsegundos; no determina precedencia. La versión mayor reemplaza a la anterior.
