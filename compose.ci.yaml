@@ -1,0 +1,8 @@
+# Superposición exclusiva de GitHub Actions; se activa con COMPOSE_FILE en el
+# trabajo Compose. El runner ubuntu-24.04 usa kernel 7.0 y MongoDB 8.x se niega
+# a iniciar en kernels 6.19 o superiores (SERVER-121912, SERVER-136848).
+# MongoDB 7.0 arranca en ese kernel y la CI siempre crea volúmenes nuevos.
+# Local y VM conservan MongoDB 8: ver docs/ARCHITECTURE.md §9.
+services:
+  mongo:
+    image: mongo:7.0@sha256:8bb4442761a63a8dda452744082cdac9644b429807eb977b42324a63cef59ca4

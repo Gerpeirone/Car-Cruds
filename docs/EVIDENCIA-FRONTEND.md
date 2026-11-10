@@ -54,3 +54,24 @@ Continúan pendientes las pantallas administrativas y de personal, la publicaci�
 ## Aclaración del acceso
 
 Se distinguió la referencia de soporte de los errores HTTP de un código de reserva y se agregó ayuda para pegar la credencial sin prefijos. Un caso de regresión 401 comprueba que esa referencia no se presente como una reserva. La suite actual aprueba 25 pruebas ordinarias; la prueba real previamente registrada conserva su alcance. Build satisfactorio.
+
+## 6. Revisión en navegador real — 9 de noviembre
+
+Se cerró el pendiente de la sección 4 con un navegador renderizado: Microsoft Edge en modo headless, controlado con `playwright-core`, contra la entrada pública local (Caddy con HTTPS interno, `PUBLIC_HOST=localhost`), que deriva `/v1/*` al gateway y el resto a la interfaz. Se recorrieron 33 pantallas: cliente (acceso, catálogo, ficha, reservas), operador (resumen, flota, clientes, reservas, mantenimiento) y personal (lista, alta, ficha, membresías, turnos, detalle de turno), en escritorio de 1366×900 y en móvil de 390×844, incluido el menú lateral abierto en móvil.
+
+| Control | Resultado inicial | Resultado final |
+| --- | --- | --- |
+| axe-core 4.11, reglas WCAG 2.0/2.1 A y AA | Contraste insuficiente en todas las pantallas (unos 300 nodos) y tablas desplazables sin foco en móvil | **0 violaciones** en las 33 pantallas |
+| Scroll horizontal (`scrollWidth − innerWidth`) | 0 px | 0 px |
+| Errores de consola | Ninguno | Ninguno |
+| Recorrido con Tab (acceso de cliente, acceso y resumen del operador) | Orden lógico, enlace «Saltar al contenido» y foco visible (contorno de 3 px) en cada elemento | Sin cambios |
+
+Correcciones aplicadas:
+
+- Los colores de texto secundario que fallaban se oscurecieron sin cambiar el tono, hasta llegar a 4,5:1 contra el fondo más claro donde aparecen (o 3:1 en texto grande). Incluye la variable `--muted` (`#738075` → `#677369`). Solo se tocaron propiedades `color`, no fondos ni bordes.
+- La etiqueta de la ilustración en la ficha medía 6 px en móvil: pasó a 9 px con mayor contraste.
+- Los contenedores de tablas con desplazamiento horizontal son enfocables (`tabIndex=0`, `role="region"` y etiqueta), para recorrerlos con teclado.
+
+El informe resumido está en [ui-review-2026-11-09.json](evidence/ui-review-2026-11-09.json). La revisión se puede repetir con `npm --prefix scripts/ui-review ci` y `node scripts/ui-review/review.mjs`, indicando `BASE_URL`, `BROWSER`, `ADMIN_TOKEN` y `CLIENT_TOKEN` como variables de entorno. Termina con código 1 si encuentra problemas. Las credenciales se pasaron por variables de entorno y no figuran en el informe. Para inyectar axe, la auditoría desactivó la CSP solo en el navegador de prueba. La política del sitio no se modificó.
+
+Límites: axe detecta en forma automática alrededor de la mitad de los problemas de accesibilidad. No se probó con lector de pantalla ni en Safari o Firefox. El selector nativo de fecha y hora se muestra según el idioma del navegador.

@@ -32,6 +32,7 @@ export async function request<T>(
         ...init.headers,
       },
     });
+    if (response.status === 204) return undefined as T;
     let data: unknown;
     try {
       data = await response.json();
@@ -84,6 +85,16 @@ const messages: Record<string, string> = {
     "La ficha cambió o ese identificador ya existe. Consultá el registro actual antes de volver a guardar.",
   CONFLICT:
     "Ya existe un cliente con ese identificador. Consultá sus datos antes de registrar otro.",
+  EMPLOYEE_INACTIVE:
+    "El empleado está dado de baja. Solo se puede consultar su seguimiento previo.",
+  PATIENT_LINK_REQUIRED:
+    "Primero hay que vincular al empleado con su paciente del hospital.",
+  NOT_CONFIGURED:
+    "La conexión con el hospital no está configurada en este entorno. No se envió nada.",
+  CLINIC_UNAVAILABLE:
+    "El hospital no respondió o respondió algo incompatible. Consultá la solicitud guardada antes de volver a enviar.",
+  EVIDENCE_CONFLICT:
+    "Los datos contradicen lo que ya está registrado para esta solicitud. Revisá la referencia o el turno indicado.",
 };
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError)

@@ -35,7 +35,7 @@ func main() {
 	var optionalCache fleet.Cache
 	if addr := platform.Env("REDIS_ADDR", ""); addr != "" {
 		cache = fleet.NewRedisCache(addr, platform.Env("REDIS_PASSWORD", ""), "fleet:v1:"+platform.Env("MONGODB_DATABASE", "fleet"))
-		optionalCache = cache
+		optionalCache = fleet.NewBreakerCache(cache)
 		defer cache.Close()
 	}
 	var search fleet.SearchEngine

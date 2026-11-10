@@ -139,7 +139,12 @@ export function Fleet() {
       ) : (
         data && (
           <>
-            <div className="operator-table-wrap">
+            <div
+            className="operator-table-wrap"
+            tabIndex={0}
+            role="region"
+            aria-label="Tabla con desplazamiento horizontal"
+          >
               <table className="operator-table">
                 <caption className="sr-only">Vehículos de la flota</caption>
                 <thead>

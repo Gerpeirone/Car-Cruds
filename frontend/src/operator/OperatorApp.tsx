@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   ShieldCheck,
+  UserCog,
   Users,
 } from "lucide-react";
 import { ApiError, request } from "../api";
@@ -27,6 +28,14 @@ import type { Call } from "./shared";
 import { Fleet, VehicleEditor } from "./Vehicles";
 import { Customers, CustomerCreate } from "./Customers";
 import { Reservations, Maintenance } from "./Rentals";
+import {
+  Clinic,
+  ClinicRequestView,
+  Memberships,
+  Staff,
+  StaffCreate,
+  StaffEditor,
+} from "./Staff";
 import "./operator.css";
 
 export default function OperatorApp() {
@@ -92,6 +101,18 @@ export default function OperatorApp() {
           <Route path="/operador/clientes/nuevo" element={<CustomerCreate />} />
           <Route path="/operador/reservas" element={<Reservations />} />
           <Route path="/operador/mantenimiento" element={<Maintenance />} />
+          <Route path="/operador/personal" element={<Staff />} />
+          <Route path="/operador/personal/nuevo" element={<StaffCreate />} />
+          <Route
+            path="/operador/personal/membresias"
+            element={<Memberships />}
+          />
+          <Route path="/operador/personal/turnos" element={<Clinic />} />
+          <Route
+            path="/operador/personal/turnos/:requestId"
+            element={<ClinicRequestView />}
+          />
+          <Route path="/operador/personal/:id" element={<StaffEditor />} />
           <Route path="*" element={<Navigate to="/operador" replace />} />
         </Routes>
       </OperatorShell>
@@ -205,6 +226,7 @@ function OperatorShell({ children }: { children: ReactNode }) {
     ["/operador/clientes", "Clientes", Users],
     ["/operador/reservas", "Reservas", ClipboardList],
     ["/operador/mantenimiento", "Mantenimiento", CalendarDays],
+    ["/operador/personal", "Personal", UserCog],
   ] as const;
   return (
     <div className="operator-shell">
@@ -292,6 +314,13 @@ function Dashboard() {
       text: "Bloqueá fechas para preparar y mantener los vehículos.",
       icon: CalendarDays,
       label: "Programar mantenimiento",
+    },
+    {
+      to: "/operador/personal",
+      title: "Un equipo que también se cuida.",
+      text: "Gestioná el personal, sus membresías del gimnasio y sus turnos médicos.",
+      icon: UserCog,
+      label: "Gestionar personal",
     },
   ];
   return (

@@ -1,0 +1,13 @@
+{
+  "name": "car-cruds-ui-review",
+  "private": true,
+  "type": "module",
+  "description": "Revisión de la interfaz en navegador real: axe WCAG 2.1 AA, desborde horizontal, consola y teclado.",
+  "scripts": {
+    "review": "node review.mjs"
+  },
+  "dependencies": {
+    "axe-core": "4.11.0",
+    "playwright-core": "1.56.1"
+  }
+}

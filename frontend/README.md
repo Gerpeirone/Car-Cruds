@@ -67,7 +67,7 @@ Esta prueba solo admite loopback. Crea un vehículo ficticio exclusivo, usa el c
 
 `src/App.tsx` contiene rutas y pantallas; `api.ts`, transporte y errores; `domain.ts`, fechas/importes/operación pendiente; `CarArt.tsx`, ilustración propia; `styles.css`, diseño. `main.tsx` carga fuentes locales. El lockfile fija las dependencias. La CI de frontend ejecuta `npm ci`, pruebas ordinarias y build.
 
-La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. El [panel del operador](../docs/PANEL-OPERADOR.md) está implementado en `/operador/acceso`: usa exclusivamente `AUTH_ADMIN_TOKEN`, sin ID de cliente, y verifica `role=admin` por `/v1/session`. La interfaz de personal y cloud siguen pendientes.
+La API no lista reservas: se consulta una propia por código. El precio/agenda/propiedad siguen siendo autoridad del backend. El [panel del operador](../docs/PANEL-OPERADOR.md) está implementado en `/operador/acceso`: usa exclusivamente `AUTH_ADMIN_TOKEN`, sin ID de cliente, y verifica `role=admin` por `/v1/session`. La sección [Personal](../docs/PERSONAL-OPERADOR.md) (`/operador/personal`) cubre empleados, membresías del gimnasio y turnos médicos. En la VM, Caddy sirve esta interfaz y deriva `/v1/*` al gateway ([despliegue](../docs/DESPLIEGUE.md)).
 
 - [Evidencia y limitación de revisión visual](../docs/EVIDENCIA-FRONTEND.md).
 - [Especificación de pantallas y criterios](../docs/FRONTEND-ALQUILER.md).

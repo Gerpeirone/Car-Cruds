@@ -1,0 +1,42 @@
+# Tablero y alertas (D11). Superposición opcional:
+#   docker compose -f compose.yaml -f compose.observability.yaml up -d --wait
+# Prometheus: http://127.0.0.1:9090 (alertas en /alerts).
+# Grafana:    http://127.0.0.1:3000, tablero «Car Cruds · Operación»; usuario
+#             admin con GRAFANA_ADMIN_PASSWORD del .env. En la VM, por túnel SSH.
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+    restart: unless-stopped
+    environment:
+      AUTH_SERVICE_TOKEN: ${AUTH_SERVICE_TOKEN:?Ejecutar devsetup}
+    # El token de servicio se escribe en un archivo efímero del contenedor;
+    # la configuración versionada solo referencia su ruta.
+    entrypoint: [/bin/sh, -c]
+    command:
+      - umask 077 && printf %s "$$AUTH_SERVICE_TOKEN" > /tmp/token && exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infra/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports: ["127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:9090/-/ready], interval: 5s, timeout: 3s, retries: 12}
+    depends_on: {gateway: {condition: service_healthy}}
+  grafana:
+    image: grafana/grafana:12.1.1@sha256:a1701c2180249361737a99a01bc770db39381640e4d631825d38ff4535efa47d
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Agregar GRAFANA_ADMIN_PASSWORD al .env (go run ./cmd/devsetup lo genera en un .env nuevo)}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/car-cruds.json
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports: ["127.0.0.1:${GRAFANA_PORT:-3000}:3000"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/api/health], interval: 5s, timeout: 3s, retries: 24}
+    depends_on: {prometheus: {condition: service_healthy}}
+
+volumes:
+  prometheus-data:
+  grafana-data:
