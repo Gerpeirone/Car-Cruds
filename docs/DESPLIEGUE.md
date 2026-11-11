@@ -376,7 +376,7 @@ docker compose $F ps rentals web gateway
 Verificación: `curl -s -o /dev/null -w '%{http_code}
 ' https://57-156-56-201.sslip.io/v1/reservations` da 401. En el navegador, con la credencial de alquiler, **Mis alquileres** lista solo las reservas de ese conductor.
 
-**Datos de demostración:** no se cargan con el despliegue. Si el equipo decide mostrarlos en la VM, se ejecuta en la VM contra su gateway local, que lee el `.env` sin copiarlo, con `docker run --rm --network host -v "$PWD":/src -w /src golang:1.26.1-alpine go run ./cmd/demoseed -apply`. Antes conviene ver el plan sin `-apply`, y para retirarlos se usa `-cleanup`. Ver [cmd/demoseed](../cmd/demoseed/README.md).
+**Datos de demostración:** no se cargan con el despliegue. Si el equipo decide mostrarlos en la VM, se ejecuta en la VM contra su gateway local, que lee el `.env` sin copiarlo, con `docker run --rm --network host -v "$PWD":/src -w /src golang:1.26.1-alpine go run ./cmd/demoseed -apply`. Antes conviene ver el plan sin `-apply`, y para retirarlos se usa `-cleanup`. Para ampliar solo vehículos y empleados, sin clientes ni reservas, se usa `-catalog` (vista previa de solo lectura contra la VM), después `-catalog -apply` y, al final, `-verify`. Ver [cmd/demoseed](../cmd/demoseed/README.md).
 
 **Volver atrás:** `for s in rentals web; do docker tag car-cruds-$s:antes-$FECHA car-cruds-$s:latest; done && docker compose $F up -d --no-deps --wait rentals web`.
 

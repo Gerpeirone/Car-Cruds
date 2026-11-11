@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +22,7 @@ type fakeGateway struct {
 	employees    []remoteEmployee
 	vehicles     map[string]remoteVehicle
 	reservations []remoteReservation
+	unindexed    map[string]bool // in Flota but not yet returned by the search
 	writes       []string
 }
 
@@ -82,11 +84,48 @@ func (f *fakeGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			write(409, map[string]string{"code": "CONFLICT"})
 			return
 		}
-		f.vehicles[id] = remoteVehicle{VehicleID: id, Brand: body["brand"].(string), Model: body["model"].(string), Active: true, Version: 1}
+		f.vehicles[id] = remoteVehicle{VehicleID: id, Brand: body["brand"].(string), Model: body["model"].(string), Category: body["category"].(string),
+			Transmission: body["transmission"].(string), Seats: int(body["seats"].(float64)), DailyRateMinor: int64(body["dailyRateMinor"].(float64)),
+			Currency: body["currency"].(string), Active: body["active"].(bool), Version: 1}
 		write(201, f.vehicles[id])
+	case r.Method == "GET" && path == "/v1/vehicles":
+		var items []remoteVehicle
+		for _, v := range f.vehicles {
+			if v.Active || r.URL.Query().Get("includeInactive") == "true" {
+				items = append(items, v)
+			}
+		}
+		sort.Slice(items, func(i, j int) bool { return items[i].VehicleID < items[j].VehicleID })
+		write(200, map[string]any{"items": items, "total": len(items)})
 	case r.Method == "GET" && path == "/v1/vehicles/search":
-		_, ok := f.vehicles["demo-renault-kangoo"]
-		write(200, map[string]any{"total": map[bool]int{true: 1}[ok]})
+		// Like Solr: active only, exact filters, text over brand and model,
+		// price order with the id as tie breaker, then the requested page.
+		q := r.URL.Query()
+		var items []remoteVehicle
+		for _, v := range f.vehicles {
+			text := strings.ToLower(v.Brand + " " + v.Model)
+			if !v.Active || f.unindexed[v.VehicleID] || (q.Has("brand") && v.Brand != q.Get("brand")) || (q.Has("category") && v.Category != q.Get("category")) ||
+				(q.Has("transmission") && v.Transmission != q.Get("transmission")) || (q.Has("seats") && fmt.Sprint(v.Seats) != q.Get("seats")) ||
+				!strings.Contains(text, strings.ToLower(q.Get("q"))) {
+				continue
+			}
+			items = append(items, v)
+		}
+		sort.Slice(items, func(i, j int) bool {
+			a, b := items[i], items[j]
+			if q.Get("sort") == "price_desc" {
+				a, b = b, a
+			}
+			if a.DailyRateMinor != b.DailyRateMinor {
+				return a.DailyRateMinor < b.DailyRateMinor
+			}
+			return items[i].VehicleID < items[j].VehicleID
+		})
+		page, size := 1, 20
+		fmt.Sscan(q.Get("page"), &page)
+		fmt.Sscan(q.Get("pageSize"), &size)
+		from := min((page-1)*size, len(items))
+		write(200, map[string]any{"items": items[from:min(from+size, len(items))], "page": page, "pageSize": size, "total": len(items)})
 	case r.Method == "GET" && strings.HasPrefix(path, "/v1/vehicles/"):
 		v, ok := f.vehicles[strings.TrimPrefix(path, "/v1/vehicles/")]
 		if !ok {

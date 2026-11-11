@@ -45,6 +45,11 @@ var employees = []employee{
 	{"Demo · Camila Ortiz (Administración)", true},
 	{"Demo · Federico Sosa (Logística)", true},
 	{"Demo · Gabriela Paz (Ventas, baja)", false},
+	{"Demo · Hernán Castro (Mecánica)", true},
+	{"Demo · Inés Molina (Reservas)", true},
+	{"Demo · Julián Vega (Preparación de vehículos)", true},
+	{"Demo · Lorena Ibarra (Recursos humanos)", true},
+	{"Demo · Matías Rojas (Seguridad)", true},
 }
 
 var vehicles = []vehicle{
@@ -62,6 +67,8 @@ var vehicles = []vehicle{
 	{"demo-fiat-cronos", "Fiat", "Cronos", "sedan", "manual", 5, 3600000},
 	{"demo-nissan-kicks", "Nissan", "Kicks", "suv", "automatic", 5, 6200000},
 	{"demo-renault-kangoo", "Renault", "Kangoo", "van", "manual", 7, 5400000},
+	{"demo-chevrolet-tracker", "Chevrolet", "Tracker", "suv", "automatic", 5, 6400000},
+	{"demo-peugeot-2008", "Peugeot", "2008", "suv", "automatic", 5, 6000000},
 }
 
 // Rentals for the fictitious drivers (operator view) plus, for the driver of
