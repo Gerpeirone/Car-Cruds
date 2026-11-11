@@ -99,9 +99,13 @@ export function AccountPortal({ catalog }: { catalog: (account: Account, expire:
         <section className="account-card">
           <h1>Encontrá tu próximo auto</h1>
           <p className="muted">Explorá el catálogo de Car Cruds y compará los vehículos disponibles.</p>
-          <Link className="button" to={account ? "/catalogo" : "/registro"}>
-            {account ? "Explorar el catálogo" : "Crear cuenta"} <ArrowRight size={18} />
-          </Link>
+          <div className="account-home-actions">
+            <Link className="button" to="/catalogo">
+              Explorar {account ? "el " : ""}catálogo <ArrowRight size={18} />
+            </Link>
+            {!account && <Link className="button secondary" to="/registro">Crear cuenta</Link>}
+          </div>
+          {!account && <p className="field-hint">Para explorar el catálogo necesitás una cuenta. Reservar requiere además una credencial de alquiler.</p>}
           <Link className="account-alternate" to="/acceso">Ya tengo una credencial de alquiler</Link>
         </section>
         <div className="account-visual"><CarArt hero /></div>

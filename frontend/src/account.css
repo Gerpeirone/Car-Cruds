@@ -37,3 +37,4 @@
   .account-header { flex-wrap: wrap; }
 }
 @media (max-width: 420px) { .account-fields { grid-template-columns: 1fr; } }
+.account-home-actions { display: flex; flex-wrap: wrap; gap: .6rem; }

@@ -100,6 +100,27 @@ func (a Actor) CanRead(r Reservation) bool {
 	}
 	return a.Role == "client" && a.App == r.OwnerApp && a.CustomerID == r.CustomerID
 }
+
+// ListScope returns which driver's reservations the actor may list. A client
+// always gets its own driver, derived from the validated credential, and only
+// the reservations created through its own application; a requested
+// customerID that differs is refused instead of silently widened.
+func (a Actor) ListScope(requested string) (customerID, ownerApp string, p *Problem) {
+	switch {
+	case a.Role == "client" && a.CustomerID != "" && a.App != "":
+		if requested != "" && requested != a.CustomerID {
+			return "", "", Fail("FORBIDDEN", "Solo podés consultar tus propias reservas.")
+		}
+		return a.CustomerID, a.App, nil
+	case (a.Role == "admin" || a.Role == "service") && a.App != "":
+		if !Identifier.MatchString(requested) {
+			return "", "", Fail("INVALID_INPUT", "customerId es obligatorio para consultar reservas de un conductor.")
+		}
+		return requested, "", nil
+	default:
+		return "", "", Fail("FORBIDDEN", "La aplicación no tiene permiso para esta operación.")
+	}
+}
 func (a Actor) CanCreate(customerID string) bool {
 	return a.App != "" && (a.Role == "admin" || a.Role == "service" || (a.Role == "client" && a.CustomerID == customerID))
 }

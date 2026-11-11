@@ -48,3 +48,34 @@ func TestKnownPatternsRemainStableAcrossResourceIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestListReservationsValidatesQueryBeforePersistence(t *testing.T) {
+	h := platform.AuthMiddleware(&Handler{Service: &application.Service{}}, map[string]platform.Principal{
+		"client": {App: "client", Role: "client", CustomerID: "cli-001"}, "admin": {App: "op", Role: "admin"}, "gym": {App: "gym", Role: "gym"}})
+	for _, test := range []struct {
+		token, query string
+		status       int
+		code         string
+	}{
+		{"", "", 401, "UNAUTHORIZED"},
+		{"gym", "", 403, "FORBIDDEN"},
+		{"client", "?customerId=cli-002", 403, "FORBIDDEN"},
+		{"client", "?status=RESERVED", 400, "INVALID_INPUT"},
+		{"client", "?page=1&page=2", 400, "INVALID_INPUT"},
+		{"client", "?page=01", 400, "INVALID_INPUT"},
+		{"client", "?pageSize=51", 400, "INVALID_INPUT"},
+		{"admin", "", 400, "INVALID_INPUT"},
+	} {
+		r := httptest.NewRequest("GET", "/v1/reservations"+test.query, nil)
+		if test.token != "" {
+			r.Header.Set("Authorization", "Bearer "+test.token)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		var body map[string]any
+		json.Unmarshal(w.Body.Bytes(), &body)
+		if w.Code != test.status || body["code"] != test.code {
+			t.Fatalf("%s %s: %d %s", test.token, test.query, w.Code, w.Body)
+		}
+	}
+}

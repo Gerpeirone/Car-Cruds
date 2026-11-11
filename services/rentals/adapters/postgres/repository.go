@@ -172,6 +172,38 @@ func (r *Repository) Get(ctx context.Context, id string) (domain.Reservation, er
 	return v, err
 }
 
+func (r *Repository) List(ctx context.Context, customerID, ownerApp string, page, pageSize int) ([]domain.Reservation, int64, error) {
+	// One snapshot for the page and the total.
+	tx, err := r.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, 0, unavailable()
+	}
+	defer tx.Rollback(ctx)
+	const filter = " FROM rental_reservations WHERE customer_id=$1 AND ($2='' OR owner_app=$2)"
+	var total int64
+	if err = tx.QueryRow(ctx, "SELECT count(*)"+filter, customerID, ownerApp).Scan(&total); err != nil {
+		return nil, 0, unavailable()
+	}
+	rows, err := tx.Query(ctx, "SELECT "+columns+filter+" ORDER BY starts_on DESC, id LIMIT $3 OFFSET $4", customerID, ownerApp, pageSize, (page-1)*pageSize)
+	if err != nil {
+		return nil, 0, unavailable()
+	}
+	defer rows.Close()
+	items := make([]domain.Reservation, 0, pageSize)
+	for rows.Next() {
+		v, err := read(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		v.Period.Days = duration(v.Period.StartsOn, v.Period.EndsOn)
+		items = append(items, v)
+	}
+	if rows.Err() != nil {
+		return nil, 0, unavailable()
+	}
+	return items, total, nil
+}
+
 func (r *Repository) Transition(ctx context.Context, actor domain.Actor, id string, next domain.Status) (domain.Reservation, error) {
 	tx, err := r.Pool.Begin(ctx)
 	if err != nil {

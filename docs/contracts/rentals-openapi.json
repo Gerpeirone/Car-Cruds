@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Alquileres: API propia implementada",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Contrato del backend propio al 13 de octubre de 2026. Describe las operaciones implementadas en services/rentals y conserva separado openapi-v1.json, correspondiente al mock histórico. Reservas, agenda e idempotencia se almacenan en PostgreSQL propio; las verificaciones de cliente y tarifa consultan Clientes y Flota por HTTP. El presupuesto de operación es de hasta 5 segundos y cada llamada de dependencia usa hasta 1 segundo dentro del tiempo restante. Las fechas son días calendario de la sucursal America/Buenos_Aires; el período [startsOn, endsOn) dura entre 1 y 30 días. Los importes son enteros int64 en centavos de ARS. Los ejemplos son ilustrativos y sus fechas deben ajustarse al día de ejecución. Esta descripción de la API no acredita publicación externa, aceptación de la entrega ni compatibilidad con clínica o gimnasio. Referencias: [SPEC](../../SPEC.md), [D4](../adr/ADR-004-consistencia-concurrencia.md), [D5](../adr/ADR-016-comunicacion-v2.md)."
   },
   "x-contract-status": "implemented-own-api",
@@ -130,6 +130,150 @@
       }
     },
     "/v1/reservations": {
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "listRentalReservations",
+        "summary": "Listar las reservas del conductor",
+        "description": "Para `client`, el conductor se deriva de la credencial validada (CustomerID y aplicación de origen): solo se listan sus reservas creadas por su aplicación y no se acepta otro `customerId`. `admin` y `service` deben indicar `customerId`. Orden: inicio más reciente primero. Solo lectura; los estados y transiciones no cambian.",
+        "x-roles": [
+          "admin",
+          "client",
+          "service"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": false,
+            "description": "Obligatorio para admin y service. Un client puede omitirlo; si lo envía debe ser su propio conductor (otro valor: 403).",
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            },
+            "example": "cli-001"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Página desde 1. Predeterminada 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página entre 1 y 50. Predeterminado 20.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de reservas del conductor con el total.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "page",
+                    "pageSize",
+                    "total"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Reservation"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 50
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "d30c48bb-e7aa-4b6d-a69f-83fbbe07c77f",
+                      "status": "RESERVED",
+                      "vehicleId": "auto-001",
+                      "customerId": "cli-001",
+                      "startsOn": "2030-01-15",
+                      "endsOn": "2030-01-18",
+                      "days": 3,
+                      "dailyRateMinor": 5000000,
+                      "totalMinor": 15000000,
+                      "currency": "ARS"
+                    }
+                  ],
+                  "page": 1,
+                  "pageSize": 20,
+                  "total": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro desconocido o repetido, paginación inválida o falta customerId para admin/service.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "page debe ser 1..10000 y pageSize 1..50."
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Rol sin permiso, o client que pide las reservas de otro conductor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "Solo podés consultar tus propias reservas."
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/DependencyUnavailable"
+          }
+        }
+      },
       "post": {
         "tags": [
           "Reservas"
