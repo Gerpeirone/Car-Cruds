@@ -33,6 +33,7 @@ import {
   useLoad,
   useOperator,
 } from "./shared";
+import type { Call } from "./shared";
 
 export interface Employee {
   employeeId: string;
@@ -239,22 +240,6 @@ export function toInstant(local: string) {
   return date.toISOString().replace(".000Z", "Z");
 }
 
-function StaffTabs() {
-  const tabs = [
-    ["/operador/personal", "Empleados"],
-    ["/operador/personal/membresias", "Membresías del gimnasio"],
-    ["/operador/personal/turnos", "Turnos médicos"],
-  ] as const;
-  return (
-    <nav className="operator-subnav" aria-label="Secciones de personal">
-      {tabs.map(([to, label]) => (
-        <NavLink key={to} to={to} end={to === "/operador/personal"}>
-          {label}
-        </NavLink>
-      ))}
-    </nav>
-  );
-}
 function Pager({
   total,
   page,
@@ -329,7 +314,6 @@ export function Staff() {
           Registrar empleado
         </Link>
       </Heading>
-      <StaffTabs />
       <form className="operator-toolbar" onSubmit={lookup}>
         <label className="operator-search">
           Consultar empleado por ID
@@ -695,6 +679,7 @@ export function StaffEditor() {
                 </Action>
               </div>
             </form>
+            <IntegrationStatus employee={current} />
             <dialog
               ref={dialog}
               className="cancel-dialog"
@@ -749,6 +734,7 @@ export function StaffEditor() {
 export function Memberships() {
   const { page, params, setParams } = usePage();
   const period = params.get("period") || currentPeriod();
+  const selected = params.get("empleado");
   const [draft, setDraft] = useState(period);
   const { data, error, loading, reload } = useLoad<MembershipReport>(
     `/v1/employees/reports/memberships?period=${encodeURIComponent(period)}&page=${page}&pageSize=${pageSize}`,
@@ -766,8 +752,10 @@ export function Memberships() {
   }
   return (
     <>
-      <Heading title="Bienestar del equipo." />
-      <StaffTabs />
+      <Heading
+        eyebrow="INTEGRACIÓN CON EL GIMNASIO"
+        title="Gimnasio – Membresías de empleados"
+      />
       <form className="operator-toolbar" onSubmit={apply}>
         <label className="operator-search">
           Período informado por el gimnasio
@@ -786,8 +774,11 @@ export function Memberships() {
       </form>
       {!!formError && <Issue error={formError} />}
       <p className="operator-hint field-hint">
-        El gimnasio envía la evidencia de membresía, uso y gastos. Sin evidencia
-        no significa que no haya uso ni costo: el dato simplemente no llegó.
+        El gimnasio consume nuestra lista de empleados y nos envía la evidencia
+        de membresía, uso y gastos de cada mes. Sin evidencia no significa que
+        no haya uso ni costo: el dato simplemente no llegó. El gimnasio
+        administra el vínculo entre cada empleado y su socio; Car Cruds no lo
+        guarda.
       </p>
       {loading ? (
         <Busy />
@@ -837,6 +828,9 @@ export function Memberships() {
                     <th>Costo</th>
                     <th>Gastos</th>
                     <th>Evidencia</th>
+                    <th>
+                      <span className="sr-only">Acciones</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -861,11 +855,29 @@ export function Memberships() {
                           {ev ? (
                             <>
                               v{ev.version} · {moment(ev.observedAt)}
-                              <small>{ev.sourceReference}</small>
+                              <small>
+                                {item.sourceApp || "Origen no informado"}
+                              </small>
                             </>
                           ) : (
                             "—"
                           )}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="text-button"
+                            aria-label={`Ver evidencia de ${item.displayName}`}
+                            onClick={() =>
+                              setParams({
+                                period,
+                                page: String(page),
+                                empleado: item.employeeId,
+                              })
+                            }
+                          >
+                            Ver evidencia <ArrowRight size={14} />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -884,6 +896,14 @@ export function Memberships() {
                 onPage={(next) => setParams({ period, page: String(next) })}
               />
             </div>
+            {selected && (
+              <EvidenceDetail
+                employeeId={selected}
+                period={period}
+                row={data.items.find((i) => i.employeeId === selected)}
+                onClose={() => setParams({ period, page: String(page) })}
+              />
+            )}
           </>
         )
       )}
@@ -917,7 +937,25 @@ function forgetClinicDraft() {
 }
 
 export function Clinic() {
-  const { page, setPage } = usePage();
+  const { page, setPage, params } = usePage();
+  const employees = useLoad<EmployeePage>(
+    "/v1/admin/employees?page=1&pageSize=100",
+    isPage,
+  );
+  const overview = useLoad<ClinicReport>(
+    "/v1/employees/reports/clinic?page=1&pageSize=100",
+    isClinicReport,
+  );
+  const [review, setReview] = useState<{
+    draft: ClinicDraft;
+    startAt: string;
+  } | null>(null);
+  const reviewDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (review) reviewDialog.current?.showModal();
+    else if (reviewDialog.current?.open) reviewDialog.current.close();
+  }, [review]);
+  const active = employees.data?.items.filter((e) => e.active) ?? [];
   const doctors = useLoad<ClinicDoctors>(
     "/v1/employees/clinic/doctors",
     isClinicDoctors,
@@ -930,7 +968,7 @@ export function Clinic() {
   const [form, setForm] = useState<ClinicDraft>(
     () =>
       pending ?? {
-        personId: "",
+        personId: params.get("empleado") ?? "",
         patientId: "",
         doctorId: "",
         startLocal: "",
@@ -946,22 +984,31 @@ export function Clinic() {
   function update<K extends keyof ClinicDraft>(key: K, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
     setFormError(undefined);
+    try {
+      const draft = {
+        ...form,
+        personId: form.personId.trim(),
+        patientId: form.patientId.trim(),
+        doctorId: form.doctorId.trim(),
+      };
+      if (![draft.personId, draft.patientId, draft.doctorId].every(validKey))
+        throw new Error(
+          "Completá empleado, paciente y profesional con identificadores de hasta 100 caracteres.",
+        );
+      // Nothing reaches the hospital until the operator confirms the summary.
+      setReview({ draft, startAt: toInstant(draft.startLocal) });
+    } catch (err) {
+      setFormError(err);
+    }
+  }
+  async function save() {
+    if (!review) return;
+    const { draft, startAt } = review;
     await command.run(async () => {
       try {
-        const draft = {
-          ...form,
-          personId: form.personId.trim(),
-          patientId: form.patientId.trim(),
-          doctorId: form.doctorId.trim(),
-        };
-        if (![draft.personId, draft.patientId, draft.doctorId].every(validKey))
-          throw new Error(
-            "Completá empleado, paciente y profesional con identificadores de hasta 100 caracteres.",
-          );
-        const startAt = toInstant(draft.startLocal);
         // Saving the reference first lets a lost response be recovered with
         // the same body: Employees returns the original intention for it.
         try {
@@ -991,11 +1038,13 @@ export function Clinic() {
           isClinicRequest,
         );
         forgetClinicDraft();
+        setReview(null);
         navigate(
-          `/operador/personal/turnos/${encodeURIComponent(created.requestId)}`,
+          `/operador/hospital/${encodeURIComponent(created.requestId)}`,
           { state: { clinicCreated: true } },
         );
       } catch (err) {
+        setReview(null);
         setFormError(err);
         if (unsure(err)) setUnknown(true);
         else if (err instanceof ApiError) forgetClinicDraft();
@@ -1016,22 +1065,48 @@ export function Clinic() {
   }
   return (
     <>
-      <Heading title="Cuidar a quien cuida." />
-      <StaffTabs />
+      <Heading
+        eyebrow="INTEGRACIÓN CON EL HOSPITAL"
+        title="Hospital – Gestión de turnos médicos"
+      />
+      <ClinicOverview report={overview} />
       <div className="operator-split">
         <form className="operator-form-card" onSubmit={submit}>
           <div className="operator-section-label">NUEVA SOLICITUD DE TURNO</div>
           <div className="operator-fields">
-            <label>
-              ID del empleado
-              <input
-                value={form.personId}
-                onChange={(e) => update("personId", e.target.value)}
-                disabled={locked}
-                maxLength={100}
-                required
-              />
-            </label>
+            {active.length ? (
+              <label>
+                Empleado
+                <select
+                  value={form.personId}
+                  onChange={(e) => update("personId", e.target.value)}
+                  disabled={locked}
+                  required
+                >
+                  <option value="">Elegí un empleado activo</option>
+                  {form.personId &&
+                    !active.some((e) => e.employeeId === form.personId) && (
+                      <option value={form.personId}>{form.personId}</option>
+                    )}
+                  {active.map((e) => (
+                    <option key={e.employeeId} value={e.employeeId}>
+                      {e.displayName} · {e.employeeId}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                ID del empleado
+                <input
+                  value={form.personId}
+                  onChange={(e) => update("personId", e.target.value)}
+                  disabled={locked}
+                  maxLength={100}
+                  required
+                />
+              </label>
+            )}
             <label>
               ID de paciente en el hospital
               <input
@@ -1085,7 +1160,8 @@ export function Clinic() {
           <p className="field-hint">
             Referencia de la solicitud: <strong>{form.localReference}</strong>.
             Guardar no envía nada al hospital: el envío se confirma en la
-            siguiente pantalla.
+            siguiente pantalla. El paciente lo habilita el hospital; sus
+            pacientes de prueba informados son pat-001 y pat-003.
           </p>
           {!!formError && <Issue error={formError} />}
           {unknown && (
@@ -1115,7 +1191,7 @@ export function Clinic() {
           )}
           <div className="operator-form-actions">
             <Action type="submit" busy={command.busy} disabled={unknown}>
-              Guardar solicitud <ArrowRight size={17} />
+              Revisar solicitud <ArrowRight size={17} />
             </Action>
           </div>
         </form>
@@ -1142,6 +1218,59 @@ export function Clinic() {
           mano.
         </p>
       )}
+      <dialog
+        ref={reviewDialog}
+        className="cancel-dialog"
+        aria-labelledby="clinic-review-title"
+        onCancel={(e) => {
+          if (command.busy) e.preventDefault();
+          else setReview(null);
+        }}
+        onClose={() => setReview(null)}
+      >
+        <button
+          className="icon-button dialog-close"
+          disabled={command.busy}
+          aria-label="Cerrar resumen"
+          onClick={() => setReview(null)}
+        >
+          <X size={20} />
+        </button>
+        <span className="lookup-icon">
+          <HeartPulse size={26} />
+        </span>
+        <h2 id="clinic-review-title">Confirmar solicitud</h2>
+        {review && (
+          <dl className="operator-review">
+            <dt>Empleado</dt>
+            <dd>{review.draft.personId}</dd>
+            <dt>Paciente</dt>
+            <dd>{review.draft.patientId}</dd>
+            <dt>Médico</dt>
+            <dd>{review.draft.doctorId}</dd>
+            <dt>Turno</dt>
+            <dd>{moment(review.startAt)}</dd>
+            <dt>Referencia</dt>
+            <dd className="break-word">{review.draft.localReference}</dd>
+          </dl>
+        )}
+        <p>
+          Se vincula el empleado con el paciente y se guarda la solicitud.
+          Todavía no se envía al hospital ni se genera ningún cargo.
+        </p>
+        <div className="dialog-actions">
+          <Action
+            className="secondary"
+            disabled={command.busy}
+            onClick={() => setReview(null)}
+          >
+            Volver
+          </Action>
+          <Action busy={command.busy} onClick={() => void save()}>
+            Confirmar y guardar <Check size={17} />
+          </Action>
+        </div>
+      </dialog>
       <ClinicBilling />
       <h2 className="operator-subtitle">Última solicitud por empleado</h2>
       {loading ? (
@@ -1162,6 +1291,7 @@ export function Clinic() {
                 <tr>
                   <th>Empleado</th>
                   <th>Clasificación</th>
+                  <th>Estado</th>
                   <th>Turno pedido</th>
                   <th>
                     <span className="sr-only">Acciones</span>
@@ -1187,6 +1317,18 @@ export function Clinic() {
                       </span>
                     </td>
                     <td>
+                      {item.request ? (
+                        <>
+                          {stateLabels[item.request.state]}
+                          {item.request.failureCode && (
+                            <small>{item.request.failureCode}</small>
+                          )}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
                       {item.request
                         ? moment(item.request.requestedStartAt)
                         : "Sin solicitudes"}
@@ -1195,7 +1337,7 @@ export function Clinic() {
                       {item.request && (
                         <Link
                           className="text-button"
-                          to={`/operador/personal/turnos/${encodeURIComponent(item.request.requestId)}`}
+                          to={`/operador/hospital/${encodeURIComponent(item.request.requestId)}`}
                           aria-label={`Ver solicitud de ${item.displayName}`}
                         >
                           Ver solicitud <ArrowRight size={14} />
@@ -1303,7 +1445,7 @@ export function ClinicRequestView() {
   }
   return (
     <>
-      <Back to="/operador/personal/turnos" children="Volver a turnos" />
+      <Back to="/operador/hospital" children="Volver a Hospital" />
       <Heading title="Seguimiento del turno." />
       {!!error && <Issue error={error} />}
       {!!success && <Success>{success}</Success>}
@@ -1545,7 +1687,9 @@ function ClinicBilling() {
                   <small>TOTAL {t.currency}</small>
                   <strong>{amount(t.amountMinor, t.currency)}</strong>
                   <span className="field-hint">
-                    {t.bookings} reservas cobradas
+                    {t.bookings === 1
+                      ? "1 reserva cobrada"
+                      : `${t.bookings} reservas cobradas`}
                   </span>
                 </div>
               ))}
@@ -1600,5 +1744,329 @@ function ClinicBilling() {
         )
       )}
     </>
+  );
+}
+
+// Indicators come only from the employees clinic report: the last request
+// of each employee. No aggregate endpoint exists, so nothing else is shown.
+function ClinicOverview({
+  report,
+}: {
+  report: { data?: ClinicReport; error?: unknown; loading: boolean };
+}) {
+  if (report.loading) return <Busy />;
+  if (report.error) return <Issue error={report.error} />;
+  if (!report.data) return null;
+  const requests = report.data.items.flatMap((i) =>
+    i.request ? [i.request] : [],
+  );
+  const count = (...states: ClinicState[]) =>
+    requests.filter((r) => states.includes(r.state)).length;
+  const cards: [string, number][] = [
+    ["CON SOLICITUD", requests.length],
+    ["CONFIRMADAS", count("booked")],
+    ["REGISTRADAS SIN ENVIAR", count("ready")],
+    ["A CONCILIAR", count("unknown")],
+    ["RECHAZADAS O CANCELADAS", count("rejected", "cancelled")],
+  ];
+  const partial = report.data.total > report.data.items.length;
+  return (
+    <>
+      <div className="operator-summary">
+        {cards.map(([label, value]) => (
+          <div key={label}>
+            <small>{label}</small>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="operator-hint field-hint">
+        Cuenta la última solicitud de cada empleado según Empleados
+        {partial
+          ? ` (primeros ${report.data.items.length} de ${report.data.total} empleados)`
+          : ""}
+        . Car Cruds llama al hospital desde su servicio de Empleados; este panel
+        nunca se comunica con el hospital directamente.
+      </p>
+    </>
+  );
+}
+
+interface EvidenceHistory {
+  employeeId: string;
+  period: string;
+  items: (Omit<Evidence, "employeeId" | "period"> & {
+    sourceApp: string;
+    receivedAt: string;
+  })[];
+}
+const isEvidenceHistory = (v: EvidenceHistory) =>
+  !!v &&
+  Array.isArray(v.items) &&
+  v.items.every(
+    (i) => Number.isInteger(i.version) && typeof i.receivedAt === "string",
+  );
+
+function EvidenceDetail({
+  employeeId,
+  period,
+  row,
+  onClose,
+}: {
+  employeeId: string;
+  period: string;
+  row?: MembershipReport["items"][number];
+  onClose: () => void;
+}) {
+  const history = useLoad<EvidenceHistory>(
+    `/v1/employees/${encodeURIComponent(employeeId)}/membership-evidence?period=${encodeURIComponent(period)}`,
+    isEvidenceHistory,
+  );
+  const ev = row?.evidence;
+  const facts: [string, string][] = ev
+    ? [
+        ["EMPLEADO", ev.employeeId],
+        ["ORIGEN", row?.sourceApp || "No informado"],
+        ["REFERENCIA", ev.sourceReference],
+        ["VERSIÓN VIGENTE", String(ev.version)],
+        ["OBSERVADA", moment(ev.observedAt)],
+        ["SOCIO", yesNo(ev.member)],
+        ["USO", yesNo(ev.used)],
+        ["COSTO", amount(ev.costMinor, ev.currency)],
+        ["GASTOS", amount(ev.spendingMinor, ev.currency)],
+        ["MONEDA", ev.currency || "No informada"],
+      ]
+    : [];
+  return (
+    <section className="operator-reservation" aria-labelledby="evidence-title">
+      <div className="operator-reservation-head">
+        <div>
+          <span className="eyebrow">EVIDENCIA DEL PERÍODO {period}</span>
+          <h2 id="evidence-title" className="break-word">
+            {row?.displayName ?? employeeId}
+          </h2>
+        </div>
+        <button type="button" className="text-button" onClick={onClose}>
+          Cerrar detalle <X size={14} />
+        </button>
+      </div>
+      {!row && (
+        <p className="field-hint">
+          El empleado no figura en esta página del informe; se muestra solo su
+          historial.
+        </p>
+      )}
+      {row && !ev && (
+        <div className="notice warning">
+          No llegó evidencia del gimnasio para este empleado en {period}. No
+          significa que no sea socio ni que no haya gastos.
+        </div>
+      )}
+      {!!facts.length && (
+        <div className="operator-reservation-facts">
+          {facts.map(([label, value]) => (
+            <div key={label}>
+              <small>{label}</small>
+              <strong className="break-word">{value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+      <h3 className="operator-subtitle">Versiones recibidas</h3>
+      {history.loading ? (
+        <Busy />
+      ) : history.error ? (
+        <Issue error={history.error} retry={history.reload} />
+      ) : history.data?.items.length ? (
+        <div
+          className="operator-table-wrap"
+          tabIndex={0}
+          role="region"
+          aria-label="Tabla con desplazamiento horizontal"
+        >
+          <table className="operator-table">
+            <caption className="sr-only">
+              Historial de evidencia de {employeeId} en {period}
+            </caption>
+            <thead>
+              <tr>
+                <th>Versión</th>
+                <th>Recibida</th>
+                <th>Observada</th>
+                <th>Socio / uso</th>
+                <th>Origen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.data.items.map((h) => (
+                <tr key={h.version}>
+                  <td>
+                    v{h.version}
+                    {ev?.version === h.version && <small>Vigente</small>}
+                  </td>
+                  <td>{moment(h.receivedAt)}</td>
+                  <td>{moment(h.observedAt)}</td>
+                  <td>
+                    {yesNo(h.member)} / {yesNo(h.used)}
+                  </td>
+                  <td>
+                    {h.sourceApp}
+                    <small>{h.sourceReference}</small>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="field-hint">Sin versiones recibidas para este período.</p>
+      )}
+      <p className="field-hint">
+        Una versión atrasada se guarda en el historial pero no reemplaza la
+        vigente. El gimnasio administra el vínculo con su socio.
+      </p>
+    </section>
+  );
+}
+
+// Finds one employee in a paginated report without inventing a filter the
+// API does not offer. It stops after a bounded number of pages.
+async function findInReport<T extends { total: number }>(
+  call: Call,
+  path: (page: number) => string,
+  ids: (data: T) => string[],
+  id: string,
+  maxPages = 10,
+) {
+  for (let page = 1; page <= maxPages; page++) {
+    const data = await call<T>(path(page));
+    const index = ids(data).indexOf(id);
+    if (index >= 0) return { data, index };
+    if (page * 100 >= data.total) return null;
+  }
+  return null;
+}
+
+type Lookup<T> = { loading: boolean; error?: unknown; item?: T | null };
+
+function IntegrationStatus({ employee }: { employee: Employee }) {
+  const { call } = useOperator();
+  const period = currentPeriod();
+  const [clinic, setClinic] = useState<Lookup<ClinicReport["items"][number]>>({
+    loading: true,
+  });
+  const [gym, setGym] = useState<Lookup<MembershipReport["items"][number]>>({
+    loading: true,
+  });
+  useEffect(() => {
+    let alive = true;
+    findInReport<ClinicReport>(
+      call,
+      (p) => `/v1/employees/reports/clinic?page=${p}&pageSize=100`,
+      (d) => d.items.map((i) => i.personId),
+      employee.employeeId,
+    )
+      .then(
+        (r) =>
+          alive &&
+          setClinic({ loading: false, item: r ? r.data.items[r.index] : null }),
+      )
+      .catch((error) => alive && setClinic({ loading: false, error }));
+    findInReport<MembershipReport>(
+      call,
+      (p) =>
+        `/v1/employees/reports/memberships?period=${encodeURIComponent(period)}&page=${p}&pageSize=100`,
+      (d) => d.items.map((i) => i.employeeId),
+      employee.employeeId,
+    )
+      .then(
+        (r) =>
+          alive &&
+          setGym({ loading: false, item: r ? r.data.items[r.index] : null }),
+      )
+      .catch((error) => alive && setGym({ loading: false, error }));
+    return () => {
+      alive = false;
+    };
+  }, [call, employee.employeeId, period]);
+  const id = encodeURIComponent(employee.employeeId);
+  const request = clinic.item?.request;
+  const ev = gym.item?.evidence;
+  return (
+    <div className="operator-integrations">
+      <section className="operator-form-card" aria-labelledby="int-hospital">
+        <div className="operator-section-label" id="int-hospital">
+          HOSPITAL · TURNOS MÉDICOS
+        </div>
+        {clinic.loading ? (
+          <Busy />
+        ) : clinic.error ? (
+          <Issue error={clinic.error} />
+        ) : request ? (
+          <p>
+            <strong>{stateLabels[request.state]}</strong> ·{" "}
+            {classificationLabels[request.classification]}
+            <br />
+            Turno pedido: {moment(request.requestedStartAt)}
+            <br />
+            Última evidencia: {moment(request.observedAt)}
+          </p>
+        ) : (
+          <p className="field-hint">
+            {clinic.item === null
+              ? "No se encontró en el informe de Hospital."
+              : "Sin solicitudes de turno registradas."}
+          </p>
+        )}
+        <div className="operator-form-actions">
+          {request && (
+            <Link
+              className="button secondary"
+              to={`/operador/hospital/${encodeURIComponent(request.requestId)}`}
+            >
+              Ver solicitud
+            </Link>
+          )}
+          {employee.active && (
+            <Link className="button" to={`/operador/hospital?empleado=${id}`}>
+              Solicitar turno <ArrowRight size={16} />
+            </Link>
+          )}
+        </div>
+      </section>
+      <section className="operator-form-card" aria-labelledby="int-gym">
+        <div className="operator-section-label" id="int-gym">
+          GIMNASIO · MEMBRESÍA {period}
+        </div>
+        {gym.loading ? (
+          <Busy />
+        ) : gym.error ? (
+          <Issue error={gym.error} />
+        ) : ev ? (
+          <p>
+            <strong>Socio: {yesNo(ev.member)}</strong> · Uso: {yesNo(ev.used)}
+            <br />
+            Versión {ev.version} de{" "}
+            {gym.item?.sourceApp || "origen no informado"}
+            <br />
+            Observada: {moment(ev.observedAt)}
+          </p>
+        ) : (
+          <p className="field-hint">
+            {gym.item === null
+              ? "No se encontró en el informe del gimnasio."
+              : "Sin evidencia del gimnasio para este mes."}
+          </p>
+        )}
+        <div className="operator-form-actions">
+          <Link
+            className="button secondary"
+            to={`/operador/gimnasio?period=${encodeURIComponent(period)}&empleado=${id}`}
+          >
+            Ver evidencia
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -203,8 +203,21 @@ async function login(user: ReturnType<typeof userEvent.setup>) {
   );
   await user.click(screen.getByRole("button", { name: /Entrar al panel/ }));
 }
+async function confirmClinic(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /Revisar solicitud/ }));
+  const dialog = screen.getByRole("dialog", {
+    hidden: true,
+    name: "Confirmar solicitud",
+  });
+  await user.click(
+    within(dialog).getByRole("button", {
+      name: /Confirmar y guardar/,
+      hidden: true,
+    }),
+  );
+}
 async function fillClinic(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByLabelText("ID del empleado"), "emp-001");
+  await user.selectOptions(await screen.findByLabelText("Empleado"), "emp-001");
   await user.type(
     screen.getByLabelText("ID de paciente en el hospital"),
     "pac-001",
@@ -277,7 +290,7 @@ it("edita la ficha y da de baja con confirmación explícita", async () => {
 });
 it("muestra el informe de membresías sin convertir faltantes en cero", async () => {
   const user = userEvent.setup();
-  mount("/operador/personal/membresias?period=2026-10");
+  mount("/operador/gimnasio?period=2026-10");
   await login(user);
   await screen.findByText("Persona sin datos");
   expect(screen.getByText("Sin evidencia")).toBeTruthy();
@@ -288,10 +301,10 @@ it("muestra el informe de membresías sin convertir faltantes en cero", async ()
 });
 it("vincula, guarda la intención y la envía al hospital", async () => {
   const user = userEvent.setup();
-  mount("/operador/personal/turnos");
+  mount("/operador/hospital");
   await login(user);
   await fillClinic(user);
-  await user.click(screen.getByRole("button", { name: /Guardar solicitud/ }));
+  await confirmClinic(user);
   await screen.findByText(/Solicitud guardada. Todavía no se envió/);
   expect(writes[0]).toEqual({
     path: "/v1/employees/clinic/patient-links",
@@ -326,23 +339,23 @@ it("vincula, guarda la intención y la envía al hospital", async () => {
 it("recupera una intención incierta con la misma referencia tras volver a entrar", async () => {
   requestLost = true;
   const user = userEvent.setup();
-  const first = mount("/operador/personal/turnos");
+  const first = mount("/operador/hospital");
   await login(user);
   await fillClinic(user);
-  await user.click(screen.getByRole("button", { name: /Guardar solicitud/ }));
+  await confirmClinic(user);
   await screen.findByText(/La solicitud pudo haberse guardado/);
   const reference = (writes[1].body as { localReference: string })
     .localReference;
   first.unmount();
   requestLost = false;
-  mount("/operador/personal/turnos");
+  mount("/operador/hospital");
   await login(user);
   await screen.findByText(/La solicitud pudo haberse guardado/);
   expect(screen.getByText(reference)).toBeTruthy();
   await user.click(
     screen.getByRole("button", { name: /reintentar con la misma referencia/ }),
   );
-  await user.click(screen.getByRole("button", { name: /Guardar solicitud/ }));
+  await confirmClinic(user);
   await screen.findByText(/Solicitud guardada/);
   const creations = writes.filter(
     (w) => w.path === "/v1/employees/clinic/requests",
@@ -353,7 +366,7 @@ it("recupera una intención incierta con la misma referencia tras volver a entra
 it("informa la falta de configuración del hospital sin marcar resultado incierto", async () => {
   submitResult = "not-configured";
   const user = userEvent.setup();
-  mount("/operador/personal/turnos/req-001");
+  mount("/operador/hospital/req-001");
   await login(user);
   await user.click(
     await screen.findByRole("button", { name: /Enviar al hospital/ }),
@@ -371,11 +384,11 @@ it("informa la falta de configuración del hospital sin marcar resultado inciert
 it("elige el médico del catálogo del hospital y muestra su facturación", async () => {
   hospitalConfigured = true;
   const user = userEvent.setup();
-  mount("/operador/personal/turnos");
+  mount("/operador/hospital");
   await login(user);
   const doctor = await screen.findByLabelText("Médico del hospital");
   expect(screen.getByRole("option", { name: "doc-002 · 45 min" })).toBeTruthy();
-  await user.type(screen.getByLabelText("ID del empleado"), "emp-001");
+  await user.selectOptions(await screen.findByLabelText("Empleado"), "emp-001");
   await user.type(
     screen.getByLabelText("ID de paciente en el hospital"),
     "pac-001",
@@ -384,14 +397,14 @@ it("elige el médico del catálogo del hospital y muestra su facturación", asyn
   fireEvent.change(screen.getByLabelText("Fecha y hora (Buenos Aires)"), {
     target: { value: "2099-01-10T10:00" },
   });
-  await user.click(screen.getByRole("button", { name: /Guardar solicitud/ }));
+  await confirmClinic(user);
   await screen.findByText(/Solicitud guardada/);
   expect(writes[1].body).toMatchObject({ doctorId: "doc-002" });
 });
 it("muestra la facturación del hospital sin reintegrar cancelaciones", async () => {
   hospitalConfigured = true;
   const user = userEvent.setup();
-  mount("/operador/personal/turnos");
+  mount("/operador/hospital");
   await login(user);
   await screen.findByText("2 reservas cobradas");
   expect(screen.getByText("TOTAL ARS")).toBeTruthy();
@@ -400,7 +413,7 @@ it("muestra la facturación del hospital sin reintegrar cancelaciones", async ()
 });
 it("sin hospital configurado permite ingresar el médico a mano", async () => {
   const user = userEvent.setup();
-  mount("/operador/personal/turnos");
+  mount("/operador/hospital");
   await login(user);
   await screen.findByLabelText("ID del profesional");
   expect(

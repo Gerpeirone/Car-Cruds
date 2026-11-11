@@ -126,11 +126,12 @@ for (const [viewport, options] of Object.entries(viewports)) {
     ["operador-mantenimiento", "/operador/mantenimiento"],
     ["personal-lista", "/operador/personal"],
     ["personal-alta", "/operador/personal/nuevo"],
-    ["personal-membresias", "/operador/personal/membresias"],
-    ["personal-turnos", "/operador/personal/turnos"],
+    ["gimnasio", "/operador/gimnasio"],
+    ["gimnasio-evidencia", "/operador/gimnasio?period=2026-11&empleado=employee-001"],
+    ["hospital", "/operador/hospital"],
   ];
   if (employeeID) routes.push(["personal-ficha", `/operador/personal/${encodeURIComponent(employeeID)}`]);
-  if (requestID) routes.push(["personal-turno-detalle", `/operador/personal/turnos/${encodeURIComponent(requestID)}`]);
+  if (requestID) routes.push(["hospital-turno-detalle", `/operador/hospital/${encodeURIComponent(requestID)}`]);
   for (const [name, route] of routes) {
     await go(page, route);
     await audit(page, viewport, name);

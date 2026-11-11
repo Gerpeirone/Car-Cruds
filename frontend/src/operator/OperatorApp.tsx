@@ -7,6 +7,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import {
   ArrowRight,
@@ -20,6 +21,8 @@ import {
   Menu,
   ShieldCheck,
   UserCog,
+  HeartPulse,
+  Dumbbell,
   Users,
 } from "lucide-react";
 import { ApiError, request } from "../api";
@@ -103,20 +106,39 @@ export default function OperatorApp() {
           <Route path="/operador/mantenimiento" element={<Maintenance />} />
           <Route path="/operador/personal" element={<Staff />} />
           <Route path="/operador/personal/nuevo" element={<StaffCreate />} />
+          <Route path="/operador/hospital" element={<Clinic />} />
+          <Route
+            path="/operador/hospital/:requestId"
+            element={<ClinicRequestView />}
+          />
+          <Route path="/operador/gimnasio" element={<Memberships />} />
+          {/* Rutas anteriores, conservadas para enlaces ya compartidos. */}
           <Route
             path="/operador/personal/membresias"
-            element={<Memberships />}
+            element={<Navigate to="/operador/gimnasio" replace />}
           />
-          <Route path="/operador/personal/turnos" element={<Clinic />} />
+          <Route
+            path="/operador/personal/turnos"
+            element={<Navigate to="/operador/hospital" replace />}
+          />
           <Route
             path="/operador/personal/turnos/:requestId"
-            element={<ClinicRequestView />}
+            element={<LegacyRequest />}
           />
           <Route path="/operador/personal/:id" element={<StaffEditor />} />
           <Route path="*" element={<Navigate to="/operador" replace />} />
         </Routes>
       </OperatorShell>
     </OperatorContext.Provider>
+  );
+}
+function LegacyRequest() {
+  const { requestId = "" } = useParams();
+  return (
+    <Navigate
+      to={`/operador/hospital/${encodeURIComponent(requestId)}`}
+      replace
+    />
   );
 }
 function OperatorLogin({ onLogin }: { onLogin: (token: string) => void }) {
@@ -220,13 +242,25 @@ function OperatorShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
-  const items = [
-    ["/operador", "Resumen", LayoutDashboard],
-    ["/operador/flota", "Flota", CarFront],
-    ["/operador/clientes", "Clientes", Users],
-    ["/operador/reservas", "Reservas", ClipboardList],
-    ["/operador/mantenimiento", "Mantenimiento", CalendarDays],
-    ["/operador/personal", "Personal", UserCog],
+  const groups = [
+    ["RESUMEN", [["/operador", "Resumen", LayoutDashboard]]],
+    [
+      "OPERACIONES",
+      [
+        ["/operador/flota", "Flota", CarFront],
+        ["/operador/clientes", "Clientes", Users],
+        ["/operador/reservas", "Reservas", ClipboardList],
+        ["/operador/mantenimiento", "Mantenimiento", CalendarDays],
+      ],
+    ],
+    [
+      "GESTIÓN DE PERSONAL",
+      [
+        ["/operador/personal", "Personal", UserCog],
+        ["/operador/hospital", "Hospital", HeartPulse],
+        ["/operador/gimnasio", "Gimnasio", Dumbbell],
+      ],
+    ],
   ] as const;
   return (
     <div className="operator-shell">
@@ -242,11 +276,18 @@ function OperatorShell({ children }: { children: ReactNode }) {
         </Link>
         <span className="sidebar-caption">PANEL DEL OPERADOR</span>
         <nav aria-label="Navegación del operador">
-          {items.map(([path, label, Icon]) => (
-            <NavLink key={path} to={path} end={path === "/operador"}>
-              <Icon size={18} />
-              {label}
-            </NavLink>
+          {groups.map(([title, items]) => (
+            <div className="sidebar-group" key={title}>
+              <span className="sidebar-group-title" aria-hidden="true">
+                {title}
+              </span>
+              {items.map(([path, label, Icon]) => (
+                <NavLink key={path} to={path} end={path === "/operador"}>
+                  <Icon size={18} />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-bottom">
@@ -314,6 +355,20 @@ function Dashboard() {
       text: "Bloqueá fechas para preparar y mantener los vehículos.",
       icon: CalendarDays,
       label: "Programar mantenimiento",
+    },
+    {
+      to: "/operador/hospital",
+      title: "Turnos sin vueltas.",
+      text: "Pedí y seguí los turnos médicos del personal con el hospital.",
+      icon: HeartPulse,
+      label: "Ir a Hospital",
+    },
+    {
+      to: "/operador/gimnasio",
+      title: "Bienestar a la vista.",
+      text: "Consultá la evidencia de membresía que envía el gimnasio.",
+      icon: Dumbbell,
+      label: "Ir a Gimnasio",
     },
     {
       to: "/operador/personal",
