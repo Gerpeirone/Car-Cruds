@@ -5,12 +5,56 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/Gerpeirone/Car-Cruds/internal/platform"
 )
+
+func TestAccountCookieDoesNotOpenProtectedRoutes(t *testing.T) {
+	cookie := &http.Cookie{Name: platform.AccountCookie, Value: strings.Repeat("a", 64)}
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := r.Cookie(platform.AccountCookie); err != nil {
+			t.Error("cookie not forwarded to the account or catalog route")
+		}
+		w.WriteHeader(204)
+	}))
+	defer backend.Close()
+	t.Setenv("CUSTOMERS_URL", backend.URL)
+	t.Setenv("FLEET_URL", backend.URL)
+	h, _, err := handler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	secured := platform.AuthMiddleware(h, nil, platform.AccountRoute, platform.AccountCatalogRoute)
+	for _, tc := range []struct {
+		method, path string
+		status       int
+	}{
+		{"POST", "/v1/auth/register", 204},
+		{"GET", "/v1/auth/me", 204},
+		{"GET", "/v1/vehicles/search", 204},
+		{"GET", "/v1/vehicles/auto-001", 204},
+		{"GET", "/v1/vehicles/auto-001/quote", 401},
+		{"POST", "/v1/vehicles/reindex", 401},
+		{"GET", "/v1/admin/employees", 401},
+		{"POST", "/v1/employees/membership-evidence", 401},
+		{"POST", "/v1/reservations", 401},
+		{"POST", "/v1/auth/register/extra", 401},
+		{"GET", "/v1/vehicles/%2e%2e/admin", 401},
+	} {
+		r := httptest.NewRequest(tc.method, tc.path, nil)
+		r.AddCookie(cookie)
+		r.Header.Set("X-Role", "admin")
+		w := httptest.NewRecorder()
+		secured.ServeHTTP(w, r)
+		if w.Code != tc.status {
+			t.Errorf("%s %s: HTTP %d, want %d", tc.method, tc.path, w.Code, tc.status)
+		}
+	}
+}
 
 func TestSessionReturnsOnlyAuthenticatedRoleAndCustomer(t *testing.T) {
 	h, _, err := handler()

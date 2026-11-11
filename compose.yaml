@@ -87,6 +87,7 @@ services:
     environment:
       <<: *auth
       DATABASE_URL: postgres://customers:${CUSTOMERS_DB_PASSWORD}@postgres:5432/customers?sslmode=disable
+      CUSTOMER_SESSION_TTL: ${CUSTOMER_SESSION_TTL:-12h}
       RABBITMQ_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       AMQP_URL: amqp://carcruds:${RABBITMQ_PASSWORD}@rabbitmq:5672/
     depends_on: {postgres: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}

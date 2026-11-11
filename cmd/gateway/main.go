@@ -50,6 +50,9 @@ func proxy(target string) (http.Handler, error) {
 		return nil
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !platform.AccountRoute(r) && !platform.AccountCatalogRoute(r) {
+			r.Header.Del("Cookie")
+		}
 		// ReverseProxy agrega encabezados del backend. Se retiran los valores
 		// locales para que la respuesta identifique una sola instancia atendida.
 		w.Header().Del("X-Service-Instance")
@@ -85,6 +88,11 @@ func handler() (http.Handler, func(context.Context) error, error) {
 	})
 	services := map[string]string{"customers": platform.Env("CUSTOMERS_URL", "http://customers:8080"), "fleet": platform.Env("FLEET_URL", "http://fleet-lb:8080"), "rentals": platform.Env("RENTALS_URL", "http://rentals:8080"), "employees": platform.Env("EMPLOYEES_URL", "http://employees:8080")}
 	routes := map[string]string{"/v1/customers": "customers", "/v1/vehicles": "fleet", "/v1/reservations": "rentals", "/v1/availability": "rentals", "/v1/maintenance": "rentals", "/v1/employees": "employees", "/v1/admin/employees": "employees"}
+	accounts, err := proxy(services["customers"])
+	if err != nil {
+		return nil, nil, err
+	}
+	mux.Handle("/v1/auth/", accounts)
 	for path, name := range routes {
 		p, err := proxy(services[name])
 		if err != nil {
@@ -151,7 +159,7 @@ func main() {
 	defer cancel()
 	h, ready, err := handler()
 	if err == nil {
-		err = platform.Run(ctx, "gateway", h, ready)
+		err = platform.Run(ctx, "gateway", h, ready, platform.AccountRoute, platform.AccountCatalogRoute)
 	}
 	if err != nil {
 		slog.Error("gateway_stopped", "error", err)

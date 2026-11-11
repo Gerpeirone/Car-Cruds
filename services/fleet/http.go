@@ -11,7 +11,7 @@ import (
 func Handler(service *Service) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/vehicles", func(w http.ResponseWriter, r *http.Request) {
-		if !platform.RequireRole(w, r, "admin", "client", "service") {
+		if !platform.RequireRole(w, r, "admin", "client", "service", "catalog") {
 			return
 		}
 		q, err := readQuery(r)
@@ -28,7 +28,7 @@ func Handler(service *Service) http.Handler {
 		platform.WriteJSON(w, http.StatusOK, result)
 	})
 	mux.HandleFunc("GET /v1/vehicles/search", func(w http.ResponseWriter, r *http.Request) {
-		if !platform.RequireRole(w, r, "admin", "client", "service") {
+		if !platform.RequireRole(w, r, "admin", "client", "service", "catalog") {
 			return
 		}
 		q, err := readQuery(r)
@@ -44,12 +44,16 @@ func Handler(service *Service) http.Handler {
 		platform.WriteJSON(w, http.StatusOK, result)
 	})
 	mux.HandleFunc("GET /v1/vehicles/{id}", func(w http.ResponseWriter, r *http.Request) {
-		if !platform.RequireRole(w, r, "admin", "client", "service") {
+		if !platform.RequireRole(w, r, "admin", "client", "service", "catalog") {
 			return
 		}
 		v, err := service.Get(r.Context(), r.PathValue("id"))
 		if err != nil {
 			respondError(w, err)
+			return
+		}
+		if !v.Active && platform.PrincipalFrom(r.Context()).Role == "catalog" {
+			respondError(w, ErrNotFound)
 			return
 		}
 		platform.WriteJSON(w, http.StatusOK, v)

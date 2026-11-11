@@ -52,6 +52,7 @@ def implemented_routes():
         "services/customers/presentation/http.go",
         "services/rentals/adapters/httpapi/handler.go",
         "internal/platform/runtime.go",
+        "internal/platform/account.go",
         "cmd/gateway/main.go",
     ):
         text = (ROOT / name).read_text(encoding="utf-8")

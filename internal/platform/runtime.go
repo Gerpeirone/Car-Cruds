@@ -79,7 +79,7 @@ func RegisterMetrics(collectors ...prometheus.Collector) {
 	extraMetrics = append(extraMetrics, collectors...)
 }
 
-func Run(ctx context.Context, service string, handler http.Handler, ready func(context.Context) error) error {
+func Run(ctx context.Context, service string, handler http.Handler, ready func(context.Context) error, cookieRoutes ...func(*http.Request) bool) error {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	shutdown, err := InitTelemetry(ctx, service)
 	if err != nil {
@@ -127,7 +127,7 @@ func Run(ctx context.Context, service string, handler http.Handler, ready func(c
 		}
 	}))
 	mux.Handle("/", handler)
-	secured := AuthMiddleware(mux, tokens)
+	secured := AuthMiddleware(mux, tokens, cookieRoutes...)
 	observed := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get("X-Request-ID")
 		if !requestIDPattern.MatchString(id) {

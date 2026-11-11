@@ -11,7 +11,8 @@ import (
 	"testing"
 )
 
-func TestRealPostgresCustomerPersistenceAndInbox(t *testing.T) {
+func isolatedCustomers(t *testing.T) (*pgxpool.Pool, *pgxpool.Config) {
+	t.Helper()
 	connection := os.Getenv("TEST_CUSTOMERS_DATABASE_URL")
 	if connection == "" {
 		connection = os.Getenv("TEST_DATABASE_URL")
@@ -24,7 +25,7 @@ func TestRealPostgresCustomerPersistenceAndInbox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer admin.Close()
+	t.Cleanup(admin.Close)
 	if err = admin.Ping(ctx); err != nil {
 		t.Fatal("PostgreSQL real no disponible")
 	}
@@ -33,7 +34,11 @@ func TestRealPostgresCustomerPersistenceAndInbox(t *testing.T) {
 	if _, err = admin.Exec(ctx, "CREATE SCHEMA "+quoted); err != nil {
 		t.Fatal(err)
 	}
-	defer admin.Exec(ctx, "DROP SCHEMA "+quoted+" CASCADE")
+	t.Cleanup(func() {
+		if _, err := admin.Exec(ctx, "DROP SCHEMA "+quoted+" CASCADE"); err != nil {
+			t.Error("No se pudo limpiar el esquema de prueba")
+		}
+	})
 	config, err := pgxpool.ParseConfig(connection)
 	if err != nil {
 		t.Fatal(err)
@@ -43,10 +48,17 @@ func TestRealPostgresCustomerPersistenceAndInbox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer pool.Close()
+	t.Cleanup(pool.Close)
 	if err = Migrate(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
+	return pool, config
+}
+
+func TestRealPostgresCustomerPersistenceAndInbox(t *testing.T) {
+	pool, _ := isolatedCustomers(t)
+	ctx := context.Background()
+	var err error
 	if err = Migrate(ctx, pool); err != nil {
 		t.Fatal(err)
 	}

@@ -7,9 +7,11 @@ import (
 	"github.com/Gerpeirone/Car-Cruds/services/customers/data"
 	"github.com/Gerpeirone/Car-Cruds/services/customers/presentation"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -33,7 +35,14 @@ func main() {
 	if broker := platform.Env("AMQP_URL", ""); broker != "" {
 		go repo.ConsumeRentals(ctx, broker)
 	}
-	if err = platform.Run(ctx, "customers", &presentation.Handler{Service: service}, pool.Ping); err != nil {
+	ttl, err := time.ParseDuration(platform.Env("CUSTOMER_SESSION_TTL", "12h"))
+	if err != nil || ttl < time.Minute || ttl > 7*24*time.Hour {
+		log.Fatal("CUSTOMER_SESSION_TTL debe estar entre 1m y 168h.")
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/v1/auth/", presentation.NewAccountHandler(business.Accounts{Store: repo, TTL: ttl}))
+	mux.Handle("/", &presentation.Handler{Service: service})
+	if err = platform.Run(ctx, "customers", mux, pool.Ping, platform.AccountRoute); err != nil {
 		log.Fatal("El servidor de Clientes finalizó con error.")
 	}
 }

@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Clientes",
-    "version": "0.1.0",
-    "description": "API implementada de perfiles de conductores. No ofrece modificación ni eliminación HTTP de clientes, ni un endpoint de historial. Los empleados se administran en otro servicio."
+    "version": "0.2.0",
+    "description": "Perfiles de conductor y cuentas personales con sesión. Los empleados se administran en otro servicio."
   },
   "servers": [
     {
@@ -331,6 +331,423 @@
           }
         }
       }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "operationId": "registerAccount",
+        "summary": "Registrar una cuenta personal",
+        "description": "Normaliza el correo y asigna rol client. Un correo repetido recibe la misma respuesta.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "public"
+        ],
+        "security": [],
+        "responses": {
+          "202": {
+            "description": "Solicitud válida aceptada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "accepted"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON o campos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere JSON del mismo sitio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de intentos alcanzado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "email",
+                  "password",
+                  "passwordConfirmation"
+                ],
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Límite de 1024 bytes. El registro requiere al menos 12 caracteres.",
+                    "minLength": 12
+                  },
+                  "passwordConfirmation": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Límite de 1024 bytes. El registro requiere al menos 12 caracteres.",
+                    "minLength": 12
+                  }
+                }
+              },
+              "example": {
+                "email": "ana@example.com",
+                "password": "Ejemplo ficticio con 12 caracteres",
+                "firstName": "Ana",
+                "lastName": "Demo",
+                "passwordConfirmation": "Ejemplo ficticio con 12 caracteres"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "loginAccount",
+        "summary": "Iniciar sesión personal",
+        "description": "Valida el correo y la contraseña y emite cookie HttpOnly, Secure y SameSite Strict.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "public"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Perfil de la cuenta autenticada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "role"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "firstName": {
+                      "type": "string"
+                    },
+                    "lastName": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "client"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "id": "12345678-1234-4123-8123-123456789abc",
+                  "firstName": "Ana",
+                  "lastName": "Demo",
+                  "email": "ana@example.com",
+                  "role": "client"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie opaca de sesión personal.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON o campos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere JSON del mismo sitio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de intentos alcanzado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Límite de 1024 bytes. El registro requiere al menos 12 caracteres."
+                  }
+                }
+              },
+              "example": {
+                "email": "ana@example.com",
+                "password": "Ejemplo ficticio con 12 caracteres"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "logoutAccount",
+        "summary": "Cerrar sesión personal",
+        "description": "Elimina la sesión vigente si existe. Enviar Content-Type application/json.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "client"
+        ],
+        "security": [
+          {
+            "accountCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sesión revocada y cookie expirada."
+          },
+          "415": {
+            "description": "Se requiere JSON del mismo sitio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "getAccountProfile",
+        "summary": "Consultar mi perfil",
+        "description": "Devuelve el perfil asociado a la cookie vigente.",
+        "tags": [
+          "Clientes"
+        ],
+        "x-roles": [
+          "client"
+        ],
+        "security": [
+          {
+            "accountCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil de la cuenta autenticada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "role"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "firstName": {
+                      "type": "string"
+                    },
+                    "lastName": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "client"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "id": "12345678-1234-4123-8123-123456789abc",
+                  "firstName": "Ana",
+                  "lastName": "Demo",
+                  "email": "ana@example.com",
+                  "role": "client"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Cookie ausente, vencida o inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "x-contract-status": "implemented-own-api",
@@ -345,6 +762,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Token opaco de aplicación configurado fuera de Git. No es una cuenta de usuario ni se presupone JWT. Los roles no se toman del cuerpo."
+      },
+      "accountCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-carcruds-account",
+        "description": "Sesión personal emitida por Clientes."
       }
     },
     "schemas": {

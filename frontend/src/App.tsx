@@ -69,6 +69,8 @@ import type {
 } from "./domain";
 import CarArt from "./CarArt";
 import OperatorApp from "./operator/OperatorApp";
+import { AccountPortal } from "./AccountPortal";
+import type { Account } from "./AccountPortal";
 
 type Call = <T>(path: string, init?: RequestInit) => Promise<T>;
 interface Access {
@@ -77,6 +79,7 @@ interface Access {
   logout: () => void;
   quote: Quote | null;
   setQuote: (q: Quote | null) => void;
+  personal?: boolean;
 }
 const AccessContext = createContext<Access | null>(null);
 function useAccess() {
@@ -299,6 +302,8 @@ export default function App() {
     [session?.token],
   );
   if (location.pathname.startsWith("/operador")) return <OperatorApp />;
+  if (location.pathname === "/" || /^\/(registro|iniciar-sesion|perfil|catalogo)(\/|$)/.test(location.pathname))
+    return <AccountPortal catalog={(account, expire) => <PersonalCatalog account={account} expire={expire} />} />;
   if (!session)
     return (
       <Routes>
@@ -370,6 +375,28 @@ export default function App() {
       </Shell>
     </AccessContext.Provider>
   );
+}
+
+function PersonalCatalog({ account, expire }: { account: Account; expire: () => void }) {
+  const call: Call = useCallback(async <T,>(path: string, init?: RequestInit) => {
+    try {
+      return await request<T>(path, "", init);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) expire();
+      throw err;
+    }
+  }, [expire]);
+  return <AccessContext.Provider value={{
+    personal: true,
+    customer: { id: account.id, name: account.firstName, active: false, licenseValidUntil: "" },
+    call, quote: null, setQuote: () => {}, logout: expire,
+  }}>
+    <Routes>
+      <Route path="/catalogo" element={<Catalog />} />
+      <Route path="/catalogo/:vehicleId" element={<VehicleDetail />} />
+      <Route path="*" element={<Navigate to="/catalogo" replace />} />
+    </Routes>
+  </AccessContext.Provider>;
 }
 
 function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
@@ -902,11 +929,13 @@ function VehicleCard({
   vehicle: Vehicle;
   index: number;
 }) {
+  const { personal } = useAccess();
+  const detailPath = `${personal ? "/catalogo" : "/autos"}/${encodeURIComponent(v.vehicleId)}`;
   return (
     <article className="vehicle-card">
       <Link
         className={`vehicle-picture tone-${index % 3}`}
-        to={`/autos/${encodeURIComponent(v.vehicleId)}`}
+        to={detailPath}
         tabIndex={-1}
         aria-hidden="true"
       >
@@ -920,7 +949,7 @@ function VehicleCard({
       <div className="vehicle-card-body">
         <span className="vehicle-brand">{v.brand}</span>
         <h3>
-          <Link to={`/autos/${encodeURIComponent(v.vehicleId)}`}>
+          <Link to={detailPath}>
             {v.model}
           </Link>
         </h3>
@@ -945,7 +974,7 @@ function VehicleCard({
           <Link
             className="round-link"
             aria-label={`Ver ${v.brand} ${v.model}`}
-            to={`/autos/${encodeURIComponent(v.vehicleId)}`}
+            to={detailPath}
           >
             <ArrowRight size={20} />
           </Link>
@@ -966,7 +995,7 @@ function VehicleDetail() {
     `/v1/vehicles/${encodeURIComponent(vehicleId)}`,
     isVehicle,
   );
-  const { call, setQuote, customer } = useAccess();
+  const { call, setQuote, customer, personal } = useAccess();
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [availability, setAvailability] = useState<Availability | null>(null);
@@ -1023,7 +1052,7 @@ function VehicleDetail() {
   if (!v) return null;
   return (
     <>
-      <Link to="/autos" className="back-link">
+      <Link to={personal ? "/catalogo" : "/autos"} className="back-link">
         <ArrowLeft size={16} />
         Volver a la flota
       </Link>
@@ -1062,7 +1091,7 @@ function VehicleDetail() {
               <span>Categoría</span>
             </div>
           </div>
-          <div className="detail-note">
+          {!personal && <div className="detail-note">
             <ShieldCheck size={22} />
             <p>
               Tu reserva, con el precio acordado.
@@ -1071,7 +1100,7 @@ function VehicleDetail() {
                 al reservar.
               </span>
             </p>
-          </div>
+          </div>}
         </section>
         <aside className="booking-panel">
           <span className="eyebrow">ARMÁ TU VIAJE</span>
@@ -1079,6 +1108,7 @@ function VehicleDetail() {
             <strong>{money(v.dailyRateMinor)}</strong>
             <span>/ día orientativo</span>
           </div>
+          {personal ? <p className="muted">Para reservar necesitás una credencial de alquiler.</p> : <>
           <p className="muted">Elegí tus fechas y consultá disponibilidad.</p>
           {!v.active ? (
             <div className="notice warning">
@@ -1169,6 +1199,7 @@ function VehicleDetail() {
             <LockKeyhole size={15} />
             Confirmás después de revisar el total.
           </div>
+          </>}
         </aside>
       </div>
     </>

@@ -13,6 +13,9 @@ import (
 //go:embed migrations/001.sql
 var migration string
 
+//go:embed migrations/002_accounts.sql
+var accountMigration string
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -23,6 +26,9 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	if _, err = tx.Exec(ctx, migration); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, accountMigration); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
