@@ -77,8 +77,14 @@ func TokensFromEnv() (map[string]Principal, error) {
 	return tokens, nil
 }
 
-func AuthMiddleware(next http.Handler, tokens map[string]Principal) http.Handler {
+func AuthMiddleware(next http.Handler, tokens map[string]Principal, cookieRoutes ...func(*http.Request) bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, accepts := range cookieRoutes {
+			if accepts(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 		parts := strings.Fields(r.Header.Get("Authorization"))
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			Error(w, 401, "UNAUTHORIZED", "Se requiere autenticación de aplicación")

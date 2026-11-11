@@ -27,14 +27,15 @@
       "get": {
         "operationId": "listVehicles",
         "summary": "Listar el catálogo fuente",
-        "description": "admin, client y service. Lee MongoDB sin depender de Solr; por defecto solo activos. includeInactive=true incluye inactivos únicamente para admin; para otros roles se ignora. El parámetro q es aceptado y validado por el lector común, pero no filtra esta operación: usar /search para buscar texto. Conteo e ítems provienen de consultas separadas; no hay snapshot común.",
+        "description": "admin, client y service. Lee MongoDB sin depender de Solr; por defecto solo activos. includeInactive=true incluye inactivos únicamente para admin; para otros roles se ignora. El parámetro q es aceptado y validado por el lector común, pero no filtra esta operación: usar /search para buscar texto. Conteo e ítems provienen de consultas separadas; no hay snapshot común. Una cuenta personal autenticada puede consultar vehículos activos.",
         "tags": [
           "Flota"
         ],
         "x-roles": [
           "admin",
           "client",
-          "service"
+          "service",
+          "catalog"
         ],
         "responses": {
           "200": {
@@ -225,6 +226,14 @@
             },
             "example": true
           }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "accountCookie": []
+          }
         ]
       },
       "post": {
@@ -361,14 +370,15 @@
       "get": {
         "operationId": "searchVehicles",
         "summary": "Buscar vehículos en el índice Solr",
-        "description": "admin, client y service. Busca texto y aplica filtros sobre la proyección derivada; siempre excluye inactivos. q se interpreta como texto escapado, sin aceptar sintaxis Lucene arbitraria. El índice puede retrasarse respecto de MongoDB: no autoriza precio ni reserva. Si Solr falla devuelve 503 SEARCH_UNAVAILABLE, sin reemplazar el fallo por una lista vacía.",
+        "description": "admin, client y service. Busca texto y aplica filtros sobre la proyección derivada; siempre excluye inactivos. q se interpreta como texto escapado, sin aceptar sintaxis Lucene arbitraria. El índice puede retrasarse respecto de MongoDB: no autoriza precio ni reserva. Si Solr falla devuelve 503 SEARCH_UNAVAILABLE, sin reemplazar el fallo por una lista vacía. Una cuenta personal autenticada puede consultar vehículos activos.",
         "tags": [
           "Flota"
         ],
         "x-roles": [
           "admin",
           "client",
-          "service"
+          "service",
+          "catalog"
         ],
         "responses": {
           "200": {
@@ -559,6 +569,14 @@
             },
             "example": "Corolla"
           }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "accountCookie": []
+          }
         ]
       }
     },
@@ -578,14 +596,15 @@
       "get": {
         "operationId": "getVehicle",
         "summary": "Consultar la ficha de un vehículo",
-        "description": "admin, client y service. Consulta Redis y, ante miss o error, MongoDB con tiempo y concurrencia acotados. La ficha puede conservar la vigencia de la caché; no debe usarse como tarifa autoritativa de confirmación. La consulta por identificador puede devolver un vehículo inactivo.",
+        "description": "admin, client y service. Consulta Redis y, ante miss o error, MongoDB con tiempo y concurrencia acotados. La ficha puede conservar la vigencia de la caché; no debe usarse como tarifa autoritativa de confirmación. La consulta por identificador puede devolver un vehículo inactivo. Una cuenta personal autenticada puede consultar vehículos activos.",
         "tags": [
           "Flota"
         ],
         "x-roles": [
           "admin",
           "client",
-          "service"
+          "service",
+          "catalog"
         ],
         "responses": {
           "200": {
@@ -681,7 +700,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "accountCookie": []
+          }
+        ]
       },
       "put": {
         "operationId": "updateVehicle",
@@ -1030,6 +1057,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Token opaco de aplicación configurado fuera de Git. No es una cuenta de usuario ni se presupone JWT. Los roles no se toman del cuerpo."
+      },
+      "accountCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-carcruds-account",
+        "description": "Sesión personal para leer el catálogo de vehículos activos."
       }
     },
     "schemas": {

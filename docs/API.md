@@ -1,6 +1,6 @@
 # Referencia de endpoints de Car Cruds
 
-**Fecha de revisión:** 10 de noviembre de 2026. **Alcance:** 39 operaciones HTTP implementadas: 36 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
+**Alcance:** 43 operaciones HTTP implementadas, incluidas cuatro operaciones de cuenta personal en Clientes.
 
 ## 1. Consultar la documentación con Swagger
 
@@ -31,7 +31,18 @@ La instalación y configuración del visor siguen la documentación oficial de [
 
 Todos los ejemplos usan personas, vehículos e identificadores ficticios. Sus valores monetarios ilustran el formato, no tarifas externas acordadas. Ajustar fechas y obtener identificadores reales del entorno antes de ejecutar una solicitud.
 
-## 3. Clientes — 3 operaciones
+## 3. Clientes — 7 operaciones
+
+### Cuenta personal
+
+| Operación | Acceso y efecto |
+| --- | --- |
+| `POST /v1/auth/register` | Alta pública por JSON. Devuelve 202 tanto para una solicitud válida nueva como para un correo existente. |
+| `POST /v1/auth/login` | Valida credenciales, devuelve el perfil y establece la cookie de sesión. |
+| `POST /v1/auth/logout` | Invalida la sesión en PostgreSQL, expira la cookie y devuelve 204. Enviar `Content-Type: application/json`. |
+| `GET /v1/auth/me` | Devuelve el perfil asociado a la cookie vigente o 401. |
+
+El contrato está en [customers-openapi.json](contracts/customers-openapi.json). Las cuentas personales pueden consultar el catálogo y fichas activas. El acceso de conductor y de operador usa sus credenciales existentes. [Modelo, seguridad y operación](../services/customers/README.md#cuentas-personales)
 
 Contrato: [customers-openapi.json](contracts/customers-openapi.json). Implementación: `services/customers/presentation/http.go`.
 

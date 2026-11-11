@@ -22,12 +22,12 @@ export async function request<T>(
     const response = await fetch(path, {
       ...init,
       signal: controller.signal,
-      credentials: "omit",
+      credentials: token ? "omit" : "same-origin",
       cache: "no-store",
       redirect: "error",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init.body ? { "Content-Type": "application/json" } : {}),
         ...init.headers,
       },
@@ -59,6 +59,9 @@ export async function request<T>(
   }
 }
 const messages: Record<string, string> = {
+  INVALID_ACCOUNT_INPUT: "Revisá los campos y confirmá que las contraseñas coincidan.",
+  AUTH_RATE_LIMITED: "Demasiados intentos. Volvé a intentar más tarde.",
+  SERVICE_UNAVAILABLE: "El servicio no está disponible en este momento. Volvé a intentar.",
   UNAUTHORIZED:
     "Tu acceso no es válido o dejó de estar disponible. Volvé a ingresar.",
   FORBIDDEN: "Este acceso no tiene permiso para realizar la acción.",

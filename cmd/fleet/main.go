@@ -43,7 +43,8 @@ func main() {
 		search = fleet.NewSolr(url, platform.NewHTTPClient(2*time.Second))
 	}
 	service := fleet.NewService(repo, optionalCache, search)
-	if err = platform.Run(ctx, "fleet", fleet.Handler(service), repo.Ready); err != nil {
+	handler := fleet.WithAccountCatalog(fleet.Handler(service), platform.Env("CUSTOMERS_URL", "http://customers:8080"))
+	if err = platform.Run(ctx, "fleet", handler, repo.Ready, platform.AccountCatalogRoute); err != nil {
 		slog.Error("fleet stopped")
 		os.Exit(1)
 	}
