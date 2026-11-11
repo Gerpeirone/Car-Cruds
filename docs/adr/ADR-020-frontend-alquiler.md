@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Fecha | 8 de noviembre de 2026 |
-| Estado | Implementado en la entrega 3 (PR #8); revisión del equipo, visual y publicación pendientes |
+| Estado | Implementado en la entrega 3 (PR #8); revisión en navegador completada el 9 de noviembre de 2026; revisión del equipo y publicación pendientes |
 | Alcance | F3-01 de [entrega 3](../ENTREGA-3.md) |
 | Complementa | D2: presentación y límites; D5: consumo HTTP; D11: correlación |
 | Sustituye | Ningún ADR del backend |

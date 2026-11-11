@@ -90,6 +90,7 @@ Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementa
 | `GET /v1/admin/employees` | Lista administrativa de activos e inactivos; paginada | `200`, ítems con `employeeId`, `displayName`, `active`. Solo `admin` |
 | `GET /v1/employees/{id}/status` | Estado laboral puntual de un empleado registrado, incluidos inactivos; sin parámetros de consulta | `200`, solo `employeeId` y `active`; `404` si no es un empleado registrado. `admin`, `gym`, `service`; no cancela membresías |
 | `GET /v1/employees/{id}` | Consulta administrativa individual | `200`, registro completo; `404` si no existe. Solo `admin` |
+| `GET /v1/employees/{id}/status` | Consulta puntual del estado laboral, incluidos empleados inactivos; no expone nombre, membresías ni datos clínicos | `200`, exclusivamente `employeeId` y `active`. `admin`, `gym`, `service`; `404` si no existe |
 | `PUT /v1/employees/{id}` | Sustituye `displayName` y `active`, ambos obligatorios | `200`, registro actualizado. Solo `admin` |
 | `DELETE /v1/employees/{id}` | Baja lógica repetible; conserva historia | `200`, registro con `active=false`. Solo `admin`; no cancela turnos ni membresías automáticamente |
 | `GET /v1/employees/integrations` | Marcador general de acuerdos/acceso externos pendientes | Siempre `503 NOT_CONFIGURED` en esta versión. `admin`, `service`; no sustituye las rutas específicas implementadas |

@@ -36,7 +36,7 @@ La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y
 
 - El cliente de laboratorio debe existir, tener credencial propia y estar vinculado por `AUTH_CLIENT_CUSTOMER_ID`; la credencial se entrega por un canal privado. La interfaz no crea cuentas ni reemplaza la identidad del backend.
 - Deben existir vehículos activos, un cliente habilitado y fechas vigentes para demostrar reservas. Los fixtures de pruebas se identificarán y limpiarán según su propietario.
-- El fallo de arranque de MongoDB en la [CI de la base](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42516259957) continúa pendiente de diagnóstico. La publicación de documentación no equivale a corregirlo.
+- El fallo de arranque de MongoDB en la [CI de la base](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42516259957) quedó diagnosticado y mitigado en esta entrega (kernel del runner y MongoDB 8.x; ver «CI en verde» más abajo y la sección 9 de [ARCHITECTURE](ARCHITECTURE.md)).
 - El acceso cloud y los acuerdos externos se coordinan en [DESPLIEGUE](DESPLIEGUE.md) e [INTEGRACIONES](INTEGRACIONES.md). No bloquean la documentación ni el desarrollo local de F3-01.
 - La consolidación documental de E2 está propuesta en [PR #7](https://github.com/Gerpeirone/Car-Cruds/pull/7). No se integra esa propuesta en `main` ni se presupone su aceptación por iniciar esta rama.
 
@@ -63,3 +63,18 @@ Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud),
 - **Guion.** [GUION-PRESENTACION](GUION-PRESENTACION.md) incluye el recorrido, los requisitos con su evidencia, preguntas probables y plan B.
 
 Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hospital.
+
+## 8. Frescura de búsqueda — 9 de noviembre de 2026
+
+El recorrido `cmd/smoke` ahora mide alta, actualización de tarifa/versión y baja lógica desde antes de cada escritura hasta que la búsqueda refleja el cambio. En la [CI de la revisión `2dc9c61`](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42745574484/job/129597135342) las tres transiciones cumplieron la cota de 5 s. El método, sus límites y la evidencia figuran en [D6](adr/ADR-006-busqueda.md#medición-de-operación-normal--9-de-noviembre-de-2026). Falta ampliar a carga sostenida y recuperación.
+
+## 9. Criterio de cierre de evidencia del sistema
+
+El requisito «decisiones verificadas mediante evidencia del sistema» se considera cumplido en una revisión únicamente cuando coinciden estos cuatro controles:
+
+1. contratos OpenAPI, ejemplos, inventario de `API.md` y rutas implementadas sin diferencias;
+2. pruebas y análisis estático del backend sin fallos ni omisiones de las integraciones configuradas;
+3. Compose con dependencias reales, recorrido persistente, caché fría/caliente/fallback y frescura de Solr bajo carga satisfactorios;
+4. pruebas, build y revisión reproducible del frontend satisfactorios.
+
+La evidencia histórica conserva su revisión y alcance. No se traslada automáticamente a un commit nuevo: la ejecución de CI de esa revisión debe quedar enlazada aquí antes de declarar el punto cerrado. La publicación cloud y las pruebas con equipos externos siguen siendo requisitos separados.

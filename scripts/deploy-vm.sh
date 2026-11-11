@@ -8,6 +8,17 @@ if [[ ! -f compose.yaml || ! -f compose.deploy.yaml ]]; then
   exit 1
 fi
 
+# MongoDB 8 no inicia con los kernels 6.19+ observados en este proyecto.
+kernel=$(uname -r)
+if [[ ! $kernel =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+  echo "No se pudo interpretar el kernel: $kernel" >&2
+  exit 1
+fi
+if (( 10#${BASH_REMATCH[1]} > 6 || (10#${BASH_REMATCH[1]} == 6 && 10#${BASH_REMATCH[2]} >= 19) )); then
+  echo "Kernel $kernel incompatible con MongoDB 8; usar Ubuntu 24.04 con kernel anterior a 6.19" >&2
+  exit 1
+fi
+
 if ! command -v docker >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
   echo "Instalando dependencias..."
   sudo apt-get update

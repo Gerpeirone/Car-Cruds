@@ -1,6 +1,6 @@
 # ADR-021 — Panel del operador y proyección de acceso
 
-Fecha: 8 de noviembre de 2026. Estado: implementado en la entrega 3 (PR #8); aceptación del equipo y revisión visual pendientes. Complementa D2, D5, D8 y D11; conserva ADR-020 y los patrones internos del backend.
+Fecha: 8 de noviembre de 2026. Estado: implementado en la entrega 3 (PR #8); revisión en navegador completada el 9 de noviembre de 2026; aceptación del equipo pendiente. Complementa D2, D5, D8 y D11; conserva ADR-020 y los patrones internos del backend.
 
 ## Contexto
 

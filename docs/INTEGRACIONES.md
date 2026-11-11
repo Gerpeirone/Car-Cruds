@@ -2,6 +2,8 @@
 
 > **Gimnasio — 10/11/2026:** el equipo de Pablo informó que implementó la consulta, la vinculación y el envío mensual. La [guía de integración](contracts/INTEGRACION_GIMNASIO.md) reúne la publicación de 0.4.0, la entrega privada del token con vencimiento y los pasos de la prueba conjunta.
 
+> **Propuesta de bajas — gimnasio:** `GET /v1/employees/{id}/status` (contrato 0.4.0) permite comprobar la baja de un empleado ya vinculado sin cancelar membresías; es propuesta propia, ver [ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md). Su aceptación sigue en EXT-01 y EXT-03.
+
 > **Estado operativo — 08/11/2026:** contrato y adaptador hospitalarios integrados y probados en laboratorio. Acceso compartido, aceptación del gimnasio y ensayo conjunto siguen abiertos; [PENDIENTES-E2](PENDIENTES-E2.md) enumera los aportes necesarios sin exponer credenciales.
 
 **Revisión vigente — 23/10/2026:** Empleados administra exclusivamente personal registrado; [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a Turnos para socios 1.0.0, fijado a `c0b65f4`. Nuevos vínculos, intenciones y cualquier envío que pueda crear requieren empleado activo; evidencia previa de inactivos se conserva. La adaptación agrega clave privada, idempotencia persistida, recuperación explícita y espera durable sin ampliar el producto hacia otras operaciones clínicas. La validación de la rama y la aceptación conjunta se registran por separado.

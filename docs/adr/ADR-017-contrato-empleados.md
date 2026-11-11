@@ -81,3 +81,7 @@ El alcance de membresías/costos y turnos continúa sin implementar ni acordar c
 ## Avance de implementación — 14 de octubre de 2026
 
 [employees-openapi.json](../contracts/employees-openapi.json), OpenAPI 3.0.3 versión 0.1.0, describe la API propia implementada. GET /v1/employees devuelve únicamente employeeId/displayName de activos; admite gym/admin/service, page desde 1 y pageSize 20 con máximo 100. Conteo e ítems comparten una instantánea READ ONLY REPEATABLE READ por página, con orden estable; no hay instantánea entre páginas. Candidatos y operaciones administrativas quedan restringidos a admin. Pruebas reales y recorrido por gateway verifican formato, permisos y separación. El borrador anterior se conserva histórico. Aceptación del consumidor, población/bajas, identidad externa, URL pública y devolución de membresías/gastos continúan pendientes.
+
+## Complemento: consulta de estado laboral
+
+Para evitar inferir bajas de un recorrido paginado se agrega `GET /v1/employees/{id}/status`, limitado a identidad y estado laboral, con acceso `gym`, `admin` y `service`. No concede acceso administrativo ni cancela membresías, y es compatible con ADR-018: solo concierne a empleados registrados, activos o inactivos. El contrato propio pasa a 0.4.0 como extensión compatible de lista y evidencia. Se prefirió esta consulta acotada a exponer la administración completa o a exigir eventos externos no acordados. Es una propuesta de Car Cruds: [ACUERDO-GIMNASIO](../ACUERDO-GIMNASIO.md) registra lo que falta confirmar con el gimnasio.

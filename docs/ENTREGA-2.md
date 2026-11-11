@@ -23,7 +23,7 @@ El gimnasio consulta la lista de empleados activos y puede enviar evidencia de m
 | Exigencia | Cobertura comprobada | Límite o pendiente |
 | --- | --- | --- |
 | Servicio operativo y funcionalidad compartida | Flujo de alquiler y lista mínima de empleados operativos por gateway; recorrido y permisos aprobados | Acreditar acceso y consumo del gimnasio durante la evaluación |
-| Almacenamiento integrado | PostgreSQL y MongoDB ejercitados por pruebas reales; Redis y Solr también verificados | El arranque en CI actual falla en MongoDB; no se atribuye ese fallo a la persistencia ya comprobada localmente |
+| Almacenamiento integrado | PostgreSQL y MongoDB ejercitados por pruebas reales; Redis y Solr también verificados | El arranque en la CI de `19c4e06` falló en MongoDB (mitigado en la entrega 3, ver [ENTREGA-3](ENTREGA-3.md)); no se atribuye ese fallo a la persistencia ya comprobada localmente |
 | Logs correlacionados y primera traza | Registros JSON de reserva en cuatro servicios y nueva traza Jaeger con siete spans | Propagación AMQP, tablero y alertas quedan para ampliación operativa |
 | D2: estilos internos | Capas en Clientes/Flota y Hexagonal en Alquileres/Empleados | Conservar justificación y revisión del equipo |
 | D6: búsqueda | Solr actualizado por cambios, filtros/paginación/ordenamiento y recorrido actual aprobados; reconstrucción inicial con evidencia histórica | Medir frescura desde commit y ampliar reconstrucción operativa |

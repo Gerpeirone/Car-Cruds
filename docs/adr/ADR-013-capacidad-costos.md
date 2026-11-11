@@ -3,9 +3,9 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D13: capacidad y costos |
-| Versión documental | 0.5 |
-| Fecha | 15 de octubre de 2026 |
-| Estado | Medición local inicial y estimación; validación de capacidad sostenida pendiente |
+| Versión documental | 0.6 |
+| Fecha | 10 de noviembre de 2026 |
+| Estado | Medición local inicial y procedimiento sostenido automatizado; nueva evidencia pendiente de ejecución |
 | Hito | Entrega 2 — 23 de octubre de 2026 |
 
 ## 1. Contexto y decisión
@@ -67,6 +67,8 @@ Una VM única constituye un laboratorio económico, con puntos únicos de falla 
 
 Esta medición inicial cubre los cuatro resultados solicitados por D13 con límites explícitos. No acredita un SLO sostenido, capacidad máxima del sistema ni escalabilidad cloud. Se deben repetir etapas más largas con calentamiento, mezcla de lecturas/escrituras, mayor volumen de datos, generador separado y una variación controlada de admisión o réplicas.
 
+El [ensayo sostenido](../ENSAYO-CARGA-SOSTENIDA.md) automatiza una comparación de caché fría, caliente y fallback con igual concurrencia/duración, y mantiene 30 segundos de tráfico de búsqueda mientras el recorrido integrado mide alta, actualización y baja en Solr. La CI usa diez segundos por fase como regresión; la evidencia para defensa utiliza treinta. Los resultados no se incorporan a esta decisión hasta que una ejecución real termine correctamente y se revise su resumen.
+
 La comparación de fichas caliente/fallback sobre backend posterior está registrada en [D7](ADR-007-cache.md); muestra reducción de accesos, con latencia no uniforme. No sustituye la carga de disponibilidad ni una línea base sin dependencia Redis.
 
 También se ampliarán:
@@ -90,3 +92,4 @@ Un simulador local, si se utiliza, se identificará como tal y no acreditará in
 | 0.3 | 14 de octubre de 2026 | Resultados locales, límite de admisión, alternativa y estimación AWS con supuestos |
 | 0.4 | 15 de octubre de 2026 | Admisión configurable y límite conocido de conexiones en la creación de reservas |
 | 0.5 | 15 de octubre de 2026 | Validación remota fuera de la transacción, revalidación idempotente y pruebas de regresión |
+| 0.6 | 10 de noviembre de 2026 | Procedimiento automatizado para caché sostenida y frescura de Solr bajo carga |

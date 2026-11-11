@@ -1,6 +1,6 @@
 # Panel del operador — F3-02
 
-Fecha: 8 de noviembre de 2026. Estado: implementado en la entrega 3 (PR #8), con verificación automatizada y contra servicios reales. Revisión visual en navegador pendiente.
+Fecha: 8 de noviembre de 2026. Estado: implementado en la entrega 3 (PR #8), con verificación automatizada y contra servicios reales. Revisión en navegador real completada el 9 de noviembre de 2026 ([EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre)).
 
 [Resumen estructurado de la verificación](evidence/operator-validation-2026-11-08.json).
 

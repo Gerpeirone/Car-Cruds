@@ -62,6 +62,8 @@ El resultado respalda la **reducción de accesos a la fuente** con caché calien
 
 La corrección de instrumentación clasifica error de transporte antes de miss. Tras un error de lectura, se consulta la fuente una sola vez y no se intenta escribir nuevamente en Redis. Las pruebas focales verificaron puerto/cliente cerrado, miss normal y conexión TCP silenciosa acotada por el contexto. La fase fría y una comparación sostenida con caché deshabilitada continúan pendientes.
 
+El [nuevo procedimiento sostenido](../ENSAYO-CARGA-SOSTENIDA.md) fuerza un arranque frío eliminando solo la entrada de datos y conservando su generación, compara después la entrada caliente y finalmente detiene/restaura Redis para medir fallback y circuit breaker. Usa la misma ruta, concurrencia y duración, registra accesos a MongoDB y valida errores automáticamente. El procedimiento implementado no se presenta como evidencia hasta completar una ejecución real.
+
 ## 5. Referencias e historial
 
 Material en `clases.zip`: `teoria/03-cache.md`, `practica/clase-3-cache.md` y `teoria/06-gateway-lb-discovery.md`. [D3](ADR-015-persistencia-v2.md), [D10](ADR-010-resiliencia.md).

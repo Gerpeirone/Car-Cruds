@@ -57,3 +57,7 @@ La prueba conjunta debe mostrar: consulta autenticada, correspondencia de un emp
 ## Verificación propia
 
 `go test -race ./services/employees/...` verifica reglas, permisos y formato HTTP. Con `TEST_DATABASE_URL` configurada incluye persistencia PostgreSQL, correcciones, mensajes atrasados, historia, reinicio, monedas y reintentos concurrentes. Sin esa variable las pruebas de base se omiten explícitamente. El workflow de GitHub Actions ejecuta dichas pruebas con PostgreSQL real y rechaza omisiones en la suite del conjunto.
+
+## Consulta de estado laboral
+
+`GET /v1/employees/{id}/status` acepta el Bearer de los roles `gym`, `admin` y `service`, no admite parámetros de consulta y devuelve únicamente `{"employeeId":"employee-001","active":false}`. Incluye empleados inactivos y no expone nombre, DNI, email, informes ni información clínica. `404` indica que el identificador no corresponde a un empleado conocido y `503`, un problema técnico; ninguno autoriza inferir una baja ni reutilizar el ID. `active: false` informa una baja laboral y **no cancela ni desvincula automáticamente** al socio o su membresía: esa decisión corresponde al gimnasio. La operación es una propuesta de Car Cruds para no deducir bajas por ausencia en la lista paginada; el gimnasio todavía no la aceptó ([ACUERDO-GIMNASIO](ACUERDO-GIMNASIO.md)).

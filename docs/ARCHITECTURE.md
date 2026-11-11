@@ -4,11 +4,9 @@
 
 > **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
 
-> **Planificación de entrega 3 — 08/11/2026:** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el primer frontend del alquiler. FE-A01 a FE-A10 detallan acceso de laboratorio, búsqueda, disponibilidad, reserva idempotente y consulta/cancelación por código sobre la API vigente. F3-01 está implementado en la entrega 3 (PR #8); [evidencia y límites de verificación](EVIDENCIA-FRONTEND.md). La publicación cloud y la revisión visual en navegador siguen pendientes.
+> **Planificación de entrega 3 — 08/11/2026 (actualizada 09/11):** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el frontend del alquiler sobre la API vigente. La revisión visual en navegador se completó el 9 de noviembre; la publicación cloud sigue pendiente.
 
-> **Verificación — 08/11/2026:** [revisión actual](REVISION-E2-2026-11-08.md) sobre `main` (`19c4e06`): suite real, contrato hospitalario aislado y traza aprobados. La CI actual falla al iniciar MongoDB. Los diagramas representan fronteras y conexiones previstas; las conexiones externas aún no acreditan operación conjunta. [PENDIENTES-E2](PENDIENTES-E2.md) distingue bloqueos externos y trabajo posterior.
-
-**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
+**Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos; las tablas, migraciones y referencias históricas se conservan sin acceso activo. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
 
 | Campo | Valor |
 | --- | --- |
@@ -189,7 +187,7 @@ El flujo clínico conserva vínculo explícito con paciente, intención durable,
 
 Flota utiliza outbox embebido en el documento MongoDB, con máximo 128 pendientes: si está lleno se rechaza el cambio antes de confirmar. El indexador consulta la versión vigente y actualiza Solr condicionalmente; duplicados y mensajes atrasados no deben retroceder la proyección. Se configuraron colas y entrega durable; reproceso operativo y alertas requieren cierre.
 
-Solr se actualiza ante cambios sin esperar búsquedas. El objetivo de frescura de 5 s desde commit sigue pendiente de medición completa. La reconstrucción inicial reencola la fuente en el mismo core y se verificó su resultado; el índice nuevo con intercambio controlado permanece previsto.
+Solr se actualiza ante cambios sin esperar búsquedas. El [recorrido de CI](adr/ADR-006-busqueda.md#medición-de-operación-normal--9-de-noviembre-de-2026) midió alta, actualización y baja desde antes de cada escritura HTTP: las tres quedaron visibles en menos de 5 s, una cota superior del retraso desde commit en operación normal. Faltan distribuciones bajo carga y recuperación. La reconstrucción inicial reencola la fuente en el mismo core y se verificó su resultado; el índice nuevo con intercambio controlado permanece previsto.
 
 Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un llenado anterior tras invalidación exitosa y mientras Redis conserva la marca. `volatile-lru` protege las marcas de expulsión; una prueba real con 69 expulsiones preservó V2 y rechazó V1. Las marcas crecen en memoria: falta una política de limpieza. Pérdida/vaciado de Redis elimina esa garantía; OOM o indisponibilidad habilitan fallback acotado. La tarifa autoritativa sigue en MongoDB. La comparación caliente/fallback registró cero lecturas de ficha MongoDB durante 8461 hits y 7395 lecturas fuente con Redis detenido. Todas las respuestas fueron 200; la latencia no mejoró uniformemente. [D7](adr/ADR-007-cache.md) conserva método, números y pendientes de fase fría/línea base deshabilitada.
 
@@ -221,7 +219,8 @@ Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila in
 | Observabilidad | Logs JSON, trazas HTTP en Jaeger, Prometheus con cinco alertas y tablero de Grafana ([compose.observability.yaml](../compose.observability.yaml), [simulacro](evidence/alert-drill-2026-11-09.json)); no hay notificación saliente ni contexto de traza por AMQP | Deuda aceptada | Canal de notificación y propagación de trazas por mensajería (D11) |
 | CI y kernel | El runner `ubuntu-24.04` usa el kernel `7.0.0-1017-azure` y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912), [SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848)). La CI usa MongoDB 7.0 mediante [compose.ci.yaml](../compose.ci.yaml) y volvió a pasar completa | Externa, mitigada | La CI prueba una versión mayor distinta de la de local y VM; volver a 8 cuando MongoDB corrija la detección. La VM debe usar un kernel menor que 6.19 ([DESPLIEGUE](DESPLIEGUE.md)) |
 | Operación | Sin respaldos, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
-| Evidencia | La caché se midió caliente y con Redis detenido; faltan la fase fría, la frescura de Solr desde el commit y carga sostenida | Pendiente | Ampliar en la defensa individual |
+| Evidencia | La caché se midió caliente y con Redis detenido; Solr cumplió una cota de 5 s para alta, cambio y baja en CI; faltan fase fría y carga sostenida | Pendiente | Ampliar en la defensa individual |
+| Revisión | Aceptación del equipo y de la cátedra; toda integración a `main` requiere aprobación del equipo mediante pull request | Pendiente | Ver [AGENTS.md](../AGENTS.md) |
 
 ## 10. Referencias e historial
 

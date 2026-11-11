@@ -203,6 +203,7 @@ func (h *harness) fleet(ctx context.Context) error {
 	h.vehicle = vehicle{ID: h.vehicleID, Brand: "Smoke-" + h.runID, Model: "Fixture de integración", Category: "smoke", Transmission: "manual", Seats: 5, DailyRateMinor: 123456, Currency: "ARS", Active: true}
 	h.vehicleIntent = true
 	var stored vehicle
+	createdAt := time.Now()
 	if _, err := h.request(ctx, "crear_vehiculo", "POST", "/v1/vehicles", h.admin, h.vehicle, "", 201, &stored); err != nil {
 		return err
 	}
@@ -210,6 +211,9 @@ func (h *harness) fleet(ctx context.Context) error {
 		return errors.New("vehículo creado no coincide con la fixture")
 	}
 	h.vehicle = stored
+	if err := h.searchVisible(ctx, "alta", true, createdAt); err != nil {
+		return err
+	}
 	// Fill the shared cache, then update the authoritative price and verify that
 	// either replica returns the new version. A stale CAS must be rejected.
 	if _, err := h.request(ctx, "ficha_cache", "GET", "/v1/vehicles/"+h.vehicleID, h.client, nil, "", 200, &stored); err != nil {
@@ -217,12 +221,16 @@ func (h *harness) fleet(ctx context.Context) error {
 	}
 	old := h.vehicle
 	h.vehicle.DailyRateMinor++
+	updatedAt := time.Now()
 	if _, err := h.request(ctx, "actualizar_vehiculo", "PUT", "/v1/vehicles/"+h.vehicleID, h.admin, h.vehicle, "", 200, &stored); err != nil {
 		return err
 	}
 	h.vehicle = stored
 	if stored.Version != 2 || stored.DailyRateMinor != old.DailyRateMinor+1 {
 		return errors.New("escritura de Flota no avanzó versión y tarifa")
+	}
+	if err := h.searchVisible(ctx, "actualización", true, updatedAt); err != nil {
+		return err
 	}
 	if _, err := h.request(ctx, "rechazar_version_anterior", "PUT", "/v1/vehicles/"+h.vehicleID, h.admin, old, "", 409, nil); err != nil {
 		return err
@@ -236,13 +244,12 @@ func (h *harness) fleet(ctx context.Context) error {
 			return errors.New("ficha cacheada conservó una versión anterior a la escritura")
 		}
 	}
-	return h.searchVisible(ctx, true)
+	return nil
 }
 
-func (h *harness) searchVisible(ctx context.Context, active bool) error {
-	pollCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+func (h *harness) searchVisible(ctx context.Context, transition string, active bool, started time.Time) error {
+	pollCtx, cancel := context.WithDeadline(ctx, started.Add(5*time.Second))
 	defer cancel()
-	started := time.Now()
 	for {
 		var result struct {
 			Items []vehicle `json:"items"`
@@ -254,11 +261,15 @@ func (h *harness) searchVisible(ctx context.Context, active bool) error {
 		}
 		visible := len(result.Items) == 1 && result.Total == 1 && result.Items[0].ID == h.vehicleID && result.Items[0].Version == h.vehicle.Version && result.Items[0].DailyRateMinor == h.vehicle.DailyRateMinor && result.Items[0].Active
 		if (active && visible) || (!active && result.Total == 0 && len(result.Items) == 0) {
-			h.log("PASS índice active=%t visibilidadMs=%d", active, time.Since(started).Milliseconds())
+			elapsed := time.Since(started)
+			if elapsed >= 5*time.Second {
+				return fmt.Errorf("frescura de %s excedió 5 s desde la escritura: %s", transition, elapsed)
+			}
+			h.log("PASS índice transición=%s versión=%d cotaDesdeEscrituraMs=%d", transition, h.vehicle.Version, elapsed.Milliseconds())
 			return nil
 		}
 		if err := pause(pollCtx, 200*time.Millisecond); err != nil {
-			return errors.New("el índice no alcanzó la versión esperada dentro de cinco segundos de consultas")
+			return fmt.Errorf("índice no alcanzó %s versión=%d dentro de 5 s desde la escritura", transition, h.vehicle.Version)
 		}
 	}
 }
