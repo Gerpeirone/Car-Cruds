@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-11",
+  "branch": "feat/demo-catalogo-vehiculos-empleados",
+  "environment": "Compose desechable en loopback (Caddy HTTPS, gateway, Clientes, Flota x2 con NGINX, Alquileres, Empleados, indexador, PostgreSQL, MongoDB, Redis, RabbitMQ, Solr). Sin Azure, sin Hospital ni Gimnasio reales.",
+  "initial_state": "Equivalente al de Azure: 3 vehículos (uno Toyota Corolla), 2 empleados de las integraciones y 5 reservas de cli-001 creadas por «operador» (4 RESERVED, 1 CANCELLED). Datos ficticios.",
+  "preview": "demoseed -catalog: 15 vehículos y 10 empleados a crear; demo-toyota-corolla OMITIDO por existir Toyota Corolla; tablas y flota idénticas antes y después",
+  "first_apply": "demoseed -catalog -apply: 15 vehículos y 10 empleados creados; sin observaciones",
+  "second_apply": "0 creados; sin observaciones",
+  "verification": {
+    "solr_index": "18 vehículos activos de Flota presentes en la búsqueda",
+    "models": "18 modelos distintos de 11 marcas, sin marca y modelo repetidos",
+    "text_search": "Kangoo → 1",
+    "filters": "brand=Toyota 3, category=suv 5, transmission=automatic 9, seats=7 1; todos coinciden",
+    "ordering": "price_asc y price_desc ordenados (34.000 a 89.000 ARS por día)",
+    "paging": "18 vehículos en 3 páginas de 6, sin repetidos",
+    "staff_panel": "10 empleados demo (9 activos) de 12"
+  },
+  "preservation": "md5 de customers, customer_rental_history, customer_accounts, rental_reservations, rental_agenda, rental_idempotency, membership_evidence, clinic_patient_links y clinic_appointment_history idénticos antes y después; employees solo agrega 10 filas y las 2 previas conservan su md5; auto-001, auto-002 y auto-003 conservan versión y updatedAt",
+  "browser": "Edge headless 1366x900: catálogo con 3 páginas sin repetidos, orden por mayor precio, filtro suv + automática (5), búsqueda Kangoo, panel del operador con 10 empleados demo",
+  "screenshots": ["img/demo-catalogo-pagina-1-2026-11-11.png", "img/demo-catalogo-filtro-suv-2026-11-11.png", "img/demo-catalogo-mayor-precio-2026-11-11.png", "img/demo-operador-personal-2026-11-11.png"],
+  "secrets_in_output": 0
+}

@@ -3,6 +3,9 @@
 // check, idempotency key and the Flota → Solr indexing path apply as usual.
 //
 // It never runs by itself: without -apply or -cleanup it only prints the plan.
+// -catalog limits it to vehicles and employees (a read-only preview against
+// the target, or with -apply only the missing ones); -verify only checks the
+// published catalog.
 // It only creates records whose identifiers start with "demo-" (employees:
 // "Demo ·"), never edits or deletes existing ones, and refuses non-loopback
 // URLs unless -allow-remote is given. Tokens are read from the environment or
@@ -46,9 +49,12 @@ func run(args []string, out io.Writer) int {
 	cleanup := fs.Bool("cleanup", false, "retirar los datos de demostración (cancelar reservas, desactivar autos y empleados demo)")
 	returnActive := fs.Bool("return-active", false, "con -cleanup, registrar también la devolución de los alquileres demo activos")
 	allowRemote := fs.Bool("allow-remote", false, "permitir un origen que no sea loopback (requiere decisión explícita del equipo)")
+	catalog := fs.Bool("catalog", false, "solo vehículos y empleados demo: sin -apply es una vista previa de solo lectura contra el destino")
+	verify := fs.Bool("verify", false, "solo verificar el catálogo publicado (Solr, filtros, orden, paginado) sin escribir")
 	timeout := fs.Duration("timeout", 2*time.Minute, "límite total")
-	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || (*apply && *cleanup) || (*returnActive && !*cleanup) {
-		fmt.Fprintln(out, "Uso: go run ./cmd/demoseed [-apply | -cleanup [-return-active]] [-url http://127.0.0.1:8080] [-env .env]")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || (*apply && *cleanup) || (*returnActive && !*cleanup) ||
+		(*catalog && *cleanup) || (*verify && (*apply || *cleanup || *catalog)) {
+		fmt.Fprintln(out, "Uso: go run ./cmd/demoseed [-apply | -cleanup [-return-active] | -catalog [-apply] | -verify] [-url http://127.0.0.1:8080] [-env .env]")
 		return 2
 	}
 	if err := devconfig.Load(*envFile); err != nil {
@@ -63,7 +69,7 @@ func run(args []string, out io.Writer) int {
 	s := &seeder{base: base, admin: os.Getenv("AUTH_ADMIN_TOKEN"), client: os.Getenv("AUTH_CLIENT_TOKEN"),
 		credentialCustomer: envOr("AUTH_CLIENT_CUSTOMER_ID", "cli-001"), out: out, now: time.Now,
 		http: &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
-	if !*apply && !*cleanup {
+	if !*apply && !*cleanup && !*catalog && !*verify {
 		s.plan()
 		return 0
 	}
@@ -73,9 +79,16 @@ func run(args []string, out io.Writer) int {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	if *apply {
+	switch {
+	case *verify:
+		err = s.verifyCatalog(ctx)
+	case *catalog && *apply:
+		err = s.applyCatalog(ctx)
+	case *catalog:
+		err = s.previewCatalog(ctx)
+	case *apply:
 		err = s.seed(ctx)
-	} else {
+	default:
 		err = s.retire(ctx, *returnActive)
 	}
 	if err != nil {
