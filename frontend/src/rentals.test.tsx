@@ -51,13 +51,20 @@ beforeEach(() => {
     vi.fn(async (path: string, init: RequestInit = {}) => {
       calls.push({ path, init });
       if (path === "/v1/customers/cli-001") return Response.json(customer);
-      if (path.startsWith("/v1/reservations?"))
+      if (path.startsWith("/v1/reservations?")) {
+        // As Rentals answers the operator credential: customerId is required.
+        if (
+          new URLSearchParams(path.split("?")[1]).get("customerId") !==
+          "cli-001"
+        )
+          return Response.json({ code: "INVALID_INPUT" }, { status: 400 });
         return Response.json({
           items: rows,
           page: 1,
           pageSize: 12,
           total: rows.length,
         });
+      }
       if (path === "/v1/reservations/res-futura" && init.method === "DELETE") {
         if (cancelFails) throw new TypeError("respuesta perdida");
         rows = rows.map((r) =>
@@ -95,7 +102,7 @@ async function login(user: ReturnType<typeof userEvent.setup>) {
 const card = (id: string) =>
   screen.getByText(id).closest("article") as HTMLElement;
 
-it("lista las reservas propias con datos reales y sin enviar un customerId", async () => {
+it("lista las reservas propias con datos reales y el conductor de la sesión", async () => {
   const user = userEvent.setup();
   mount("/mis-alquileres");
   await login(user);
@@ -117,7 +124,9 @@ it("lista las reservas propias con datos reales y sin enviar un customerId", asy
     within(active).getByText(/la devolución la registra el operador/),
   ).toBeTruthy();
   const list = calls.find((c) => c.path.startsWith("/v1/reservations?"))!;
-  expect(list.path).not.toMatch(/customerId/);
+  expect(
+    new URLSearchParams(list.path.split("?")[1]).get("customerId"),
+  ).toBe("cli-001");
   expect(new Headers(list.init.headers).get("Authorization")).toBe(
     `Bearer ${token}`,
   );
@@ -210,6 +219,54 @@ it("muestra el estado vacío con acceso al catálogo", async () => {
   ).toBeTruthy();
   await user.click(screen.getByRole("link", { name: /Explorar catálogo/ }));
   await screen.findAllByRole("link", { name: /Corolla/ });
+});
+
+// Regression of Azure: with the credential used for cli-001 the list answered
+// 400 because no customerId was sent. Five fictitious reservations created by
+// the operator, four RESERVED and one CANCELLED, must all be shown.
+it("muestra las cinco reservas del conductor creadas por el operador", async () => {
+  rows = [
+    reservation("res-op-1", "RESERVED"),
+    reservation("res-op-2", "RESERVED"),
+    reservation("res-op-3", "RESERVED"),
+    reservation("res-op-4", "RESERVED"),
+    reservation("res-op-5", "CANCELLED"),
+  ];
+  const user = userEvent.setup();
+  mount("/mis-alquileres");
+  await login(user);
+  expect(
+    await screen.findAllByRole("heading", { name: "Corolla" }),
+  ).toHaveLength(5);
+  for (const id of ["res-op-1", "res-op-2", "res-op-3", "res-op-4"]) {
+    const c = card(id);
+    expect(within(c).getByText("Reservada")).toBeTruthy();
+    expect(within(c).getByText(/01\/02\/2030/)).toBeTruthy();
+    expect(within(c).getByText(/156\.000/)).toBeTruthy();
+    expect(
+      within(c).getByRole("button", { name: "Cancelar reserva" }),
+    ).toBeTruthy();
+  }
+  // A cancelled reservation is shown as such and cannot be cancelled again.
+  const cancelled = card("res-op-5");
+  expect(within(cancelled).getByText("Cancelada")).toBeTruthy();
+  expect(
+    within(cancelled).queryByRole("button", { name: "Cancelar reserva" }),
+  ).toBeNull();
+});
+
+it("no muestra filas de otro conductor aunque el servidor las devolviera", async () => {
+  rows = [
+    reservation("res-futura", "RESERVED"),
+    { ...reservation("res-ajena", "RESERVED"), customerId: "cli-002" },
+  ];
+  const user = userEvent.setup();
+  mount("/mis-alquileres");
+  await login(user);
+  await screen.findByRole("heading", { name: "Mis alquileres" });
+  await screen.findByRole("alert");
+  expect(screen.queryByText("res-ajena")).toBeNull();
+  expect(screen.queryByText("res-futura")).toBeNull();
 });
 
 it("desde /acceso lleva al registro y al catálogo sin confundir los permisos", async () => {
