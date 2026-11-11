@@ -101,7 +101,7 @@ func TestGymHTTPContractWithPostgres(t *testing.T) {
 			}
 		}
 	}
-	if err := json.Unmarshal(raw, &contract); err != nil || contract.Info.Version != "0.4.0" {
+	if err := json.Unmarshal(raw, &contract); err != nil || contract.Info.Version != "0.5.0" {
 		t.Fatalf("unexpected contract version: %q, %v", contract.Info.Version, err)
 	}
 	evidence := contract.Paths[evidencePath].Post.RequestBody.Content["application/json"].Example

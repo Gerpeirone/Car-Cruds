@@ -1,5 +1,7 @@
 # ADR-017 — Capacidad compartida de Empleados
 
+> **Historial para el operador — 11/11/2026:** el contrato pasa a 0.5.0 al agregar `GET /v1/employees/{id}/membership-evidence` (solo `admin`), que lee las versiones recibidas. Es un cambio aditivo: el gimnasio sigue usando las mismas tres operaciones de la 0.4.0.
+
 > **Entrega al gimnasio — 10/11/2026:** el contrato vigente en código es 0.4.0 (especificación OpenAPI 3.0.3). Caddy sirve el archivo versionado y `checkshared` permite compararlo desde la red consumidora. Se mantiene el Bearer opaco por aplicación con un vencimiento RFC3339 configurable para `gym`. El gimnasio informó que implementó su lado del intercambio. Falta verificar el entorno HTTPS y ejecutar la prueba bilateral. [Guía de integración](../contracts/INTEGRACION_GIMNASIO.md)
 
 > **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) adapta el consumo clínico y lleva su contrato administrativo a 0.3.0. Las notas de migración pendiente conservan su corte histórico.

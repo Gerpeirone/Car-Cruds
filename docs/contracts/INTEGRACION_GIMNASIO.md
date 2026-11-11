@@ -4,7 +4,7 @@ Car Cruds publica una lista mínima de empleados activos y recibe evidencia de m
 
 ## Entorno y contrato
 
-La versión implementada es **0.4.0**, descrita en **OpenAPI 3.0.3**. Conserva las operaciones de lista y recepción de evidencia de 0.3.0 y agrega la consulta de estado laboral por ID. El archivo de referencia es [employees-openapi.json](employees-openapi.json). La configuración de Caddy sirve ese mismo archivo en `/contracts/employees-openapi.json` sin autenticación.
+La versión implementada es **0.5.0**, descrita en **OpenAPI 3.0.3**. Respecto de la 0.4.0 entregada al gimnasio solo agrega el historial de evidencia para el operador (`GET /v1/employees/{id}/membership-evidence`, rol `admin`); las operaciones que usa el gimnasio no cambian. Conserva las operaciones de lista y recepción de evidencia de 0.3.0 y agrega la consulta de estado laboral por ID. El archivo de referencia es [employees-openapi.json](employees-openapi.json). La configuración de Caddy sirve ese mismo archivo en `/contracts/employees-openapi.json` sin autenticación.
 
 La URL pública, su certificado y la versión efectivamente servida se registran después de verificar el entorno desde fuera de la VM. Al preparar esta guía, el repositorio no identificaba un origen público verificado. El procedimiento de publicación está en [Despliegue](../DESPLIEGUE.md).
 
