@@ -1,5 +1,7 @@
 # ADR-011 — Observabilidad, primera versión
 
+> **Tablero y alertas — 09/11/2026:** [compose.observability.yaml](../../compose.observability.yaml) agrega Prometheus v3.5.0 (recolección cada 5 s de los siete procesos con el token de servicio) y Grafana 12.1.1 con el tablero «Car Cruds · Operación». Hay cinco reglas: servicio caído, 5xx mayor al 5 %, p95 del gateway mayor a 1 s, breaker de caché abierto e invalidación fallida. En el [simulacro](../evidence/alert-drill-2026-11-09.json), la alerta de Redis se disparó a los 26 s y se resolvió 15 s después de restaurarlo. Falta un canal de notificación saliente y el contexto de traza por AMQP.
+
 > **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) conserva la instrumentación HTTP y correlación en el adaptador autenticado, sin publicar claves. Su validación nueva y cualquier traza se registran separadamente; este complemento no agrega un tablero ni una evidencia de traza.
 
 | Campo | Valor |

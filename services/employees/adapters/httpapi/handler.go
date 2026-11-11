@@ -29,6 +29,8 @@ func New(service *application.Service) http.Handler {
 	mux.HandleFunc("/v1/employees/clinic/requests/{requestId}", h.clinicRequest)
 	mux.HandleFunc("/v1/employees/clinic/requests/{requestId}/{action}", h.clinicAction)
 	mux.HandleFunc("/v1/employees/reports/clinic", h.clinicReport)
+	mux.HandleFunc("/v1/employees/clinic/doctors", h.clinicDoctors)
+	mux.HandleFunc("/v1/employees/clinic/usage", h.clinicUsage)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { platform.Error(w, 404, "NOT_FOUND", "Ruta inexistente") })
 	return mux
 }

@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-10",
+  "provider": "Turnos para socios 1.0.0 del grupo de Octi, https://api-turnos.srv1779429.hstgr.cloud/v1",
+  "consumer": "carcruds (clave privada en .env, fuera de Git; no aparece en logs)",
+  "path": "Panel/API de Car Cruds -> gateway -> Empleados -> hospital. El navegador nunca llama al hospital.",
+  "steps": [
+    {"step": "GET /v1/employees/clinic/doctors", "result": "200: doc-001 (30 min) y doc-002 (20 min)"},
+    {"step": "GET /v1/employees/clinic/usage?period=2026-11 antes de reservar", "result": "200: precio vigente ARS 25.000, sin cargos"},
+    {"step": "POST /v1/employees/clinic/patient-links employee-001 con pat-001", "result": "204"},
+    {"step": "POST /v1/employees/clinic/requests (referencia verificacion-hospital-2026-11-10, doc-001, 2026-11-20T13:00:00Z)", "result": "200: requestId 1d2a478e-8c56-4164-989f-8db7c1730be2, state ready; sin llamada al hospital"},
+    {"step": "POST .../submit", "result": "200: state booked, classification confirmed, turno 1b083266-8e60-4b55-a8b3-b18dd90339c4 de 13:00 a 13:30 UTC, version 1"},
+    {"step": "POST .../submit repetido", "result": "200: mismo turno; no se creó otro"},
+    {"step": "POST .../refresh", "result": "200: consulta al hospital, booked/confirmed, version 1"},
+    {"step": "GET /v1/employees/clinic/usage?period=2026-11 después", "result": "200: exactamente 1 reserva y ARS 25.000; el reenvío no generó cargo"},
+    {"step": "GET /v1/employees/reports/clinic", "result": "employee-001 confirmed"}
+  ],
+  "screenshot": "img/hospital-turno-confirmado-2026-11-10.png",
+  "notes": "Turno real de prueba con datos semilla del hospital (pat-001), autorizado por el equipo; queda facturado. Car Cruds no cancela turnos. Latencia observada al hospital: unos 200 ms."
+}

@@ -83,3 +83,63 @@ type ClinicFailure struct {
 
 func (e *ClinicFailure) Error() string { return "integración con el hospital: " + e.Code }
 func (e *ClinicFailure) Unwrap() error { return ErrClinicUnavailable }
+
+// ClinicDoctor is the provider catalog entry used to choose a valid doctor.
+type ClinicDoctor struct {
+	ID              string
+	DurationMinutes int
+}
+
+func (d ClinicDoctor) Validate() error {
+	if !ValidEvidenceKey(d.ID) || d.DurationMinutes < 1 {
+		return ErrClinicUnavailable
+	}
+	return nil
+}
+
+var clinicPeriod = regexp.MustCompile(`^\d{4}-(0[1-9]|1[0-2])$`)
+
+// ValidClinicPeriod accepts the provider billing month AAAA-MM (UTC).
+func ValidClinicPeriod(period string) bool { return clinicPeriod.MatchString(period) }
+
+// ClinicUsage is the provider billing statement for Car Cruds in one UTC
+// month. Amounts are integer minor units; a cancellation is still billed.
+type ClinicUsage struct {
+	Period       string
+	From, To     time.Time
+	CurrentPrice ClinicMoney
+	Totals       []ClinicUsageTotal
+	Items        []ClinicUsageItem
+}
+type ClinicMoney struct {
+	AmountMinor int64
+	Currency    string
+}
+type ClinicUsageTotal struct {
+	Currency              string
+	Bookings, AmountMinor int64
+}
+type ClinicUsageItem struct {
+	AppointmentID, Currency, Status string
+	BookedAt                        time.Time
+	PriceMinor                      int64
+}
+
+var currencyCode = regexp.MustCompile(`^[A-Z]{3}$`)
+
+func (u ClinicUsage) Validate(period string) error {
+	if u.Period != period || u.From.IsZero() || !u.From.Before(u.To) || u.CurrentPrice.AmountMinor < 0 || !currencyCode.MatchString(u.CurrentPrice.Currency) {
+		return ErrClinicUnavailable
+	}
+	for _, t := range u.Totals {
+		if !currencyCode.MatchString(t.Currency) || t.Bookings < 0 || t.AmountMinor < 0 {
+			return ErrClinicUnavailable
+		}
+	}
+	for _, i := range u.Items {
+		if !ValidEvidenceKey(i.AppointmentID) || !currencyCode.MatchString(i.Currency) || i.PriceMinor < 0 || i.BookedAt.IsZero() || (i.Status != "booked" && i.Status != "cancelled") {
+			return ErrClinicUnavailable
+		}
+	}
+	return nil
+}

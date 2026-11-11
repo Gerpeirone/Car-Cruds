@@ -1,0 +1,352 @@
+{
+  "date": "2026-11-09",
+  "browser": "Microsoft Edge headless (playwright-core 1.56.1)",
+  "entry": "https://localhost (Caddy, compose.deploy.yaml, PUBLIC_HOST=localhost)",
+  "axe": "axe-core 4.11.0, tags wcag2a wcag2aa wcag21a wcag21aa",
+  "viewports": {
+    "desktop": "1366x900",
+    "mobile": "390x844"
+  },
+  "initialFindings": "color-contrast en todas las pantallas (~300 nodos) y scrollable-region-focusable en 2 tablas móviles",
+  "screens": [
+    {
+      "viewport": "desktop",
+      "name": "cliente-acceso",
+      "route": "/acceso",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "cliente-catalogo",
+      "route": "/autos",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "cliente-ficha",
+      "route": "/autos/auto-001",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "cliente-reservas",
+      "route": "/reservas",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-acceso",
+      "route": "/operador/acceso",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-resumen",
+      "route": "/operador",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-flota",
+      "route": "/operador/flota",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-clientes",
+      "route": "/operador/clientes",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-reservas",
+      "route": "/operador/reservas",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "operador-mantenimiento",
+      "route": "/operador/mantenimiento",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-lista",
+      "route": "/operador/personal",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-alta",
+      "route": "/operador/personal/nuevo",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-ficha",
+      "route": "/operador/personal/b78e0a7b-cb38-43fb-bfdc-c936f6887550",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-membresias",
+      "route": "/operador/personal/membresias",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-turnos",
+      "route": "/operador/personal/turnos",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "desktop",
+      "name": "personal-turno-detalle",
+      "route": "/operador/personal/turnos/2b7d10f5-4cb0-4189-8691-4e3259c0f002",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "cliente-acceso",
+      "route": "/acceso",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "cliente-catalogo",
+      "route": "/autos",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "cliente-ficha",
+      "route": "/autos/auto-001",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "cliente-reservas",
+      "route": "/reservas",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-acceso",
+      "route": "/operador/acceso",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-resumen",
+      "route": "/operador",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-flota",
+      "route": "/operador/flota",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-clientes",
+      "route": "/operador/clientes",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-reservas",
+      "route": "/operador/reservas",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-mantenimiento",
+      "route": "/operador/mantenimiento",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-lista",
+      "route": "/operador/personal",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-alta",
+      "route": "/operador/personal/nuevo",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-ficha",
+      "route": "/operador/personal/b78e0a7b-cb38-43fb-bfdc-c936f6887550",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-membresias",
+      "route": "/operador/personal/membresias",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-turnos",
+      "route": "/operador/personal/turnos",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "personal-turno-detalle",
+      "route": "/operador/personal/turnos/2b7d10f5-4cb0-4189-8691-4e3259c0f002",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    },
+    {
+      "viewport": "mobile",
+      "name": "operador-menu-abierto",
+      "route": "/operador/personal",
+      "horizontalOverflowPx": 0,
+      "axeViolations": 0
+    }
+  ],
+  "keyboard": {
+    "clienteAcceso": [
+      {
+        "tag": "a",
+        "label": "Car Cruds, inicio",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "input",
+        "label": "Identificador de cliente",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "input",
+        "label": "Credencial de acceso",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "button",
+        "label": "Empezar mi viaje",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Soy operador",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "body"
+      }
+    ],
+    "operadorAcceso": [
+      {
+        "tag": "a",
+        "label": "car.cruds",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "input",
+        "label": "Credencial del operador",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "button",
+        "label": "Entrar al panel",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Ir al acceso de clientes",
+        "visibleFocus": "outline 3px solid"
+      }
+    ],
+    "operadorResumen": [
+      {
+        "tag": "a",
+        "label": "Una flota lista para salir.Registrá auto",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Personas, antes que kilómetros.Registrá ",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Del retiro a la vuelta.Consultá una rese",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Cuidamos el próximo viaje.Bloqueá fechas",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Un equipo que también se cuida.Gestioná ",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "body"
+      },
+      {
+        "tag": "a",
+        "label": "Saltar al contenido",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "car.cruds",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Resumen",
+        "visibleFocus": "outline 3px solid"
+      },
+      {
+        "tag": "a",
+        "label": "Flota",
+        "visibleFocus": "outline 3px solid"
+      }
+    ]
+  },
+  "consoleErrors": {
+    "desktop": [],
+    "mobile": []
+  }
+}

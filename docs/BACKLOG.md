@@ -46,12 +46,12 @@ Los cuatro servicios propios, gateway, balanceador e infraestructura están impl
 | HU-23 | Indicación administrativa local disponible | Indicación externa de necesidad médica sin capacidad publicada del hospital |
 | HU-18 | Tokens de aplicación y permisos de recurso implementados; respuestas 401/403 verificadas | Identidad personal, condiciones públicas y revisión final de todos los criterios |
 | HU-19 | Round-robin, dos réplicas y retirada/recuperación verificadas con errores iniciales documentados | Comparación representativa y caída de LB/fuente común |
-| HU-20 | Registros correlacionados y primera traza HTTP real; métricas instrumentadas | Propagación asíncrona, colector, tablero y alertas |
-| HU-21 y HU-22 | Suite actual de 155 pruebas/subpruebas reales sin omisiones; vet y smoke de 67 solicitudes aprobados | CI actual falla al iniciar MongoDB; ampliación de ensayos según alcance |
+| HU-20 | Registros correlacionados y primera traza HTTP real; métricas recolectadas por Prometheus, tablero de Grafana y cinco alertas con simulacro (09/11) | Propagación asíncrona y notificación saliente |
+| HU-21 y HU-22 | Suite actual de 155 pruebas/subpruebas reales sin omisiones; vet y smoke de 67 solicitudes aprobados | CI en verde desde el 09/11 (MongoDB 7.0 en el runner); ampliación de ensayos según alcance |
 | HU-24 | Outbox, efecto único, recuperación de broker y mensaje incompatible a DLQ verificados | Ensayos ampliados de desorden y reproceso de mensajes de negocio fallidos |
 | HU-25 | Indexación ante cambios y reconstrucción inicial en el mismo core verificadas | Frescura desde commit, reconstrucción operativa e índice sombra previsto |
 | HU-26 | Caché/versiones/expulsión y comparación caliente/fallback con reducción de lecturas MongoDB | Fase fría, línea base sin dependencia, duración sostenida y retención de marcas |
-| HU-27 | Deadlines, concurrencia, fallback/outbox y ensayo de fallas con postmortem | Circuit Breaker y ensayos ampliados/exteriores |
+| HU-27 | Deadlines, concurrencia, fallback/outbox, ensayo de fallas con postmortem y circuit breaker de caché medido (09/11) | Ensayos ampliados/exteriores |
 | HU-28 | Disponibilidad medida; límite de admisión, alternativa y estimación de costos documentados | Ampliar a confirmación/mezcla, duración y prueba de alternativa |
 
 La evidencia verificable se enlaza desde [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md). Los pendientes externos no convierten información desconocida en ausencia de membresía, cero gastos ni ausencia de turno.

@@ -12,6 +12,13 @@ type Clinic interface {
 	Book(context.Context, domain.ClinicRequest) (domain.ClinicAppointment, error)
 	Lookup(context.Context, string) (domain.ClinicAppointment, error)
 }
+
+// ClinicDirectory reads the provider catalog and billing statement. It is a
+// separate port so booking doubles need not implement read-only extras.
+type ClinicDirectory interface {
+	Doctors(context.Context) ([]domain.ClinicDoctor, error)
+	Usage(context.Context, string) (domain.ClinicUsage, error)
+}
 type ClinicStore interface {
 	LinkClinicPatient(context.Context, domain.PatientLink) error
 	CreateClinicRequest(context.Context, domain.ClinicRequest) (domain.ClinicRequest, error)
@@ -25,6 +32,7 @@ type ClinicStore interface {
 func (s *Service) WithClinic(store ClinicStore, clinic Clinic) *Service {
 	s.clinicStore = store
 	s.clinic = clinic
+	s.directory, _ = clinic.(ClinicDirectory)
 	s.clinicSlots = make(chan struct{}, 8)
 	return s
 }
@@ -167,4 +175,35 @@ func (s *Service) ClinicReport(ctx context.Context, kind string, page domain.Pag
 		return nil, 0, domain.ErrNotConfigured
 	}
 	return s.clinicStore.ClinicReport(ctx, kind, page)
+}
+func (s *Service) acquireClinic() bool {
+	select {
+	case s.clinicSlots <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+func (s *Service) ClinicDoctors(ctx context.Context) ([]domain.ClinicDoctor, error) {
+	if s.directory == nil {
+		return nil, domain.ErrNotConfigured
+	}
+	if !s.acquireClinic() {
+		return nil, domain.ErrClinicUnavailable
+	}
+	defer func() { <-s.clinicSlots }()
+	return s.directory.Doctors(ctx)
+}
+func (s *Service) ClinicUsage(ctx context.Context, period string) (domain.ClinicUsage, error) {
+	if !domain.ValidClinicPeriod(period) {
+		return domain.ClinicUsage{}, domain.ErrInvalidInput
+	}
+	if s.directory == nil {
+		return domain.ClinicUsage{}, domain.ErrNotConfigured
+	}
+	if !s.acquireClinic() {
+		return domain.ClinicUsage{}, domain.ErrClinicUnavailable
+	}
+	defer func() { <-s.clinicSlots }()
+	return s.directory.Usage(ctx, period)
 }

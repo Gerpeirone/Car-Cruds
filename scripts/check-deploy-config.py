@@ -20,6 +20,10 @@ def validate(config):
         raise ValueError("Caddy debe publicar únicamente 80 y 443")
     if caddy["depends_on"]["gateway"]["condition"] != "service_healthy":
         raise ValueError("Caddy debe esperar al gateway saludable")
+    if caddy["depends_on"]["web"]["condition"] != "service_healthy":
+        raise ValueError("Caddy debe esperar a la interfaz web saludable")
+    if services["web"].get("ports"):
+        raise ValueError("web: la interfaz se publica solo a través de Caddy")
     if not caddy["environment"].get("PUBLIC_HOST"):
         raise ValueError("falta PUBLIC_HOST")
     if not any(

@@ -1,0 +1,36 @@
+# Alertas mínimas de la operación de laboratorio (D11). Se ven en
+# http://127.0.0.1:9090/alerts y en el tablero de Grafana.
+groups:
+  - name: car-cruds
+    rules:
+      - alert: ServicioCaido
+        expr: up{job="car-cruds"} == 0
+        for: 30s
+        labels: {severity: critical}
+        annotations:
+          summary: "{{ $labels.instance }} no responde a la recolección de métricas"
+      - alert: ErroresServidorAltos
+        expr: |
+          sum by (service) (rate(car_cruds_http_requests_total{status=~"5..", route!~"/internal/.*"}[1m]))
+            / sum by (service) (rate(car_cruds_http_requests_total{route!~"/internal/.*"}[1m])) > 0.05
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.service }} responde más de 5 % de errores 5xx"
+      - alert: LatenciaGatewayAlta
+        expr: histogram_quantile(0.95, sum by (le) (rate(car_cruds_http_duration_seconds_bucket{service="gateway", route!~"/internal/.*"}[2m]))) > 1
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: "p95 del gateway mayor a 1 s"
+      - alert: CacheFlotaSinRedis
+        expr: max by (instance) (fleet_cache_breaker_state) == 1
+        for: 15s
+        labels: {severity: warning}
+        annotations:
+          summary: "Breaker de caché abierto en {{ $labels.instance }}: Flota lee MongoDB sin Redis"
+      - alert: InvalidacionDeCacheFallida
+        expr: increase(fleet_cache_invalidation_failures_total[5m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: "Una invalidación de caché falló en {{ $labels.instance }}; puede servirse una ficha anterior hasta el TTL"

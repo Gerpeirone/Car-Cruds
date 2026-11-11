@@ -8,6 +8,10 @@
   },
   "servers": [
     {
+      "url": "https://api-turnos.srv1779429.hstgr.cloud",
+      "description": "Public production deployment. All partner operations use the /v1 prefix."
+    },
+    {
       "url": "http://localhost:8088",
       "description": "Public listener of the gateway in the local docker compose stack. The public URL is shared with each consumer together with its key."
     }

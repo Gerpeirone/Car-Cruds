@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-09",
+  "setup": "docker compose -f compose.yaml -f compose.observability.yaml up -d --wait (Prometheus v3.5.0, Grafana 12.1.1)",
+  "targets": {"scraped": 7, "up": 7, "list": ["gateway", "customers", "rentals", "employees", "fleet-a", "fleet-b", "indexer"]},
+  "rules": ["ServicioCaido", "ErroresServidorAltos", "LatenciaGatewayAlta", "CacheFlotaSinRedis", "InvalidacionDeCacheFallida"],
+  "drill": [
+    {"time": "23:38:22", "event": "Carga cerrada de lectura de ficha (cmd/load, concurrencia 2)"},
+    {"time": "23:38:37", "event": "docker compose stop redis"},
+    {"time": "23:38:52", "event": "CacheFlotaSinRedis pending en fleet-a y fleet-b"},
+    {"time": "23:39:03", "event": "CacheFlotaSinRedis firing en fleet-a y fleet-b (regla con for: 15s)"},
+    {"time": "23:39:03", "event": "Captura del tablero: breaker Abierto, 2 alertas activas, hits reemplazados por bypass y lecturas a MongoDB en aumento", "file": "img/grafana-alerta-redis-2026-11-09.png"},
+    {"time": "23:39:42", "event": "docker compose start redis"},
+    {"time": "23:39:57", "event": "Sin alertas activas; fleet_cache_breaker_state=0 en ambas réplicas"}
+  ],
+  "limits": "Alertas visibles en Prometheus y Grafana; no hay notificación saliente (correo o chat) configurada. Entorno local."
+}

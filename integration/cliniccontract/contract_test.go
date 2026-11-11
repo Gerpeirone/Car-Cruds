@@ -390,6 +390,31 @@ func TestCarCrudsConsumesUnmodifiedHospitalAppointments(t *testing.T) {
 	if len(found) != 2 {
 		t.Fatal("faltan los cargos de los dos turnos verificados")
 	}
+	// Car Cruds reads the same catalog and statement through its own API.
+	var doctorList []struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(call("GET", "/v1/employees/clinic/doctors", nil, 200)["doctors"], &doctorList) != nil || len(doctorList) == 0 {
+		t.Fatal("el catálogo de médicos no llegó por Empleados")
+	}
+	var statement []struct {
+		Currency    string `json:"currency"`
+		Bookings    int    `json:"bookings"`
+		AmountMinor int64  `json:"amountMinor"`
+	}
+	period := time.Now().UTC().Format("2006-01")
+	if json.Unmarshal(call("GET", "/v1/employees/clinic/usage?period="+period, nil, 200)["totals"], &statement) != nil {
+		t.Fatal("la facturación no llegó por Empleados")
+	}
+	matched := false
+	for _, total := range statement {
+		if total.Currency == "ARS" {
+			matched = total.Bookings == finalCount && total.AmountMinor == finalAmount
+		}
+	}
+	if !matched {
+		t.Fatal("la facturación leída por Empleados no coincide con la del hospital")
+	}
 	// Leave no active slot in the disposable provider, so the fixture can repeat.
 	providerCall("POST", "/appointments/"+url.PathEscape(recoveredID)+"/cancel", key, "", nil, 200)
 	if other := readUsage(otherKey); len(other.Items) != 0 || len(other.Totals) != 0 {
