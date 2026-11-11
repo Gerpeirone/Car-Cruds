@@ -95,35 +95,85 @@ La capacidad compartida debe permanecer accesible hasta finalizar la evaluación
 
 ## 6. Actualizar la VM de Azure
 
-La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. Al 11/11/2026 su interfaz no incluye Personal, Hospital ni Gimnasio. Además, la VM sirve la interfaz aunque el Caddyfile de `main` envía todo al gateway: tiene configuración local que no está en Git. Por eso el primer paso es revisar y guardar esos cambios. **Estos comandos no se ejecutaron; requieren autorización del equipo.**
+La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. Al 11/11/2026 su interfaz no incluye Personal, Hospital ni Gimnasio, y sirve la interfaz con configuración local que no está en Git. Este procedimiento actualiza la VM sin perder datos. **Requiere autorización del equipo.**
+
+**Por qué no se pierden datos:** `compose.yaml` fija `name: car-cruds`, así que los volúmenes (`car-cruds_postgres-data`, `car-cruds_mongo-data`, etc.) son siempre los mismos y `up` los reutiliza. La versión no agrega migraciones, por lo que volver atrás no exige tocar el esquema. **Nunca usar `down`, `rm` ni la opción `-v`.**
+
+### A. En la computadora (antes)
 
 ```bash
-cd ~/Car-Cruds                      # ruta real del checkout en la VM
-uname -r                             # debe ser menor que 6.19 (MongoDB 8)
-git status --short                   # cambios locales de la VM
-git diff > ~/vm-cambios-$(date +%F).patch   # guardarlos antes de tocar nada
-cp .env ~/env-respaldo-$(date +%F)          # copia privada, nunca a Git
-git log --oneline -1                 # anotar este commit para volver atrás
 git fetch origin
-git stash push -m "vm-local-$(date +%F)"    # solo si git status mostró cambios
-git checkout integracion/panel-integraciones   # o main, cuando el equipo la integre
-grep -c '^CLINIC_' .env              # debe dar 2: CLINIC_BASE_URL y CLINIC_API_KEY
-docker compose -f compose.yaml -f compose.deploy.yaml config --quiet
-docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait --wait-timeout 600
+gh run list --branch integracion/panel-integraciones --limit 2   # ambas en success para el commit a desplegar
+git rev-parse --short origin/integracion/panel-integraciones       # commit a desplegar (<COMMIT>)
+ssh <usuario>@57.156.56.201
 ```
 
-No usar `down -v` ni borrar volúmenes: conservan PostgreSQL (con la evidencia real del gimnasio y el turno del hospital), MongoDB y los certificados de Caddy. Si falta `CLINIC_API_KEY`, agregar las dos líneas de [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) antes del `up`: con la URL y sin clave, Empleados no inicia.
-
-Verificación desde fuera de la VM:
+### B. En la VM: preparar y respaldar (no cambia nada)
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/operador/hospital   # 200 (SPA)
-curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/v1/employees        # 401
-npm --prefix scripts/ui-review ci
-BASE_URL=https://57-156-56-201.sslip.io BROWSER="<Chrome o Edge>" ADMIN_TOKEN=... CLIENT_TOKEN=... node scripts/ui-review/review.mjs
+cd ~/Car-Cruds                          # ruta real del checkout
+FECHA=$(date +%F-%H%M); mkdir -p ~/respaldos/$FECHA && chmod 700 ~/respaldos/$FECHA
+uname -r                                # menor que 6.19 (MongoDB 8)
+df -h /                                 # unos 5 GB libres
+git rev-parse --short HEAD | tee ~/respaldos/$FECHA/commit-anterior.txt
+docker compose ls                       # anotar CONFIG FILES en uso
+docker ps --format '{{.Names}} {{.Status}}' > ~/respaldos/$FECHA/contenedores.txt
+git status --short | tee ~/respaldos/$FECHA/git-status.txt
+git diff > ~/respaldos/$FECHA/cambios-locales.patch
+git ls-files --others --exclude-standard | tar -czf ~/respaldos/$FECHA/archivos-sin-seguimiento.tgz -T - 2>/dev/null
+cp .env ~/respaldos/$FECHA/env && chmod 600 ~/respaldos/$FECHA/env
+docker compose exec -T postgres pg_dumpall -U postgres | gzip > ~/respaldos/$FECHA/postgres.sql.gz
+docker compose exec -T mongo sh -c 'mongodump --archive --gzip -u root -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin' > ~/respaldos/$FECHA/mongo.archive.gz
+gunzip -t ~/respaldos/$FECHA/postgres.sql.gz && ls -lh ~/respaldos/$FECHA
+docker compose exec -T postgres psql -U postgres -d employees -c "SELECT employee_id, period, source_app, source_reference, version FROM membership_evidence WHERE employee_id='employee-001' AND period='2026-11';"
+docker compose exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;" | tee ~/respaldos/$FECHA/historial-antes.txt
 ```
 
-En el panel, Gimnasio con período `2026-11` debe mostrar la evidencia de `employee-001` con origen `gimnasio-pablo`. Para volver atrás: `git checkout <commit anotado>`, repetir el `up` y, si había cambios locales, `git stash pop`.
+Si `docker compose ls` muestra archivos distintos de `compose.yaml` y `compose.deploy.yaml`, detenerse y adaptar el paso C: la VM fue levantada de otra forma.
+
+### C. En la VM: actualizar
+
+```bash
+git stash push --include-untracked -m "vm-local-$FECHA"   # solo si hubo cambios en el paso B
+git checkout --detach <COMMIT>
+grep -c '^CLINIC_' .env                 # si no da 2, agregar con nano:
+#   CLINIC_BASE_URL=https://api-turnos.srv1779429.hstgr.cloud/v1
+#   CLINIC_API_KEY=<clave de Car Cruds, por canal privado>
+chmod 600 .env
+grep '^PUBLIC_HOST=' .env               # 57-156-56-201.sslip.io
+docker compose -f compose.yaml -f compose.deploy.yaml config --quiet
+docker compose -f compose.yaml -f compose.deploy.yaml build
+docker compose -f compose.yaml -f compose.deploy.yaml up -d --wait --wait-timeout 600
+git rev-parse --short HEAD              # <COMMIT>
+docker compose -f compose.yaml -f compose.deploy.yaml ps
+docker compose exec -T postgres psql -U postgres -d employees -c "SELECT employee_id, period, source_app, source_reference, version FROM membership_evidence WHERE employee_id='employee-001' AND period='2026-11';"
+docker compose exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;"   # igual que antes
+```
+
+El `build` corre mientras el sitio sigue atendiendo; `up` recrea solo los contenedores que cambiaron.
+
+### D. En la computadora (verificar desde afuera)
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/operador/hospital   # 200
+curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/v1/employees        # 401
+curl -s https://57-156-56-201.sslip.io/ | grep -o '/assets/index-[^"]*\.js'                # <BUNDLE>
+curl -s https://57-156-56-201.sslip.io<BUNDLE> | grep -c "Gimnasio – Membresías"          # 1 o más
+```
+
+En el panel, Gimnasio con período `2026-11` muestra `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital muestra el turno confirmado y el cargo de ARS 25.000. No hacer reservas nuevas: cada una se factura.
+
+### E. En la VM: volver atrás
+
+```bash
+cd ~/Car-Cruds
+git checkout --detach $(cat ~/respaldos/<FECHA>/commit-anterior.txt)
+git stash list                          # "vm-local-<FECHA>"
+git stash pop
+docker compose <los mismos -f anotados en el paso B> up -d --build --wait --wait-timeout 600
+```
+
+Sin migraciones, los datos sirven con la versión anterior. Los respaldos del paso B son para una corrupción de datos; restaurarlos reemplaza información y requiere acordarlo antes.
 
 ## 7. Pendientes
 
