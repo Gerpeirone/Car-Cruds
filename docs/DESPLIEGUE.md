@@ -184,6 +184,16 @@ curl -s https://57-156-56-201.sslip.io<BUNDLE> | grep -c "Gimnasio – Membresí
 
 En el panel, Gimnasio con período `2026-11` muestra `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital muestra el turno confirmado y el cargo de ARS 25.000. No hacer reservas nuevas: cada una se factura.
 
+**Hospital: médicos y facturación.** En la VM, `bash scripts/check-hospital.sh` hace solo dos GET (médicos y facturación del mes) por la entrada pública, con el `AUTH_ADMIN_TOKEN` del `.env`, y no imprime el token. Si responde `404 NOT_FOUND`, Empleados está corriendo una imagen anterior a `65226bf`: esas rutas no existían y caen en «Ruta inexistente». El panel lo muestra como «No encontramos ese recurso para tu acceso». Recrear el contenedor (`up --force-recreate`, `restart`) **no** alcanza, porque reutiliza la imagen anterior. Hay que construir la imagen:
+
+```bash
+docker compose $F build employees
+docker compose $F up -d --no-deps --wait employees
+bash scripts/check-hospital.sh                       # OK médicos y OK facturación
+```
+
+`503 NOT_CONFIGURED` indica que el contenedor no recibió `CLINIC_BASE_URL`. `503 CLINIC_UNAVAILABLE` indica que Empleados llegó al hospital y la llamada falló: clave rechazada, red, timeout o respuesta incompatible.
+
 ### E. En la VM: volver atrás
 
 ```bash

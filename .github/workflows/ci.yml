@@ -53,6 +53,7 @@ jobs:
         run: |
           bash scripts/test-deploy-vm.sh
           bash scripts/test-check-public.sh
+          bash scripts/test-check-hospital.sh
       - name: Probar código propio con detector de carreras
         run: go test -race -count=1 -v ./...
       - name: Analizar código propio
