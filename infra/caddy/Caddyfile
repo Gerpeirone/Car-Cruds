@@ -7,6 +7,13 @@
 	@internal path /internal/*
 	respond @internal 404
 
+	handle /contracts/employees-openapi.json {
+		uri strip_prefix /contracts
+		header Cache-Control "no-cache"
+		root * /srv/contracts
+		file_server
+	}
+
 	reverse_proxy gateway:8080
 
 	log {

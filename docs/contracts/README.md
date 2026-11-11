@@ -14,6 +14,8 @@ Los contratos de Alquileres, Empleados e integración clínica se completaron co
 
 ## Estado y antecedentes de las integraciones
 
+El equipo de Gimnasio puede usar la [guía de integración](INTEGRACION_GIMNASIO.md) para configurar el acceso, validar el contrato servido y ejecutar la prueba conjunta.
+
 **Revisión vigente — 23/10/2026:** personal/gimnasio usa la versión 0.4.0, que agrega `/status` sobre la 0.3.0, y la API administrativa clínica usa la 0.3.0. Empleados administra exclusivamente personal registrado ([ADR-018](../adr/ADR-018-empleados-sin-candidatos.md)); [ADR-019](../adr/ADR-019-consumo-turnos-socios.md) adapta el flujo clínico a Turnos para socios 1.0.0 fijado a `c0b65f4`. Nuevos vínculos, intenciones y envíos que puedan crear exigen empleado activo; seguimiento previo de inactivos se conserva. La lista y membresías del gimnasio no cambian. Pruebas locales y aceptación externa se registran por separado.
 
 Actualización del 22 de octubre: [API administrativa de hospital](clinic-integration-openapi.json), versión 0.1.0, y [contrato observado de Turnos de Octi](providers/octi-turnos-observed.openapi.json). El segundo documenta código publicado, no un acuerdo bilateral ni el OpenAPI oficial del proveedor. Guía de configuración, uso y recuperación: [COMUNICACION-HOSPITAL](../COMUNICACION-HOSPITAL.md). Se conserva la lista e intercambio propio del gimnasio.

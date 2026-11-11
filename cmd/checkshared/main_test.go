@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -38,19 +40,38 @@ func TestContractRejectsExtraFieldsAndInconsistentPages(t *testing.T) {
 }
 
 func TestVerificationOnlyReadsAndDetectsAuthorizationRegression(t *testing.T) {
-	for _, leak := range []bool{false, true} {
+	contract := filepath.Join(t.TempDir(), "employees-openapi.json")
+	if err := os.WriteFile(contract, []byte("{\r\n  \"info\":{\"version\":\"0.4.0\"}\r\n}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, scenario := range []string{"valid", "privilege leak", "stale contract", "inactive employee"} {
 		calls := 0
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			calls++
 			if r.Method != http.MethodGet {
 				t.Error("verification modified data")
 			}
+			if r.URL.Path == "/contracts/employees-openapi.json" {
+				if r.Header.Get("Authorization") != "" {
+					t.Error("credential sent to public contract")
+				}
+				version := "0.4.0"
+				if scenario == "stale contract" {
+					version = "0.3.0"
+				}
+				fmt.Fprintf(w, `{"info":{"version":%q}}`, version)
+				return
+			}
 			if r.Header.Get("Authorization") != "Bearer test-gym" {
 				w.WriteHeader(401)
 				return
 			}
+			if r.URL.Path == "/v1/employees/opaque-id/status" {
+				fmt.Fprintf(w, `{"employeeId":"opaque-id","active":%t}`, scenario != "inactive employee")
+				return
+			}
 			if r.URL.Path != "/v1/employees" {
-				if leak {
+				if scenario == "privilege leak" {
 					w.WriteHeader(200)
 				} else if r.URL.Path == "/v1/candidates" {
 					w.WriteHeader(404)
@@ -70,10 +91,10 @@ func TestVerificationOnlyReadsAndDetectsAuthorizationRegression(t *testing.T) {
 			}
 			fmt.Fprintf(w, `{"items":%s,"page":%s,"pageSize":1,"total":1}`, items, page)
 		}))
-		err := verify(context.Background(), server.URL, "test-gym")
+		err := verify(context.Background(), server.URL, "test-gym", contract, "opaque-id")
 		server.Close()
-		if (err != nil) != leak || calls == 0 {
-			t.Fatalf("leak=%v err=%v", leak, err)
+		if (err != nil) != (scenario != "valid") || calls == 0 {
+			t.Fatalf("%s: %v", scenario, err)
 		}
 	}
 }
@@ -90,7 +111,7 @@ func TestRedirectNeverForwardsCredentialToAnotherOrigin(t *testing.T) {
 		http.Redirect(w, r, target.URL, 302)
 	}))
 	defer source.Close()
-	if err := verify(context.Background(), source.URL, "test-gym"); err == nil || leaked {
+	if err := verify(context.Background(), source.URL, "test-gym", "", ""); err == nil || leaked {
 		t.Fatal("redirect followed or reported as success")
 	}
 }

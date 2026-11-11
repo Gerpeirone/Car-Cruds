@@ -46,5 +46,5 @@ fi
 host=$(grep '^PUBLIC_HOST=' .env | tail -1 | cut -d= -f2-)
 echo
 echo "Contenedores iniciados para https://$host; verificar DNS, certificado y contrato desde fuera de la VM:"
-echo "go run ./cmd/checkshared -url https://$host -env .env"
-echo "Token del gimnasio: grep AUTH_GYM_TOKEN .env (compartir solo por canal privado)"
+echo "go run ./cmd/checkshared -url https://$host -contract docs/contracts/employees-openapi.json"
+echo "Configurar el vencimiento y entregar el token según docs/contracts/INTEGRACION_GIMNASIO.md"

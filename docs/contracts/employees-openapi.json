@@ -3,7 +3,7 @@
   "info": {
     "title": "Car Cruds — Empleados: API propia implementada",
     "version": "0.4.0",
-    "description": "API propia provisional de Car Cruds, actualizada el 23 de octubre de 2026. Conserva la lista activa mínima y ofrece recepción de evidencia del gimnasio e informe administrativo. La devolución es una propuesta implementada en Car Cruds, pendiente de aceptación y adaptación del grupo de Pablo; no acredita consumo externo ni publicación. No define operaciones del hospital, tarifas ni facturación. La administración vigente gestiona únicamente empleados; las rutas de candidatos fueron retiradas y responden 404. La versión 0.4.0 agrega la lectura puntual del estado laboral por ID (`GET /v1/employees/{id}/status`) sin cambiar la lista ni el cuerpo de evidencia de 0.3.0. El flujo lista → vinculación manual → evidencia fue confirmado por el profesor según el gimnasio; el perfil mensual de [ACUERDO-GIMNASIO](../ACUERDO-GIMNASIO.md) es una propuesta pendiente de confirmación bilateral."
+    "description": "API de Empleados de Car Cruds. La versión 0.4.0 agrega la consulta puntual del estado laboral por ID y conserva la lista activa y la recepción de evidencia de la 0.3.0. El gimnasio informó que ya implementó la consulta, la vinculación manual y el envío mensual. La prueba conjunta y la confirmación del perfil mensual siguen pendientes. Consultar INTEGRACION_GIMNASIO.md para configurar el consumo y ensayar el intercambio."
   },
   "x-contract-status": "implemented-own-api-not-externally-agreed",
   "security": [
@@ -890,7 +890,7 @@
       "post": {
         "operationId": "receiveGymMembershipEvidence",
         "summary": "Recibir evidencia del gimnasio en Car Cruds",
-        "description": "Solo rol gym. Emisor obtenido del token, no del cuerpo. Sin parámetros de consulta. Reenvío seguro con misma identidad, versión y contenido. Corrección: incrementar versión y enviar instantánea completa. Pendiente de aceptación externa.",
+        "description": "Solo rol gym. El servidor obtiene el emisor de la credencial. Sin parámetros de consulta. Reenvío seguro con misma identidad, versión y contenido, incluido observedAt. Una corrección incrementa la versión y envía la instantánea completa.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1190,7 +1190,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Identidad de aplicación configurada fuera de Git. Autorización por rol en Empleados. Credenciales propias provisionales; no se utiliza demo-token del mock ni se afirma un acuerdo con equipos externos."
+        "description": "Bearer opaco asociado a una identidad de aplicación. En el entorno compartido, el operador configura el vencimiento del token gym. Credenciales ausentes, inválidas o vencidas reciben 401."
       }
     },
     "schemas": {
@@ -1773,6 +1773,10 @@
     }
   },
   "servers": [
+    {
+      "url": "/",
+      "description": "Origen HTTPS que publica el contrato en el despliegue compartido."
+    },
     {
       "url": "http://127.0.0.1:8080",
       "description": "Gateway local predeterminado; ajustar al entorno. No es una URL pública acordada."

@@ -17,7 +17,10 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-type Principal struct{ App, Role, CustomerID string }
+type Principal struct {
+	App, Role, CustomerID string
+	expiresAt             time.Time
+}
 type principalKey struct{}
 type requestIDKey struct{}
 
@@ -37,13 +40,21 @@ func Env(key, fallback string) string {
 func UUID() string { return uuid.NewString() }
 
 func TokensFromEnv() (map[string]Principal, error) {
+	var gymExpiry time.Time
+	if value := os.Getenv("AUTH_GYM_TOKEN_EXPIRES_AT"); value != "" {
+		var err error
+		gymExpiry, err = time.Parse(time.RFC3339, value)
+		if err != nil || gymExpiry.IsZero() {
+			return nil, errors.New("AUTH_GYM_TOKEN_EXPIRES_AT requiere una fecha RFC3339 válida")
+		}
+	}
 	entries := []struct {
 		key       string
 		principal Principal
 	}{
 		{"AUTH_ADMIN_TOKEN", Principal{App: "operador", Role: "admin"}},
 		{"AUTH_CLIENT_TOKEN", Principal{App: "cliente-demo", Role: "client", CustomerID: Env("AUTH_CLIENT_CUSTOMER_ID", "cli-001")}},
-		{"AUTH_GYM_TOKEN", Principal{App: "gimnasio-pablo", Role: "gym"}},
+		{"AUTH_GYM_TOKEN", Principal{App: "gimnasio-pablo", Role: "gym", expiresAt: gymExpiry}},
 		{"AUTH_SERVICE_TOKEN", Principal{App: "car-cruds", Role: "service"}},
 	}
 	tokens := make(map[string]Principal)
@@ -79,7 +90,7 @@ func AuthMiddleware(next http.Handler, tokens map[string]Principal) http.Handler
 				principal = p
 			}
 		}
-		if principal.App == "" {
+		if principal.App == "" || (!principal.expiresAt.IsZero() && !time.Now().Before(principal.expiresAt)) {
 			Error(w, 401, "UNAUTHORIZED", "Credencial inválida")
 			return
 		}

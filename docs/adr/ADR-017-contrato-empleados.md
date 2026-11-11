@@ -1,6 +1,8 @@
 # ADR-017 — Capacidad compartida de Empleados
 
-> **Complemento vigente — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) adapta el consumo clínico y lleva su contrato administrativo a 0.3.0. Las notas siguientes de migración pendiente conservan su corte histórico. El contrato de personal/gimnasio permanece en 0.3.0, sin cambios de lista ni membresías.
+> **Entrega al gimnasio — 10/11/2026:** el contrato vigente en código es 0.4.0 (especificación OpenAPI 3.0.3). Caddy sirve el archivo versionado y `checkshared` permite compararlo desde la red consumidora. Se mantiene el Bearer opaco por aplicación con un vencimiento RFC3339 configurable para `gym`. El gimnasio informó que implementó su lado del intercambio. Falta verificar el entorno HTTPS y ejecutar la prueba bilateral. [Guía de integración](../contracts/INTEGRACION_GIMNASIO.md)
+
+> **Complemento clínico — 23/10/2026:** [ADR-019](ADR-019-consumo-turnos-socios.md) adapta el consumo clínico y lleva su contrato administrativo a 0.3.0. Las notas de migración pendiente conservan su corte histórico.
 
 > **Revisión de alcance — 23/10/2026:** [ADR-018](ADR-018-empleados-sin-candidatos.md) retira candidatos y limita nuevas vinculaciones, intenciones y primer envío de turnos a empleados activos; conserva historia y seguimiento previo de inactivos. Los cuerpos y resultados siguientes mantienen sus fechas históricas. Los contratos propios actuales son personal/gimnasio 0.3.0 y clínica 0.2.0; la lista y membresías del gimnasio no cambian. La migración al contrato Turnos para socios publicado posteriormente por el hospital queda pendiente.
 

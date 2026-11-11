@@ -22,6 +22,8 @@ import (
 func main() {
 	address := flag.String("url", "", "origen explícito de la API; HTTPS salvo loopback")
 	envFile := flag.String("env", "", "archivo de credenciales opcional; por defecto no se lee .env")
+	contract := flag.String("contract", "", "archivo OpenAPI esperado para comparar con el publicado")
+	employee := flag.String("employee", "", "ID de empleado ficticio activo para comprobar /status")
 	timeout := flag.Duration("timeout", 30*time.Second, "presupuesto total de verificación")
 	flag.Parse()
 	if *timeout <= 0 || devconfig.Load(*envFile) != nil {
@@ -35,7 +37,7 @@ func main() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	if err := verify(ctx, base, os.Getenv("AUTH_GYM_TOKEN")); err != nil {
+	if err := verify(ctx, base, os.Getenv("AUTH_GYM_TOKEN"), *contract, *employee); err != nil {
 		fmt.Printf("FAIL: %s\n", err)
 		os.Exit(1)
 	}
@@ -56,7 +58,7 @@ func validateURL(raw string) (string, error) {
 	return strings.TrimRight(u.String(), "/"), nil
 }
 
-func verify(ctx context.Context, base, token string) error {
+func verify(ctx context.Context, base, token, contract, employee string) error {
 	client := &http.Client{Timeout: 8 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
 		return errors.New("redirección rechazada")
 	}}
@@ -84,6 +86,21 @@ func verify(ctx context.Context, base, token string) error {
 		}
 		return body, nil
 	}
+	if contract != "" {
+		expected, err := os.ReadFile(contract)
+		var local, published bytes.Buffer
+		if err != nil || json.Compact(&local, expected) != nil {
+			return errors.New("archivo OpenAPI local inválido o ilegible")
+		}
+		actual, err := get("/contracts/employees-openapi.json", "", 200)
+		if err != nil {
+			return err
+		}
+		if json.Compact(&published, actual) != nil || !bytes.Equal(published.Bytes(), local.Bytes()) {
+			return errors.New("el OpenAPI publicado difiere del archivo esperado")
+		}
+		fmt.Println("PASS: el OpenAPI publicado coincide con el archivo esperado")
+	}
 	for _, credential := range []string{"", "invalid-checkshared-credential"} {
 		if _, err := get("/v1/employees", credential, 401); err != nil {
 			return err
@@ -106,6 +123,23 @@ func verify(ctx context.Context, base, token string) error {
 	}
 	if _, err := get("/v1/employees?page=0", token, 400); err != nil {
 		return err
+	}
+	if employee != "" {
+		body, err := get("/v1/employees/"+url.PathEscape(employee)+"/status", token, 200)
+		if err != nil {
+			return err
+		}
+		var status struct {
+			EmployeeID string `json:"employeeId"`
+			Active     *bool  `json:"active"`
+		}
+		decoder := json.NewDecoder(bytes.NewReader(body))
+		decoder.DisallowUnknownFields()
+		if decoder.Decode(&status) != nil || decoder.Decode(new(any)) != io.EOF ||
+			status.EmployeeID != employee || status.Active == nil || !*status.Active {
+			return errors.New("estado laboral inválido o empleado ficticio inactivo")
+		}
+		fmt.Println("PASS: consulta de estado del empleado ficticio")
 	}
 	for _, path := range []string{"/v1/admin/employees", "/v1/employees/integrations"} {
 		if _, err := get(path, token, 403); err != nil {

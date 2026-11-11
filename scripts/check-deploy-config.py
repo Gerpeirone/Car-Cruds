@@ -22,12 +22,18 @@ def validate(config):
         raise ValueError("Caddy debe esperar al gateway saludable")
     if not caddy["environment"].get("PUBLIC_HOST"):
         raise ValueError("falta PUBLIC_HOST")
+    if not any(
+        volume.get("target") == "/srv/contracts/employees-openapi.json"
+        and volume.get("read_only")
+        for volume in caddy.get("volumes", [])
+    ):
+        raise ValueError("falta el contrato de Empleados de solo lectura en Caddy")
 
 
 if __name__ == "__main__":
     try:
         validate(json.load(sys.stdin))
     except (ValueError, KeyError, TypeError):
-        print("FAIL: configuración de despliegue inválida; revisar reinicios, puertos y dependencias", file=sys.stderr)
+        print("FAIL: configuración de despliegue inválida; revisar reinicios, puertos, dependencias y montaje del contrato", file=sys.stderr)
         sys.exit(1)
-    print("PASS: reinicio de servicios permanentes, puertos y dependencia de Caddy")
+    print("PASS: reinicio de servicios, puertos, dependencia de Caddy y montaje del contrato")

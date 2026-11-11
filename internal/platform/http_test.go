@@ -32,6 +32,21 @@ func TestAuthCannotSpoofPrincipal(t *testing.T) {
 		t.Fatalf("status %d", w.Code)
 	}
 }
+
+func TestInvalidGymExpirationFailsConfiguration(t *testing.T) {
+	t.Setenv("AUTH_ADMIN_TOKEN", strings.Repeat("a", 24))
+	t.Setenv("AUTH_SERVICE_TOKEN", strings.Repeat("s", 24))
+	t.Setenv("AUTH_CLIENT_TOKEN", "")
+	t.Setenv("AUTH_GYM_TOKEN", strings.Repeat("g", 24))
+	t.Setenv("AUTH_GYM_TOKEN_EXPIRES_AT", "2026-11-10")
+	if _, err := TokensFromEnv(); err == nil {
+		t.Fatal("accepted expiration without time or zone")
+	}
+	t.Setenv("AUTH_GYM_TOKEN_EXPIRES_AT", "")
+	if _, err := TokensFromEnv(); err != nil {
+		t.Fatalf("legacy local token configuration: %v", err)
+	}
+}
 func TestDecodeRejectsAmbiguousBodies(t *testing.T) {
 	for _, body := range []string{`{"a":1} {"a":2}`, `{"unknown":1}`, `{"a":1,"a":2}`, `{"A":1}`, `null`, strings.Repeat("x", (1<<20)+1)} {
 		var out struct {

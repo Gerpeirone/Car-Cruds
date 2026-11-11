@@ -4,6 +4,7 @@ x-auth: &auth
   AUTH_ADMIN_TOKEN: ${AUTH_ADMIN_TOKEN:?Ejecutar go run ./cmd/devsetup}
   AUTH_CLIENT_TOKEN: ${AUTH_CLIENT_TOKEN:?Ejecutar go run ./cmd/devsetup}
   AUTH_GYM_TOKEN: ${AUTH_GYM_TOKEN:?Ejecutar go run ./cmd/devsetup}
+  AUTH_GYM_TOKEN_EXPIRES_AT: "${AUTH_GYM_TOKEN_EXPIRES_AT:-}"
   AUTH_SERVICE_TOKEN: ${AUTH_SERVICE_TOKEN:?Ejecutar go run ./cmd/devsetup}
   SERVICE_TOKEN: ${AUTH_SERVICE_TOKEN}
   OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318

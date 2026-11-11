@@ -53,17 +53,18 @@ curl -s -H "Authorization: Bearer <AUTH_GYM_TOKEN>" \
 Verificación automática, sin modificar datos, desde una máquina con Go y el token del gimnasio en `AUTH_GYM_TOKEN`:
 
 ```bash
-go run ./cmd/checkshared -url https://<PUBLIC_HOST>
+go run ./cmd/checkshared -url "$CAR_CRUDS_URL" \
+  -contract docs/contracts/employees-openapi.json -employee employee-001
 ```
 
-La herramienta exige HTTPS fuera de loopback, rechaza redirecciones y comprueba autenticación, contrato mínimo, paginación y denegación de lecturas administrativas. No imprime nombres ni tokens. Para una comprobación local en la VM puede usarse `-env .env`; al consumidor se entrega únicamente su token, nunca ese archivo. Una comprobación satisfactoria no equivale a aceptación del contrato por el gimnasio.
+Definir `CAR_CRUDS_URL` con el origen HTTPS de la VM y ajustar `-employee` al ID ficticio activo elegido. La herramienta valida TLS, rechaza redirecciones y comprueba autenticación, paginación, permisos, estado y coincidencia con el archivo servido en `/contracts/employees-openapi.json`. Para una comprobación local en la VM puede usarse `-env .env`. Registrar la prueba bilateral por separado.
 
 `SEED_DEMO=true` (valor que genera `devsetup`) carga empleados ficticios para la prueba conjunta. Los empleados reales se dan de alta con el token de administración por la API de Empleados.
 
 ## 4. Credenciales
 
 - `.env` vive solo en la VM, con permisos `0600`, y nunca se versiona.
-- Al gimnasio se le entrega únicamente `AUTH_GYM_TOKEN`, por canal privado. Los tokens de administración y de servicio no salen de la VM.
+- Configurar `AUTH_GYM_TOKEN_EXPIRES_AT` en RFC3339 antes de compartir el token. Al gimnasio se le entrega únicamente `AUTH_GYM_TOKEN`, por canal privado. [Procedimiento de entrega](contracts/INTEGRACION_GIMNASIO.md#emitir-y-entregar-el-token-de-prueba)
 - Rotar un token: editar `.env` y volver a ejecutar el script; avisar al consumidor antes.
 
 ## 5. Operación
