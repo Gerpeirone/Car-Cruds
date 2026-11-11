@@ -330,6 +330,32 @@ docker compose $F up -d --no-deps --wait employees
 git checkout --detach "$(cat ~/respaldos/$FECHA/commit-anterior.txt)"   # y `git stash pop` si se guardaron cambios locales
 ```
 
+### H. En la VM: actualizar cuentas de clientes y Flota
+
+**Requiere autorización del equipo.** Se aplica a la corrección de sesión de clientes (`fix/clientes-login-sesion`), una vez integrada en `main`. Reconstruye `customers`, `gateway`, `fleet-a`, `fleet-b` y `web`, y recrea `fleet-lb`. No hay migraciones nuevas ni variables de entorno nuevas. PostgreSQL, MongoDB, Redis, RabbitMQ, Solr, Empleados (Hospital y Gimnasio), Alquileres y Caddy no se recrean.
+
+```bash
+cd ~/Car-Cruds
+F="-f compose.yaml -f compose.frontend.yaml -f compose.deploy.yaml"
+docker compose ls                                     # deben figurar esos tres archivos
+FECHA=$(date +%F-%H%M); mkdir -p ~/respaldos/$FECHA && chmod 700 ~/respaldos/$FECHA
+git rev-parse --short HEAD | tee ~/respaldos/$FECHA/commit-anterior.txt
+for s in customers gateway fleet-a fleet-b web; do docker tag car-cruds-$s:latest car-cruds-$s:antes-$FECHA; done
+docker compose $F exec -T postgres pg_dump -U postgres -d customers -Fc > ~/respaldos/$FECHA/customers.dump   # solo respaldo, no se restaura
+git fetch origin && git checkout --detach origin/main && git log -1 --oneline
+docker compose $F config --quiet
+docker compose $F build customers gateway fleet-a fleet-b web
+docker compose $F up -d --no-deps --wait customers gateway fleet-a fleet-b web
+docker compose $F up -d --no-deps --force-recreate --wait fleet-lb      # obligatorio: toma el nginx.conf nuevo y las IP actuales
+docker compose $F exec -T fleet-lb grep -c ' resolve;' /etc/nginx/nginx.conf   # 2
+docker compose $F ps
+```
+
+Verificación sin cuentas reales: `curl -s -o /dev/null -w '%{http_code}
+' https://57-156-56-201.sslip.io/v1/auth/me` debe dar 401 y `/v1/admin/employees` también 401. El recorrido en el navegador se hace con una cuenta ficticia, creada con autorización del equipo (sección 7 del informe del PR). La sesión debe mantenerse en catálogo, ficha, perfil, recarga y nueva pestaña. En `docker compose $F logs --since 10m fleet-lb` no debe haber `"status":401` mientras la sesión está vigente.
+
+**Volver atrás:** `for s in customers gateway fleet-a fleet-b web; do docker tag car-cruds-$s:antes-$FECHA car-cruds-$s:latest; done`, `git checkout --detach "$(cat ~/respaldos/$FECHA/commit-anterior.txt)"`, `docker compose $F up -d --no-deps --wait customers gateway fleet-a fleet-b web` y, por último, `docker compose $F up -d --no-deps --force-recreate --wait fleet-lb`. Las tablas de cuentas no cambian, así que no hay que tocar el esquema.
+
 ## 7. Pendientes
 
 1. Crear la VM, fijar la IP y ejecutar el despliegue; registrar aquí y en el [contrato](contracts/README.md) la URL y la fecha.

@@ -37,7 +37,7 @@ Todos los ejemplos usan personas, vehículos e identificadores ficticios. Sus va
 
 | Operación | Acceso y efecto |
 | --- | --- |
-| `POST /v1/auth/register` | Alta pública por JSON. Devuelve 202 tanto para una solicitud válida nueva como para un correo existente. |
+| `POST /v1/auth/register` | Alta pública por JSON. Devuelve 202 tanto para una solicitud válida nueva como para un correo existente; un correo existente conserva su cuenta y su contraseña. Ante un límite de intentos responde `429 AUTH_RATE_LIMITED`; ante capacidad momentáneamente ocupada, `503 AUTH_BUSY` con `Retry-After` (igual que el login). |
 | `POST /v1/auth/login` | Valida credenciales, devuelve el perfil y establece la cookie de sesión. |
 | `POST /v1/auth/logout` | Invalida la sesión en PostgreSQL, expira la cookie y devuelve 204. Enviar `Content-Type: application/json`. |
 | `GET /v1/auth/me` | Devuelve el perfil asociado a la cookie vigente o 401. |

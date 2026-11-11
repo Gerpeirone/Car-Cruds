@@ -153,16 +153,20 @@ func (h *AccountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AccountHandler) acquire(w http.ResponseWriter, email string) bool {
-	delay := time.Second
 	select {
 	case h.hashSlots <- struct{}{}:
-		delay = h.retryAfter(email)
-		if delay == 0 {
-			return true
-		}
-		<-h.hashSlots
 	default:
+		// Both hash slots are busy: a momentary capacity limit, not an
+		// attempt limit, so it is not reported as "too many attempts".
+		w.Header().Set("Retry-After", "1")
+		platform.Error(w, 503, "AUTH_BUSY", "El acceso está ocupado. Volvé a intentar en unos segundos.")
+		return false
 	}
+	delay := h.retryAfter(email)
+	if delay == 0 {
+		return true
+	}
+	<-h.hashSlots
 	w.Header().Set("Retry-After", strconv.FormatInt(int64((delay+time.Second-1)/time.Second), 10))
 	platform.Error(w, 429, "AUTH_RATE_LIMITED", "Demasiados intentos. Volvé a intentar más tarde.")
 	return false

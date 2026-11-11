@@ -401,7 +401,7 @@
             }
           },
           "503": {
-            "description": "Persistencia no disponible.",
+            "description": "Persistencia no disponible, o acceso momentáneamente ocupado (`AUTH_BUSY`, con `Retry-After`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -566,7 +566,7 @@
             }
           },
           "503": {
-            "description": "Persistencia no disponible.",
+            "description": "Persistencia no disponible, o acceso momentáneamente ocupado (`AUTH_BUSY`, con `Retry-After`).",
             "content": {
               "application/json": {
                 "schema": {

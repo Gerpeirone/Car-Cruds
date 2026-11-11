@@ -124,3 +124,42 @@ func TestConcurrentRegistrationAndPasswordHash(t *testing.T) {
 		t.Fatal("long password was truncated")
 	}
 }
+
+// A repeated registration answers like a new one (no enumeration) but never
+// replaces the stored account: the original password keeps working, and the
+// address is normalized identically when registering and logging in.
+func TestDuplicateRegistrationKeepsOriginalPasswordAndNormalizesLogin(t *testing.T) {
+	pool, _ := isolatedCustomers(t)
+	ctx := context.Background()
+	accounts := business.Accounts{Store: &Repository{Pool: pool}, TTL: time.Hour}
+	const original = "  Frase original con espacios  "
+	const other = "Otra frase ficticia distinta"
+	if err := accounts.Register(ctx, "Ana", "Demo", "Ana.Demo@Example.TEST", original, original); err != nil {
+		t.Fatal(err)
+	}
+	var id, hash string
+	if err := pool.QueryRow(ctx, "SELECT id::text, password_hash FROM customer_accounts WHERE email='ana.demo@example.test'").Scan(&id, &hash); err != nil {
+		t.Fatal(err)
+	}
+	if err := accounts.Register(ctx, "Otra", "Persona", " ana.demo@example.test ", other, other); err != nil {
+		t.Fatalf("duplicate registration must look accepted: %v", err)
+	}
+	var count int
+	var afterID, afterHash, first string
+	if err := pool.QueryRow(ctx, "SELECT count(*), min(id::text), min(password_hash), min(first_name) FROM customer_accounts WHERE email='ana.demo@example.test'").Scan(&count, &afterID, &afterHash, &first); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 || afterID != id || afterHash != hash || first != "Ana" {
+		t.Fatal("duplicate registration modified the existing account")
+	}
+	for _, email := range []string{"ana.demo@example.test", "  ANA.DEMO@EXAMPLE.TEST\t"} {
+		if _, _, _, err := accounts.Login(ctx, email, original); err != nil {
+			t.Fatalf("login %q with the original password: %v", email, err)
+		}
+	}
+	for _, wrong := range []string{other, strings.TrimSpace(original), original + " "} {
+		if _, _, _, err := accounts.Login(ctx, "ana.demo@example.test", wrong); err != business.ErrAccountAuth {
+			t.Fatalf("password %q must not match: %v", wrong, err)
+		}
+	}
+}

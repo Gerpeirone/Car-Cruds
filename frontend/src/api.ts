@@ -61,6 +61,7 @@ export async function request<T>(
 const messages: Record<string, string> = {
   INVALID_ACCOUNT_INPUT: "Revisá los campos y confirmá que las contraseñas coincidan.",
   AUTH_RATE_LIMITED: "Demasiados intentos. Volvé a intentar más tarde.",
+  AUTH_BUSY: "El acceso está ocupado en este momento. Volvé a intentar en unos segundos.",
   SERVICE_UNAVAILABLE: "El servicio no está disponible en este momento. Volvé a intentar.",
   UNAUTHORIZED:
     "Tu acceso no es válido o dejó de estar disponible. Volvé a ingresar.",
