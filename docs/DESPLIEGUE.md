@@ -218,7 +218,7 @@ docker compose $F config --format json | python3 -c 'import json,sys; e=json.loa
 Si la clave no responde 200, restaurar `cp ~/respaldos/$FECHA/env-antes-hospital .env` y no continuar. Con 200, recrear solo Empleados. Se interrumpe unos segundos y conserva su base:
 
 ```bash
-docker compose $F build employees            # solo si se despliega una revisión nueva del servicio
+docker compose $F build employees            # obligatorio: recrear sin build reutiliza la imagen anterior (sin /clinic/doctors ni /clinic/usage → 404)
 docker compose $F up -d --no-deps --wait employees
 docker compose $F ps employees gateway web caddy
 docker compose $F logs --since 5m employees | grep -i 'hospital\|error'   # sin "configuración del hospital inválida"
