@@ -96,7 +96,9 @@ func (c *Client) call(ctx context.Context, method, path string, body []byte, cor
 				return domain.ClinicAppointment{}, &domain.ClinicFailure{Code: "CLINIC_NOT_FOUND"}
 			}
 			if method == http.MethodPost {
-				allowed := map[string]int{"INVALID_REQUEST": 400, "INVALID_JSON": 400, "SLOT_UNAVAILABLE": 409, "PATIENT_NOT_ENABLED": 403, "UNKNOWN_DOCTOR": 404, "UNKNOWN_PATIENT": 404, "LEAD_TIME_TOO_SHORT": 422}
+				// OUTSIDE_SCHEDULE: the provider's main (73e9e28) rejects
+				// times outside the doctor's weekly agenda (ART) with 422.
+				allowed := map[string]int{"INVALID_REQUEST": 400, "INVALID_JSON": 400, "SLOT_UNAVAILABLE": 409, "PATIENT_NOT_ENABLED": 403, "UNKNOWN_DOCTOR": 404, "UNKNOWN_PATIENT": 404, "LEAD_TIME_TOO_SHORT": 422, "OUTSIDE_SCHEDULE": 422}
 				if want, ok := allowed[code]; ok && want == status {
 					return domain.ClinicAppointment{}, &domain.ClinicRejection{Code: code}
 				}

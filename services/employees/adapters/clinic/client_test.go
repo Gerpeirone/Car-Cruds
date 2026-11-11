@@ -72,6 +72,8 @@ func TestProviderFailuresStayUnknownAndWritesAreNotRetried(t *testing.T) {
 		{"not enabled", 403, `{"error":{"code":"PATIENT_NOT_ENABLED"}}`, true},
 		{"unknown patient", 404, `{"error":{"code":"UNKNOWN_PATIENT"}}`, true},
 		{"short lead", 422, `{"error":{"code":"LEAD_TIME_TOO_SHORT"}}`, true},
+		{"outside agenda", 422, `{"error":{"code":"OUTSIDE_SCHEDULE"}}`, true},
+		{"agenda code with wrong status", 409, `{"error":{"code":"OUTSIDE_SCHEDULE"}}`, false},
 		{"gateway timeout", 504, `{"error":{"code":"UPSTREAM_TIMEOUT"}}`, false},
 		{"service failure", 503, `{"error":{"code":"UNAVAILABLE"}}`, false},
 		{"wrong error envelope", 409, `{"error":{"code":"INTERNAL"}}`, false},
