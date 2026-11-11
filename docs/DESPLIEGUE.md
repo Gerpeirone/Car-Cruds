@@ -196,6 +196,84 @@ docker compose <los mismos -f anotados en el paso B> up -d --build --wait --wait
 
 Sin migraciones, los datos sirven con la versión anterior. Los respaldos del paso B son para una corrupción de datos; restaurarlos reemplaza información y requiere acordarlo antes.
 
+### F. En la VM: configurar el hospital
+
+**Requiere autorización del equipo.** Configurar `CLINIC_BASE_URL` sin `CLINIC_API_KEY` impide iniciar Empleados, y también deja sin servicio al Gimnasio. Por eso ambas variables se agregan juntas y se comprueban antes de recrear el contenedor. La clave es la que el hospital entregó a Car Cruds por canal privado: no se escribe en comandos, chats, commits ni capturas.
+
+```bash
+cd ~/Car-Cruds
+F="-f compose.yaml -f compose.deploy.yaml"   # usar exactamente los CONFIG FILES de `docker compose ls`
+FECHA=$(date +%F-%H%M); mkdir -p ~/respaldos/$FECHA && chmod 700 ~/respaldos/$FECHA
+cp .env ~/respaldos/$FECHA/env-antes-hospital && chmod 600 ~/respaldos/$FECHA/env-antes-hospital
+grep -c '^CLINIC_' .env                      # 0: agregar; otro valor: revisar con nano sin duplicar líneas
+read -rsp 'Clave de Car Cruds para el hospital: ' K; echo
+case "$K" in ''|*[!A-Za-z0-9._~-]*) echo "Clave vacía o con caracteres que Compose interpretaría ($, #, comillas): no continuar"; unset K;; esac
+[ -n "$K" ] && printf '\nCLINIC_BASE_URL=https://api-turnos.srv1779429.hstgr.cloud/v1\nCLINIC_API_KEY=%s\nCLINIC_ALLOW_HTTP=false\nCLINIC_TIMEOUT=2s\n' "$K" >> .env
+unset K; chmod 600 .env
+# Clave aceptada por el hospital (solo lectura; el encabezado se lee por stdin, no queda en la línea de comandos):
+grep '^CLINIC_API_KEY=' .env | sed 's/^CLINIC_API_KEY=/X-API-Key: /' | curl -s -o /dev/null -w '%{http_code}\n' -H @- https://api-turnos.srv1779429.hstgr.cloud/v1/doctors   # 200; 401 = clave incorrecta
+docker compose $F config --format json | python3 -c 'import json,sys; e=json.load(sys.stdin)["services"]["employees"]["environment"]; print(e["CLINIC_BASE_URL"], "clave definida" if e.get("CLINIC_API_KEY") else "FALTA LA CLAVE")'
+```
+
+Si la clave no responde 200, restaurar `cp ~/respaldos/$FECHA/env-antes-hospital .env` y no continuar. Con 200, recrear solo Empleados. Se interrumpe unos segundos y conserva su base:
+
+```bash
+docker compose $F build employees            # obligatorio: recrear sin build reutiliza la imagen anterior (sin /clinic/doctors ni /clinic/usage → 404)
+docker compose $F up -d --no-deps --wait employees
+docker compose $F ps employees gateway web caddy
+docker compose $F logs --since 5m employees | grep -i 'hospital\|error'   # sin "configuración del hospital inválida"
+grep '^AUTH_ADMIN_TOKEN=' .env | sed 's/^AUTH_ADMIN_TOKEN=/Authorization: Bearer /' | curl -s -H @- https://57-156-56-201.sslip.io/v1/employees/clinic/doctors; echo
+grep '^AUTH_ADMIN_TOKEN=' .env | sed 's/^AUTH_ADMIN_TOKEN=/Authorization: Bearer /' | curl -s -H @- "https://57-156-56-201.sslip.io/v1/employees/clinic/usage?period=2026-11"; echo
+docker compose $F exec -T postgres psql -U postgres -d employees -c "SELECT request_id, local_reference, person_id, external_id, created_at FROM clinic_review_requests ORDER BY created_at;"
+docker compose $F exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;"   # igual que antes
+```
+
+Todas son lecturas: no se crean turnos ni cargos. La facturación se lee en vivo del hospital y muestra el cargo del turno del 10/11 (`1b083266-…`), aunque esa solicitud no esté en la base de la VM. El informe de Hospital solo muestra solicitudes registradas en esta base. Una intención nueva no puede conciliarse con un turno anterior sin un envío previo, y ese envío no debe hacerse para la demostración.
+
+**Volver atrás:** `cp ~/respaldos/$FECHA/env-antes-hospital .env && chmod 600 .env && docker compose $F up -d --no-deps --wait employees`. Sin `CLINIC_BASE_URL`, Empleados vuelve al modo local: envío y consulta responden `503 NOT_CONFIGURED`, y el Gimnasio continúa igual.
+
+### G. En la VM: actualizar solo Empleados
+
+**Requiere autorización del equipo** y que el cambio ya esté integrado en `main`. Se usa para correcciones que solo tocan Empleados, como el rechazo `OUTSIDE_SCHEDULE` y el registro de llamadas al hospital. No hay migraciones nuevas ni cambios de Compose. PostgreSQL, MongoDB, sus volúmenes, el gateway, la interfaz y Caddy no se recrean. La API del Gimnasio, que también atiende Empleados, se interrumpe unos segundos.
+
+```bash
+cd ~/Car-Cruds
+F="-f compose.yaml -f compose.frontend.yaml -f compose.deploy.yaml"   # los tres archivos en uso
+docker compose ls                                   # CONFIG FILES debe listar esos mismos tres; si no, detenerse
+FECHA=$(date +%F-%H%M); mkdir -p ~/respaldos/$FECHA && chmod 700 ~/respaldos/$FECHA
+git rev-parse --short HEAD | tee ~/respaldos/$FECHA/commit-anterior.txt
+git status --short | tee ~/respaldos/$FECHA/git-status.txt    # con cambios locales: git stash push --include-untracked -m "vm-local-$FECHA"
+docker image inspect car-cruds-employees --format '{{.Id}} {{.Created}}' | tee ~/respaldos/$FECHA/imagen-employees.txt
+docker tag car-cruds-employees:latest car-cruds-employees:antes-$FECHA
+docker compose $F exec -T postgres psql -U postgres -d employees -tAc "SELECT count(*) FROM membership_evidence_history;" | tee ~/respaldos/$FECHA/historial-gimnasio-antes.txt
+git fetch origin && git checkout --detach origin/main && git log -1 --oneline
+docker compose $F config --quiet
+docker compose $F build employees
+docker compose $F up -d --no-deps --wait employees
+docker compose $F ps employees gateway web caddy postgres mongo
+```
+
+Verificación (solo lecturas; no crea turnos ni cargos):
+
+```bash
+docker compose $F exec -T postgres psql -U postgres -d employees -tAc "SELECT count(*) FROM membership_evidence_history;"   # igual al archivo de respaldo
+docker compose $F exec -T postgres psql -U postgres -d employees -c "SELECT employee_id, period, source_app, source_reference, version FROM membership_evidence WHERE employee_id='employee-001' AND period='2026-11';"
+for p in /v1/employees/clinic/doctors "/v1/employees/clinic/usage?period=$(date -u +%Y-%m)"; do
+  grep '^AUTH_ADMIN_TOKEN=' .env | sed 's/^AUTH_ADMIN_TOKEN=/Authorization: Bearer /' |
+    curl -s -o /dev/null -w "$p %{http_code}\n" -H @- "https://57-156-56-201.sslip.io$p"; done   # 200 y 200
+docker compose $F logs --since 10m employees | grep '"event":"clinic.call"'   # dos registros "outcome":"ok", sin claves
+```
+
+En el panel, Gimnasio con período `2026-11` debe seguir mostrando `employee-001` y Hospital debe listar los médicos. No se reenvían solicitudes `pending_verification` para probar: cada envío que el hospital acepte se cobra.
+
+**Volver atrás** (la imagen anterior queda etiquetada; no hay cambios de esquema):
+
+```bash
+docker tag car-cruds-employees:antes-$FECHA car-cruds-employees:latest
+docker compose $F up -d --no-deps --wait employees
+git checkout --detach "$(cat ~/respaldos/$FECHA/commit-anterior.txt)"   # y `git stash pop` si se guardaron cambios locales
+```
+
 ## 7. Pendientes
 
 1. Crear la VM, fijar la IP y ejecutar el despliegue; registrar aquí y en el [contrato](contracts/README.md) la URL y la fecha.

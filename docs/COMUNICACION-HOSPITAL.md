@@ -1,5 +1,7 @@
 # Comunicación con el hospital de Octi
 
+> **Verificación sin clave — 11/11/2026:** `https://api-turnos.srv1779429.hstgr.cloud/healthz` responde 200. `GET /v1/doctors`, `/v1/usage` y `/v1/appointments/{id}` responden `401 UNAUTHORIZED` sin `X-API-Key`. La raíz sin `/v1` (`/doctors`, `/openapi.json`, `/docs`) devuelve el portal web del hospital y no la API: `CLINIC_BASE_URL` debe terminar en `/v1`. El hospital no publica disponibilidad para socios; las operaciones son médicos, turnos, cancelación y facturación. El `main` del proveedor (`73e9e28`) mantiene la versión 1.0.0 y agrega `422 OUTSIDE_SCHEDULE` para horarios fuera de la agenda semanal del médico, en hora de Argentina (UTC-03:00). Empleados lo trata como rechazo de negocio, igual que `LEAD_TIME_TOO_SHORT`. En el código del proveedor, la agenda es de lunes a viernes: `doc-001` de 9 a 13, `doc-002` de 14 a 18, `doc-003` de 8 a 12 y `doc-004` de 15 a 19. Esa agenda se confirma con el catálogo real y no se fija en Car Cruds.
+
 > **Prueba real — 10/11/2026:** con la clave de Car Cruds, Empleados reservó un turno en el hospital publicado (employee-001 con `pat-001`, `doc-001`, 20/11 a las 10:00 de Argentina): `booked`/`confirmed`. El reenvío no creó otro turno, la consulta posterior lo confirmó y la facturación muestra exactamente un cargo de ARS 25.000. Ver la [evidencia](evidence/hospital-live-2026-11-10.json) y la [captura](evidence/img/hospital-turno-confirmado-2026-11-10.png).
 
 > **Acceso compartido — 10/11/2026:** el grupo de Octi publicó Turnos para socios 1.0.0 en `https://api-turnos.srv1779429.hstgr.cloud/v1` y entregará la clave de Car Cruds por un canal privado. El contrato recibido es idéntico al integrado (solo agrega la URL pública en `servers`). Se verificó `/healthz` (200), el rechazo sin clave (401) y una latencia de unos 200 ms. Empleados agrega la lectura de médicos (`GET /v1/employees/clinic/doctors`) y de la facturación mensual (`GET /v1/employees/clinic/usage`); el panel elige el médico de ese catálogo y muestra los cargos. Precio informado: ARS 25.000 por reserva creada, sin reintegro al cancelar. Pacientes de prueba habilitados: `pat-001` y `pat-003` (`pat-002` registrado sin habilitar). Car Cruds no cancela turnos: la operación de cancelación del proveedor queda sin usar, como estaba decidido.
@@ -72,12 +74,14 @@ Todo envío que pueda crear, incluido el reintento incierto, vuelve a exigir emp
 | Respuesta/falla del hospital | Estado y tratamiento local |
 | --- | --- |
 | 201 válido | `booked` o `cancelled`, según evidencia; guarda referencia, versión y fecha |
-| Rechazo de negocio documentado | `rejected`, con motivo administrativo acotado |
+| Rechazo de negocio documentado: 400 `INVALID_REQUEST`/`INVALID_JSON`, 403 `PATIENT_NOT_ENABLED`, 404 `UNKNOWN_DOCTOR`/`UNKNOWN_PATIENT`, 409 `SLOT_UNAVAILABLE`, 422 `LEAD_TIME_TOO_SHORT`/`OUTSIDE_SCHEDULE` | `rejected`, con el código como motivo; definitivo: no vuelve a enviarse ni tiene `nextAttemptAt`. Exige coincidencia exacta de estado y código: otra combinación, como 409 `OUTSIDE_SCHEDULE`, sigue siendo `CLINIC_UNAVAILABLE` |
 | 401 | `unknown`, `CLINIC_UNAUTHORIZED`; corregir credencial conservando el mismo consumidor antes de reintentar |
 | 429 | `unknown`, `CLINIC_RATE_LIMITED`; respetar `Retry-After` y `nextAttemptAt` |
 | 409 `IDEMPOTENCY_CONFLICT` | `unknown`, `CLINIC_IDEMPOTENCY_CONFLICT`; requiere revisión, sin cambiar clave ni reenvío automático |
-| Timeout, conexión perdida, 5xx o JSON inválido | `unknown`, `CLINIC_UNAVAILABLE`; recuperación explícita con la misma intención |
+| Timeout, conexión perdida, 5xx (incluido 503 `DIRECTORY_UNAVAILABLE`), código no documentado o JSON inválido | `unknown`, `CLINIC_UNAVAILABLE`; espera de 10 s y recuperación explícita con la misma intención y la misma clave |
 | GET 404 | `unknown`, `CLINIC_NOT_FOUND`; inexistencia o falta de pertenencia no prueban ausencia de turno |
+
+El hospital rechaza `OUTSIDE_SCHEDULE` dentro de su transacción de reserva, antes de insertar el turno: no crea turno, ni cargo, ni registro de idempotencia. Por eso se trata como rechazo definitivo. Antes de esta corrección quedaba como `CLINIC_UNAVAILABLE` y el panel invitaba a reintentar.
 
 El 200 propio informa el estado administrativo; no acredita reserva exitosa. Una respuesta estructuralmente válida que no coincide con la intención conserva `INVALID_RESPONSE`; otros fallos de verificación conservan `LOOKUP_UNCONFIRMED` cuando corresponde. No se propagan como rechazos de negocio la falta de autenticación, saturación ni incertidumbre operativa.
 
@@ -90,6 +94,29 @@ El 200 propio informa el estado administrativo; no acredita reserva exitosa. Una
 Una versión atrasada no reemplaza otra nueva; igual versión con contenido diferente devuelve conflicto. Un fallo conserva `lastKnownAppointment` y su fecha, dejando pendiente la verificación; un fallo atrasado no sobrescribe una observación posterior. Las bajas permiten este seguimiento y no cancelan turnos.
 
 **Solicitudes antiguas:** una intención ya enviada sin procedencia y clave persistidas nunca vuelve a ejecutar POST. Agregar una clave retrospectiva no prueba que el proveedor la recibiera antes. La lectura/conciliación por ID requiere que la clínica asocie el turno al consumidor; un 404 no autoriza recrearlo. Se conservan migraciones y evidencia previa.
+
+### 5. Registro de cada llamada al hospital
+
+Empleados escribe un registro JSON por cada llamada HTTP al hospital (`event=clinic.call`): nivel `INFO` si salió bien y `WARN` en otro caso. Si la entrada se rechaza antes de llamar, no se registra nada.
+
+| Campo | Contenido |
+| --- | --- |
+| `operation` | `book`, `lookup`, `doctors` o `usage` |
+| `request_id` / `appointment_id` / `period` | Identificador ya validado por Car Cruds, según la operación |
+| `http_status` | Estado HTTP del hospital; `0` si no llegó respuesta |
+| `provider_code` | Código de error del hospital, solo si tiene forma de código (`[A-Z][A-Z0-9_]*`); otro valor se registra como `UNRECOGNIZED` |
+| `outcome` | `ok`, `rejected`, `failure` (401, 429, 409 de idempotencia, 404 de consulta), `invalid_input` o `unavailable` |
+| `result_code` | Código guardado en la solicitud, por ejemplo `CLINIC_UNAVAILABLE` o `CLINIC_UNAUTHORIZED` |
+| `cause` | Solo en `unavailable`: `timeout`, `transport`, `canceled`, `unexpected_status`, `invalid_body` u `oversized_body` |
+| `duration_ms`, `appointment_id`, `appointment_status` | Duración, y turno y estado cuando el hospital confirma |
+
+No se registran la clave, los encabezados, los cuerpos, el mensaje libre del hospital ni datos del paciente (`patientId`, médico, horario). Las pruebas lo verifican, incluso con un proveedor que devuelve la clave en su mensaje o en su código. Para revisar una solicitud en la VM:
+
+```bash
+docker compose $F logs --since 24h employees | grep '"event":"clinic.call"' | grep '<requestId>'
+```
+
+**Caso del 11/11/2026 (`e89403e0-ba26-4fcb-b4cc-da062d0dc170`).** Se pidió `doc-001` para el sábado 12/12 a las 14:30 ART, fuera de su agenda de lunes a viernes de 9 a 13. Quedó `pending_verification` / `CLINIC_UNAVAILABLE`, sin turno externo. La causa más probable es un `422 OUTSIDE_SCHEDULE` que la versión desplegada no reconocía. La solicitud se envió antes de que existiera este registro, así que la confirmación sale de la traza saliente en Jaeger (`http.response.status_code`) o de los logs del hospital. Para descartar un cargo, la facturación de `2026-11` no debe tener otro turno. No se reenvía para conciliarla: se conserva como evidencia y, si corresponde, se registra otra intención con un horario de agenda.
 
 ## Informe administrativo
 
