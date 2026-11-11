@@ -382,8 +382,20 @@ function PersonalCatalog({ account, expire }: { account: Account; expire: () => 
     try {
       return await request<T>(path, "", init);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) expire();
-      throw err;
+      if (!(err instanceof ApiError && err.status === 401) || init?.signal?.aborted) throw err;
+      // Only the session endpoint decides that the session ended. A 401 from a
+      // catalog read can come from a misrouted or degraded backend; then the
+      // page reports a service problem and keeps the (still valid) session.
+      try {
+        await request("/v1/auth/me", "", { signal: init?.signal });
+      } catch (check) {
+        if (check instanceof ApiError && check.status === 401) {
+          expire();
+          throw err;
+        }
+        throw check;
+      }
+      throw new ApiError(503, "SERVICE_UNAVAILABLE", err.requestID);
     }
   }, [expire]);
   return <AccessContext.Provider value={{

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, CarFront, Eye, EyeOff } from "lucide-react";
@@ -40,8 +40,13 @@ export function AccountPortal({ catalog }: { catalog: (account: Account, expire:
     setError("");
     try {
       await request("/v1/auth/logout", "", { method: "POST", body: "{}" });
-      setAccount(null);
-      navigate("/", { replace: true });
+      // React Router applies navigation as a transition. Clearing the account in
+      // the same transition renders the home page once, instead of the
+      // protected route redirecting to the login form first.
+      startTransition(() => {
+        navigate("/", { replace: true });
+        setAccount(null);
+      });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -143,7 +148,8 @@ function AccountForm({ registration, onLogin }: { registration: boolean; onLogin
           method: "POST", body: JSON.stringify({ email, password, passwordConfirmation: confirmation,
             firstName: String(data.get("firstName") || "").trim(), lastName: String(data.get("lastName") || "").trim() }),
         });
-        navigate("/iniciar-sesion", { replace: true, state: { registrationReceived: true } });
+        // The address travels only in router memory to prefill the login form.
+        navigate("/iniciar-sesion", { replace: true, state: { registrationReceived: true, email } });
       } else {
         onLogin(await request<Account>("/v1/auth/login", "", { method: "POST", body: JSON.stringify({ email, password }) }));
       }
@@ -158,13 +164,17 @@ function AccountForm({ registration, onLogin }: { registration: boolean; onLogin
   return <section className="account-card">
     <h1>{registration ? "Creá tu cuenta" : "Bienvenido de nuevo"}</h1>
     <p className="muted">{registration ? "Registrate para explorar el catálogo de Car Cruds." : "Ingresá a tu cuenta para continuar."}</p>
-    {!registration && state?.registrationReceived && <p className="notice" role="status">Recibimos tu solicitud. Si el correo estaba disponible, ya podés iniciar sesión.</p>}
+    {!registration && state?.registrationReceived && <p className="notice" role="status">
+      Recibimos tu solicitud. Si el correo no tenía una cuenta, ya podés iniciar sesión con la contraseña que elegiste.
+      Si ya tenía una, no creamos otra ni cambiamos su contraseña: ingresá con la contraseña original.
+    </p>}
     <form className="account-form" onSubmit={submit} aria-busy={busy}>
       {registration && <div className="account-fields">
         <label>Nombre<input name="firstName" autoComplete="given-name" required maxLength={80} /></label>
         <label>Apellido<input name="lastName" autoComplete="family-name" required maxLength={80} /></label>
       </div>}
-      <label>Correo electrónico<input name="email" type="email" autoComplete={registration ? "email" : "username"} required maxLength={254} /></label>
+      <label>Correo electrónico<input name="email" type="email" autoComplete={registration ? "email" : "username"} required maxLength={254}
+        defaultValue={!registration && typeof state?.email === "string" ? state.email : undefined} /></label>
       <div className="account-password">
         <label htmlFor="account-password">Contraseña</label>
         <input id="account-password" name="password" type={visible ? "text" : "password"} value={password}
