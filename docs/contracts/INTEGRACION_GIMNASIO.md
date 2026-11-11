@@ -6,9 +6,37 @@ Car Cruds publica una lista mínima de empleados activos y recibe evidencia de m
 
 La versión implementada es **0.5.0**, descrita en **OpenAPI 3.0.3**. Respecto de la 0.4.0 entregada al gimnasio solo agrega el historial de evidencia para el operador (`GET /v1/employees/{id}/membership-evidence`, rol `admin`); las operaciones que usa el gimnasio no cambian. Conserva las operaciones de lista y recepción de evidencia de 0.3.0 y agrega la consulta de estado laboral por ID. El archivo de referencia es [employees-openapi.json](employees-openapi.json). La configuración de Caddy sirve ese mismo archivo en `/contracts/employees-openapi.json` sin autenticación.
 
-La URL pública, su certificado y la versión efectivamente servida se registran después de verificar el entorno desde fuera de la VM. Al preparar esta guía, el repositorio no identificaba un origen público verificado. El procedimiento de publicación está en [Despliegue](../DESPLIEGUE.md).
+La URL pública, su certificado y la versión efectivamente servida se registran después de verificar el entorno desde fuera de la VM. El origen de Azure responde por HTTPS. El 11/11/2026 el GET del contrato devolvió HTML y la prueba autenticada sigue pendiente. El procedimiento de publicación está en [Despliegue](../DESPLIEGUE.md).
 
 ## Acceso
+
+### Recorrido del consumidor y del operador
+
+```mermaid
+sequenceDiagram
+    participant X as Gimnasio
+    participant G as Caddy y gateway
+    participant E as Empleados
+    participant P as PostgreSQL
+    participant W as Panel de Car Cruds
+    X->>G: GET /v1/employees o estado con Bearer gym
+    G->>E: Reenvía Bearer y solicitud
+    E->>P: Consulta población mínima o estado
+    E-->>X: Respuesta por gateway
+    Note over X: Vincula employeeId con el socio en su sistema
+    X->>G: POST /v1/employees/membership-evidence
+    G->>E: Autentica y enruta
+    E->>P: Bloqueo por empleado y período, versión e historia
+    E-->>X: applied true o false
+    W->>G: GET informe o historia con Bearer admin
+    G->>E: Lectura administrativa
+    E->>P: Consulta evidencia vigente o versiones
+    E-->>W: Respuesta por gateway
+```
+
+Empleados toma el origen del Bearer (`gimnasio-pablo`) y valida `sourceReference`, `period`, versión, timestamp e importes. `membership_evidence` conserva una fotografía vigente por empleado y período. `membership_evidence_history` conserva una fila por versión. El bloqueo transaccional serializa reintentos concurrentes y el historial se escribe junto con la actualización vigente. La versión 0.5.0 agrega al operador `GET /v1/employees/{id}/membership-evidence?period=AAAA-MM`. El token de Gimnasio no tiene ese permiso.
+
+El registro operativo de Azure menciona una fotografía de `employee-001`, período `2026-11`, origen `gimnasio-pablo`, versión 1. Es un antecedente del equipo pendiente de reconfirmar con lectura autenticada. El [test HTTP con PostgreSQL](../../services/employees/adapters/postgres/gym_http_test.go) y las [pruebas de persistencia y concurrencia](../../services/employees/adapters/postgres/memberships_test.go) acreditan el comportamiento de Car Cruds en laboratorio. La aceptación desde el backend de Gimnasio requiere su propia evidencia.
 
 Enviar `Authorization: Bearer <token>` por HTTPS. La credencial es opaca y el servidor resuelve su identidad como `gimnasio-pablo` y su rol como `gym`. El gateway reenvía el Bearer a Empleados, que lo valida y aplica los permisos de la operación. El token también permite consultar el rol propio con `GET /v1/session`, documentado en [Operaciones](operations-openapi.json). Administración, informes y datos clínicos requieren otros roles.
 

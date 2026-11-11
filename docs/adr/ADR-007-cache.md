@@ -1,5 +1,17 @@
 # ADR-007 — Caché de fichas de Flota
 
+## Comparación equivalente de la candidata — 10/11/2026
+
+Con el backend de `5b84ac6` se midió la misma ficha por gateway, con dos réplicas, ocho trabajadores y 20 s por fase en Docker Desktop. La [línea base](../ENSAYO-CARGA-SOSTENIDA.md#reproducir-la-línea-base-sin-caché) deja Redis activo y omite la caché en ambas réplicas. La fase fría empieza tras verificar que la ficha expiró. Se mantuvieron la fuente, el catálogo, la ruta, la concurrencia y la duración.
+
+| Fase | HTTP 200 | p50 (ms) | p95 (ms) | p99 (ms) | Lecturas a MongoDB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fría | 22.364 | 5,935 | 13,617 | 24,360 | 1 |
+| Caliente | 23.782 | 5,865 | 12,540 | 19,789 | 0 |
+| Deshabilitada | 24.272 | 5,823 | 11,496 | 20,440 | 24.273 |
+
+Las tres fases tuvieron cero errores de transporte y JSON. Los contadores incluyen el preflight. La fase deshabilitada registró el árbol modificado por un ajuste al test React mientras corría el ensayo. Las imágenes, el código de Flota y las rutas medidas fueron los mismos. El resultado demuestra reducción de lecturas a la fuente. El p95 caliente fue mayor que el de la línea base en este equipo. [Resultados crudos](../evidence/cache-candidata-2026-11-10.json)
+
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D7: caché |
