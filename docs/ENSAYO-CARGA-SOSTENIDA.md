@@ -33,7 +33,19 @@ Con el conjunto Compose saludable y `.env` generado:
 bash scripts/measure-sustained.sh 30 8
 ```
 
-Los argumentos son segundos por fase (10–30) y concurrencia (1–64). Los archivos sin secretos se escriben en `output/`: `sustained-cache-*.json`, `sustained-search.json`, `sustained-smoke.log` y `sustained-summary.json`. `output/` permanece fuera de Git; una evidencia seleccionada se copia a `docs/evidence/` solo después de revisar revisión, entorno y resultados.
+Los argumentos son segundos por fase (10–30) y concurrencia (1–64). Los archivos sin secretos se escriben en `output/`: `sustained-cache-*.json`, `sustained-search-<n>.json` (una ventana de 30 s por archivo), `sustained-smoke.log` y `sustained-summary.json`. `output/` permanece fuera de Git; una evidencia seleccionada se copia a `docs/evidence/` solo después de revisar revisión, entorno y resultados.
+
+### Corrección del 10 de noviembre de 2026
+
+El diagnóstico local de la falla intermitente de CI encontró tres problemas en el script:
+
+- **Clave de caché incorrecta.** El script borraba `fleet:vehicle:{auto-001}:data`, pero Flota usa `fleet:v1:<base>:vehicle:{id}:data` (`cmd/fleet/main.go`). El borrado no tenía efecto: la fase fría no era fría y la entrada real expiraba (TTL de 60 s, que los aciertos no renuevan) en un momento arbitrario. Si eso ocurría durante la fase caliente, varios trabajadores leían MongoDB a la vez y la validación `sourceDetail = 0` fallaba. Localmente se reprodujo con 30 s por fase: entre 2 y 8 lecturas de fuente en la fase caliente, todas juntas al expirar la entrada. Ahora el script usa la clave real (la base se lee de `MONGODB_DATABASE` en el contenedor de Flota), renueva la entrada antes de cada fase y falla si la clave no existe tras una lectura.
+- **Carga de búsqueda limitada a 30 s.** `cmd/load` admite como máximo 30 s por ejecución. Si el recorrido de frescura tardaba más, por ejemplo en un runner lento, el script fallaba. Ahora encadena ventanas de 30 s hasta que el recorrido termina.
+- **Diagnóstico insuficiente.** El resumen imprime los contadores y las cotas antes de validar, y la CI registra los archivos de `output/` y los logs de Flota, Solr y Redis si el paso falla. La medición se separó de `checkshared` en un paso propio.
+
+**Estado de verificación:** las correcciones se probaron por partes en un stack local aislado. La corrida completa de 30 s con la clave corregida se interrumpió antes de terminar y la CI todavía no se ejecutó con estos cambios, así que no hay resultados sostenidos registrados. Que la clave incorrecta sea la causa de la falla en CI es una hipótesis consistente con lo observado: no se confirmó con los logs del runner.
+
+**Deuda observada:** al expirar una entrada, cada solicitud concurrente lee MongoDB (no hay *single-flight*). El impacto está acotado por el límite de 32 lecturas de fuente simultáneas por réplica.
 
 ## Límites
 

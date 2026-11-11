@@ -78,20 +78,36 @@ phase() {
   printf '{"name":"%s","countersBefore":%s,"countersAfter":%s}\n' "$name" "$before" "$after" > "output/sustained-cache-$name-metrics.json"
 }
 
-# La marca de generación se conserva; solo se fuerza una carga fría del dato.
-# El prefijo debe coincidir con cmd/fleet: fleet:v1:<MONGODB_DATABASE>.
+# Misma clave que cmd/fleet/main.go: fleet:v1:<MONGODB_DATABASE>:vehicle:{id}:data.
+# La base se lee del propio contenedor de Flota; la marca de generación se conserva.
 database=$(docker compose exec -T fleet-a sh -c 'printf %s "${MONGODB_DATABASE:-fleet}"')
 if [[ ! $database =~ ^[A-Za-z0-9_-]+$ ]]; then
   echo "MONGODB_DATABASE no es seguro para construir la clave de caché" >&2
   exit 2
 fi
-cache_data_key="fleet:v1:${database}:vehicle:{auto-001}:data"
-docker compose exec -T -e CACHE_DATA_KEY="$cache_data_key" redis sh -c \
-  'redis-cli --no-auth-warning -a "${REDIS_PASSWORD:?}" DEL "$CACHE_DATA_KEY" >/dev/null'
+cache_key="fleet:v1:${database}:vehicle:{auto-001}:data"
+redis_cli() {
+  docker compose exec -T -e CACHE_KEY="$cache_key" redis sh -c \
+    "redis-cli --no-auth-warning -a \"\${REDIS_PASSWORD:?}\" $1 \"\$CACHE_KEY\""
+}
+# Borra la ficha de la caché y la vuelve a cargar con una lectura; falla si la clave no es la real,
+# para que un cambio de nombre no convierta la fase fría en una medición caliente sin aviso.
+reset_entry() {
+  redis_cli DEL >/dev/null
+  "$bin" -path "$route" -role client -concurrency 1 -duration 1s >/dev/null
+  if [[ $(redis_cli EXISTS | tr -d '\r') != 1 ]]; then
+    echo "La entrada $cache_key no existe tras leer la ficha" >&2
+    exit 1
+  fi
+}
+
+reset_entry
+redis_cli DEL >/dev/null
 phase cold
 
-# La fase anterior deja la entrada vigente; una lectura explícita confirma el preflight caliente.
-"$bin" -path "$route" -role client -concurrency 1 -duration 1s >/dev/null
+# El TTL de la ficha es 60 s y los aciertos no lo renuevan: con 30 s por fase, la entrada creada en la
+# fase fría expiraría durante la caliente. Se renueva justo antes para que la fase mida solo aciertos.
+reset_entry
 phase warm
 
 docker compose stop --timeout 5 redis >/dev/null
@@ -107,14 +123,22 @@ done
 [[ $redis_restored == true ]] || { echo "Redis no recuperó estado saludable" >&2; exit 1; }
 
 # Mantiene tráfico de búsqueda mientras smoke mide alta, actualización y baja.
-search_seconds=30
-"$bin" -path '/v1/vehicles/search?page=1&pageSize=20&sort=price_asc' -role client \
-  -concurrency "$concurrency" -duration "${search_seconds}s" > output/sustained-search.json &
+# cmd/load admite hasta 30 s por ejecución: se encadenan ventanas contiguas hasta que el recorrido termine,
+# de modo que un runner lento no deje el recorrido sin carga. La última ventana en curso se completa.
+rm -f output/sustained-search*.json tmp/sustained-search-stop
+search_loop() {
+  local window=0
+  while [[ ! -e tmp/sustained-search-stop ]]; do
+    window=$((window + 1))
+    "$bin" -path '/v1/vehicles/search?page=1&pageSize=20&sort=price_asc' -role client       -concurrency "$concurrency" -duration 30s > "output/sustained-search-$window.json" || return 1
+  done
+}
+search_loop &
 search_pid=$!
 sleep 1
 "$smoke" -history | tee output/sustained-smoke.log
-kill -0 "$search_pid" 2>/dev/null || { echo "La carga de búsqueda terminó antes que el recorrido de frescura" >&2; exit 1; }
-wait "$search_pid"
+touch tmp/sustained-search-stop
+wait "$search_pid" || { echo "La carga de búsqueda falló durante el recorrido de frescura" >&2; exit 1; }
 search_pid=
 
 node - "$seconds" "$concurrency" <<'NODE'
@@ -127,11 +151,16 @@ const phases = names.map((name) => {
   const delta = Object.fromEntries(Object.keys(metrics.countersAfter).map((key) => [key, metrics.countersAfter[key] - metrics.countersBefore[key]]));
   return {name, cacheCounterDelta: delta, stage: load.stages[0], revision: load.revision, workingTreeDirty: load.workingTreeDirty};
 });
-const search = JSON.parse(fs.readFileSync("output/sustained-search.json", "utf8"));
+const searchStages = fs.readdirSync("output").filter((name) => /^sustained-search-\d+\.json$/u.test(name))
+  .sort((x, y) => parseInt(x.match(/\d+/u)[0], 10) - parseInt(y.match(/\d+/u)[0], 10))
+  .flatMap((name) => JSON.parse(fs.readFileSync(`output/${name}`, "utf8")).stages);
+const search = {stages: searchStages};
+if (searchStages.length < 1) throw new Error("no hay ventanas de carga de búsqueda");
 const smoke = fs.readFileSync("output/sustained-smoke.log", "utf8");
 const freshness = [...smoke.matchAll(/PASS índice transición=(\S+) versión=(\d+) cotaDesdeEscrituraMs=(\d+)/gu)]
   .map((match) => ({transition: match[1], version: Number(match[2]), upperBoundFromWriteMs: Number(match[3])}));
 const validStage = (stage) => stage.transportErrors === 0 && stage.invalidJSON === 0 && Object.keys(stage.httpStatuses).every((status) => status === "200");
+console.log("diagnóstico", JSON.stringify({phases: phases.map((p) => ({name: p.name, delta: p.cacheCounterDelta, statuses: p.stage.httpStatuses, transportErrors: p.stage.transportErrors, invalidJSON: p.stage.invalidJSON})), searchStatuses: search.stages.map((s) => s.httpStatuses), freshness}));
 for (const phase of phases) if (!validStage(phase.stage)) throw new Error(`errores durante fase ${phase.name}`);
 if (phases[0].cacheCounterDelta.miss < 1 || phases[0].cacheCounterDelta.sourceDetail < 1) throw new Error("la fase fría no leyó la fuente");
 if (phases[1].cacheCounterDelta.hit < 1 || phases[1].cacheCounterDelta.sourceDetail !== 0) throw new Error("la fase caliente no quedó servida por caché");
