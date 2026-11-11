@@ -295,3 +295,29 @@ it("el código del frontend no contiene la API ni credenciales del hospital", ()
     );
   }
 });
+it("acepta un mes AAAA-MM en la facturación y consulta ese período", async () => {
+  const user = userEvent.setup();
+  mount("/operador/hospital");
+  await login(user);
+  const month = (await screen.findByLabelText(
+    "Mes facturado (UTC)",
+  )) as HTMLInputElement;
+  // The browser applies `pattern` as an anchored RegExp; check it as Chrome does.
+  const accepts = (value: string) =>
+    new RegExp(`^(?:${month.pattern})$`, "v").test(value);
+  expect(accepts("2026-11")).toBe(true);
+  for (const wrong of ["dddd-11", "2026-13", "2026-1", "202611"])
+    expect(accepts(wrong)).toBe(false);
+
+  await user.clear(month);
+  await user.type(month, "2026-10");
+  expect(month.checkValidity()).toBe(true);
+  await user.click(screen.getByRole("button", { name: /Ver facturación/ }));
+  expect(
+    calls.some((c) => c.path === "/v1/employees/clinic/usage?period=2026-10"),
+  ).toBe(true);
+
+  await user.clear(month);
+  await user.type(month, "2026-13");
+  expect(month.checkValidity()).toBe(false);
+});

@@ -1628,6 +1628,10 @@ export function ClinicRequestView() {
   );
 }
 
+// The backend expects YYYY-MM (e.g. 2026-11). The same source feeds the HTML
+// pattern (implicitly anchored) and the submit check, so they cannot diverge.
+const billingPeriodPattern = "\\d{4}-(0[1-9]|1[0-2])";
+const billingPeriod = new RegExp(`^${billingPeriodPattern}$`);
 function ClinicBilling() {
   const [period, setPeriod] = useState(utcMonth);
   const [draft, setDraft] = useState(period);
@@ -1642,8 +1646,7 @@ function ClinicBilling() {
         className="operator-toolbar"
         onSubmit={(e) => {
           e.preventDefault();
-          if (/^d{4}-(0[1-9]|1[0-2])$/.test(draft.trim()))
-            setPeriod(draft.trim());
+          if (billingPeriod.test(draft.trim())) setPeriod(draft.trim());
         }}
       >
         <label className="operator-search">
@@ -1652,7 +1655,8 @@ function ClinicBilling() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="AAAA-MM"
-            pattern="d{4}-(0[1-9]|1[0-2])"
+            pattern={billingPeriodPattern}
+            title="Año y mes, por ejemplo 2026-11"
             required
           />
         </label>
