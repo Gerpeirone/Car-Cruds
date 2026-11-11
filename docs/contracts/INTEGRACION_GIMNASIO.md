@@ -6,7 +6,14 @@ Car Cruds publica una lista mínima de empleados activos y recibe evidencia de m
 
 La versión implementada es **0.5.0**, descrita en **OpenAPI 3.0.3**. Respecto de la 0.4.0 entregada al gimnasio solo agrega el historial de evidencia para el operador (`GET /v1/employees/{id}/membership-evidence`, rol `admin`); las operaciones que usa el gimnasio no cambian. Conserva las operaciones de lista y recepción de evidencia de 0.3.0 y agrega la consulta de estado laboral por ID. El archivo de referencia es [employees-openapi.json](employees-openapi.json). La configuración de Caddy sirve ese mismo archivo en `/contracts/employees-openapi.json` sin autenticación.
 
-La URL pública, su certificado y la versión efectivamente servida se registran después de verificar el entorno desde fuera de la VM. El origen de Azure responde por HTTPS. El 11/11/2026 el GET del contrato devolvió HTML y la prueba autenticada sigue pendiente. El procedimiento de publicación está en [Despliegue](../DESPLIEGUE.md).
+| Dato | Estado al 11/11/2026 |
+| --- | --- |
+| Origen público | `https://57-156-56-201.sslip.io`, por HTTPS, con `main` `309a443` desplegado en Azure |
+| Contrato servido | `https://57-156-56-201.sslip.io/contracts/employees-openapi.json` publica el OpenAPI 0.5.0 en JSON. Una observación anterior del mismo día había devuelto HTML; la verificación posterior obtuvo el JSON |
+| Consultas | Las consultas de Gimnasio en Azure responden |
+| Aceptación | **Pendiente:** falta la evidencia de consumo y envío desde el backend del grupo de Gimnasio (sección [Prueba conjunta](#prueba-conjunta)) |
+
+El procedimiento de publicación y actualización está en [Despliegue](../DESPLIEGUE.md).
 
 ## Acceso
 
@@ -127,4 +134,4 @@ Usar un plazo inicial de 8 segundos por solicitud y enviar un registro a la vez 
 
 El 10/11/2026 se ejecutó `go test -race -count=1 ./...` con `TEST_DATABASE_URL` apuntando a PostgreSQL desechable y se validaron los contratos y ejemplos con `scripts/check-api-docs.py`. La prueba HTTP usa el ejemplo de este OpenAPI y verifica credenciales ausentes, inválidas y vencidas, permisos, datos obligatorios, repetición concurrente, conflicto y respuesta 503 al perder acceso a persistencia.
 
-En una red Docker aislada, `checkshared` comprobó la ruta Caddy → gateway → Empleados por TLS con una autoridad local. En esa misma red, ocho envíos concurrentes dejaron una sola aplicación. Una corrección con versión mayor reemplazó el costo y el informe conservó un único registro para ambos importes. La prueba pública requiere el origen HTTPS definitivo y la ejecución desde el backend del gimnasio.
+En una red Docker aislada, `checkshared` comprobó la ruta Caddy → gateway → Empleados por TLS con una autoridad local. En esa misma red, ocho envíos concurrentes dejaron una sola aplicación. Una corrección con versión mayor reemplazó el costo y el informe conservó un único registro para ambos importes. El origen HTTPS definitivo ya está publicado. La prueba de aceptación requiere que el backend del gimnasio ejecute los pasos de la [prueba conjunta](#prueba-conjunta) contra ese origen y que se registre su evidencia.
