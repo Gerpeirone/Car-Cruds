@@ -12,8 +12,15 @@ type MembershipInbox interface {
 	MembershipReport(context.Context, string, domain.Page) (domain.MembershipReport, error)
 }
 
+// MembershipHistory reads every received version. It is optional so inbox
+// doubles need not implement it.
+type MembershipHistory interface {
+	MembershipHistory(context.Context, string, string) ([]domain.MembershipHistoryEntry, error)
+}
+
 func (s *Service) WithMembershipInbox(inbox MembershipInbox) *Service {
 	s.memberships = inbox
+	s.history, _ = inbox.(MembershipHistory)
 	return s
 }
 
@@ -44,4 +51,14 @@ func (s *Service) MembershipReport(ctx context.Context, period string, page doma
 		return domain.MembershipReport{}, domain.ErrNotConfigured
 	}
 	return s.memberships.MembershipReport(ctx, period, page)
+}
+
+func (s *Service) MembershipHistory(ctx context.Context, employeeID, period string) ([]domain.MembershipHistoryEntry, error) {
+	if !domain.ValidEvidenceKey(employeeID) || !domain.ValidEvidenceKey(period) {
+		return nil, domain.ErrInvalidInput
+	}
+	if s.history == nil {
+		return nil, domain.ErrNotConfigured
+	}
+	return s.history.MembershipHistory(ctx, employeeID, period)
 }

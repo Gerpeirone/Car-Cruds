@@ -20,6 +20,7 @@ func New(service *application.Service) http.Handler {
 	mux.HandleFunc("/v1/employees", h.employees)
 	mux.HandleFunc("/v1/employees/{id}", h.employee)
 	mux.HandleFunc("/v1/employees/{id}/status", h.employeeStatus)
+	mux.HandleFunc("/v1/employees/{id}/membership-evidence", h.membershipHistory)
 	mux.HandleFunc("/v1/admin/employees", h.adminEmployees)
 	mux.HandleFunc("/v1/employees/integrations", h.integrations)
 	mux.HandleFunc("/v1/employees/membership-evidence", h.membershipEvidence)

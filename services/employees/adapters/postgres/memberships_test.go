@@ -145,3 +145,43 @@ func TestConcurrentGymRetriesHaveOneEffect(t *testing.T) {
 		t.Fatalf("duplicate spending: %+v %v", report, err)
 	}
 }
+
+func TestMembershipHistoryKeepsEveryReceivedVersion(t *testing.T) {
+	pool, _ := isolatedDatabase(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	repo := postgres.New(pool)
+	if err := repo.CreateEmployee(ctx, domain.Employee{ID: "h", DisplayName: "Ficticio H", Active: true}); err != nil {
+		t.Fatal(err)
+	}
+	base := domain.MembershipSnapshot{EmployeeID: "h", Period: "2026-11", SourceReference: "ref-h", ObservedAt: time.Date(2026, 11, 10, 12, 0, 0, 0, time.UTC), Member: ptr(true), Currency: ""}
+	for _, version := range []int64{2, 1, 3} {
+		s := base
+		s.Version = version
+		if version == 3 {
+			s.Used = ptr(true)
+		}
+		if _, err := repo.ReceiveMembership(ctx, "gimnasio-pablo", s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	entries, err := repo.MembershipHistory(ctx, "h", "2026-11")
+	if err != nil || len(entries) != 3 {
+		t.Fatalf("history=%+v err=%v", entries, err)
+	}
+	for i, want := range []int64{1, 2, 3} {
+		e := entries[i]
+		if e.Snapshot.Version != want || e.SourceApp != "gimnasio-pablo" || e.Snapshot.SourceReference != "ref-h" || e.ReceivedAt.IsZero() {
+			t.Fatalf("entry %d = %+v", i, e)
+		}
+	}
+	if entries[2].Snapshot.Used == nil || !*entries[2].Snapshot.Used || entries[0].Snapshot.Used != nil {
+		t.Fatal("history must keep each payload as received")
+	}
+	if entries, err = repo.MembershipHistory(ctx, "h", "2026-10"); err != nil || len(entries) != 0 {
+		t.Fatalf("empty period=%v err=%v", entries, err)
+	}
+	if _, err = repo.MembershipHistory(ctx, "unknown", "2026-11"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("unknown employee=%v", err)
+	}
+}

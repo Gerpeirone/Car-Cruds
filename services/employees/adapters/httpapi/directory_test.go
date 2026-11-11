@@ -92,3 +92,27 @@ func TestClinicDirectoryWithoutProviderIsNotConfigured(t *testing.T) {
 		}
 	}
 }
+
+func TestMembershipHistoryIsAdministrativeAndStrict(t *testing.T) {
+	handler := testHandler()
+	for _, tc := range []struct {
+		path, token string
+		want        int
+	}{
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11", "", 401},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11", "test-gym", 403},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11", "test-client", 403},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11", "test-service", 403},
+		{"/v1/employees/employee-001/membership-evidence", "test-admin", 400},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11&period=2026-10", "test-admin", 400},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11&page=1", "test-admin", 400},
+		{"/v1/employees/employee-001/membership-evidence?period=2026-11", "test-admin", 503},
+	} {
+		if w := request(handler, "GET", tc.path, "", tc.token); w.Code != tc.want {
+			t.Fatalf("%s token=%q: %d %s", tc.path, tc.token, w.Code, w.Body)
+		}
+	}
+	if w := request(handler, "POST", "/v1/employees/employee-001/membership-evidence?period=2026-11", "", "test-admin"); w.Code != 405 {
+		t.Fatalf("method: %d", w.Code)
+	}
+}

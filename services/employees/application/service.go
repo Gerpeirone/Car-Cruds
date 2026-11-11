@@ -11,6 +11,7 @@ type Service struct {
 	repository  Repository
 	newID       func() string
 	memberships MembershipInbox
+	history     MembershipHistory
 	clinicStore ClinicStore
 	clinic      Clinic
 	directory   ClinicDirectory

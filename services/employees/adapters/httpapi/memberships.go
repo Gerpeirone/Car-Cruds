@@ -113,3 +113,44 @@ func (h *Handler) membershipReport(w http.ResponseWriter, r *http.Request) {
 		Totals             []membershipTotal `json:"totals"`
 	}{period, page.Number, page.Size, report.Total, report.MissingEvidence, report.IncompleteEvidence, items, totals})
 }
+
+// membershipHistory lists every version the gym sent for one employee and
+// period, with its reception time. Read-only and administrative.
+func (h *Handler) membershipHistory(w http.ResponseWriter, r *http.Request) {
+	if !platform.RequireRole(w, r, "admin") {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
+		return
+	}
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(query) != 1 || len(query["period"]) != 1 {
+		writeError(w, domain.ErrInvalidInput)
+		return
+	}
+	entries, err := h.service.MembershipHistory(r.Context(), r.PathValue("id"), query.Get("period"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	type itemDTO struct {
+		Version         int64     `json:"version"`
+		SourceApp       string    `json:"sourceApp"`
+		SourceReference string    `json:"sourceReference"`
+		ObservedAt      time.Time `json:"observedAt"`
+		ReceivedAt      time.Time `json:"receivedAt"`
+		Member          *bool     `json:"member"`
+		Used            *bool     `json:"used"`
+		CostMinor       *int64    `json:"costMinor"`
+		SpendingMinor   *int64    `json:"spendingMinor"`
+		Currency        string    `json:"currency"`
+	}
+	items := make([]itemDTO, 0, len(entries))
+	for _, e := range entries {
+		s := e.Snapshot
+		items = append(items, itemDTO{s.Version, e.SourceApp, s.SourceReference, s.ObservedAt.UTC(), e.ReceivedAt, s.Member, s.Used, s.CostMinor, s.SpendingMinor, s.Currency})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	platform.WriteJSON(w, 200, map[string]any{"employeeId": r.PathValue("id"), "period": query.Get("period"), "items": items})
+}

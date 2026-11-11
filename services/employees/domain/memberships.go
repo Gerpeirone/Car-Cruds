@@ -129,3 +129,11 @@ func (r *MembershipReport) Accumulate(row MembershipRow) error {
 func (r *MembershipReport) SortTotals() {
 	sort.Slice(r.Totals, func(i, j int) bool { return r.Totals[i].Currency < r.Totals[j].Currency })
 }
+
+// MembershipHistoryEntry is one snapshot version as received, including
+// versions that arrived late and never replaced the current evidence.
+type MembershipHistoryEntry struct {
+	Snapshot   MembershipSnapshot
+	SourceApp  string
+	ReceivedAt time.Time
+}

@@ -1,6 +1,6 @@
 # Referencia de endpoints de Car Cruds
 
-**Fecha de revisión:** 8 de noviembre de 2026. **Alcance:** 35 operaciones HTTP implementadas: 32 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
+**Fecha de revisión:** 10 de noviembre de 2026. **Alcance:** 39 operaciones HTTP implementadas: 36 de negocio, 2 técnicas comunes y 1 de sesión en gateway. Esta referencia atiende el feedback posterior a la segunda entrega y describe el comportamiento vigente del código.
 
 ## 1. Consultar la documentación con Swagger
 
@@ -79,7 +79,7 @@ La creación exige una clave de 1 a 128 caracteres ASCII visibles, sin espacios 
 
 El precio queda congelado al reservar. Llegar a `endsOn` no devuelve el auto: un alquiler `ACTIVE` sigue impidiendo otro retiro hasta registrar su devolución. La cancelación solo aplica antes del retiro. Consultar primero no garantiza confirmar después; la transacción vuelve a validar agenda y condiciones.
 
-## 6. Empleados y gimnasio — 9 operaciones
+## 6. Empleados y gimnasio — 11 operaciones
 
 Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementación: `services/employees/adapters/httpapi/handler.go` y `memberships.go`.
 
@@ -95,6 +95,7 @@ Contrato: [employees-openapi.json](contracts/employees-openapi.json). Implementa
 | `GET /v1/employees/integrations` | Marcador general de acuerdos/acceso externos pendientes | Siempre `503 NOT_CONFIGURED` en esta versión. `admin`, `service`; no sustituye las rutas específicas implementadas |
 | `POST /v1/employees/membership-evidence` | Recibe instantánea de membresía, uso y gastos identificada por empleado, período, referencia y versión | `200`, `{ "applied": true/false }`. Solo `gym`; conflicto de procedencia/versión: `409 EVIDENCE_CONFLICT` |
 | `GET /v1/employees/reports/memberships` | Informe administrativo con `period` obligatorio, `page`, `pageSize` | `200`, evidencia por empleado, faltantes y totales por moneda para todo el período. `admin`, `service` |
+| `GET /v1/employees/{id}/membership-evidence` | Historial de evidencia de un empleado con `period` obligatorio | `200`, cada versión recibida con `sourceApp`, `sourceReference`, `observedAt` y `receivedAt`, incluidas las atrasadas. Solo `admin`; empleado inexistente `404` |
 
 Las listas admiten `page` desde 1 y `pageSize` de 1 a 100, con valores predeterminados 1/20; rechazan parámetros desconocidos o repetidos. Conteo e ítems pertenecen a la misma instantánea de una página, sin prometer una instantánea entre páginas. El nombre se normaliza y admite hasta 150 caracteres, sin controles.
 

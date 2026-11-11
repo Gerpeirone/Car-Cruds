@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Car Cruds — Empleados: API propia implementada",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "API de Empleados de Car Cruds. La versión 0.4.0 agrega la consulta puntual del estado laboral por ID y conserva la lista activa y la recepción de evidencia de la 0.3.0. El gimnasio informó que ya implementó la consulta, la vinculación manual y el envío mensual. La prueba conjunta y la confirmación del perfil mensual siguen pendientes. Consultar INTEGRACION_GIMNASIO.md para configurar el consumo y ensayar el intercambio."
   },
   "x-contract-status": "implemented-own-api-not-externally-agreed",
@@ -397,6 +397,20 @@
               }
             }
           },
+          "400": {
+            "description": "INVALID_INPUT: el identificador recibido solo contiene espacios o es vacío.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Identificador inválido."
+                }
+              }
+            }
+          },
           "401": {
             "description": "Autenticación ausente o inválida.",
             "content": {
@@ -449,20 +463,6 @@
                 "example": {
                   "code": "SERVICE_UNAVAILABLE",
                   "message": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED."
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "INVALID_INPUT: el identificador recibido solo contiene espacios o es vacío.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "Identificador inválido."
                 }
               }
             }
@@ -621,6 +621,20 @@
               }
             }
           },
+          "400": {
+            "description": "INVALID_INPUT: el identificador recibido solo contiene espacios o es vacío.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Identificador inválido."
+                }
+              }
+            }
+          },
           "401": {
             "description": "Autenticación ausente o inválida.",
             "content": {
@@ -673,20 +687,6 @@
                 "example": {
                   "code": "SERVICE_UNAVAILABLE",
                   "message": "Persistencia no disponible; en el estado de integración, NOT_CONFIGURED."
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "INVALID_INPUT: el identificador recibido solo contiene espacios o es vacío.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "Identificador inválido."
                 }
               }
             }
@@ -1183,6 +1183,146 @@
           "Gimnasio"
         ]
       }
+    },
+    "/v1/employees/{id}/membership-evidence": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Identificador opaco propio.",
+          "example": "employee-001"
+        }
+      ],
+      "get": {
+        "operationId": "getMembershipHistory",
+        "tags": [
+          "Gimnasio"
+        ],
+        "x-roles": [
+          "admin"
+        ],
+        "summary": "Historial de evidencia de membresía de un empleado",
+        "description": "Solo admin. Lista cada versión que el gimnasio envió para el empleado y el período, con su fecha de recepción. Lectura de solo lectura sobre membership_evidence_history; no recibe ni corrige evidencia. Un período sin envíos devuelve items vacío.",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Período opaco, por ejemplo AAAA-MM; obligatorio y sin otros parámetros.",
+            "example": "2026-11"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versiones recibidas para ese empleado y período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipHistory"
+                },
+                "example": {
+                  "employeeId": "employee-001",
+                  "period": "2026-11",
+                  "items": [
+                    {
+                      "version": 1,
+                      "sourceApp": "gimnasio-pablo",
+                      "sourceReference": "gym-demo-001-2026-11",
+                      "observedAt": "2026-11-10T12:00:00Z",
+                      "receivedAt": "2026-11-10T12:00:01Z",
+                      "member": true,
+                      "used": null,
+                      "costMinor": null,
+                      "spendingMinor": null,
+                      "currency": ""
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada o consulta inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "Entrada o consulta inválida."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "UNAUTHORIZED",
+                  "message": "Bearer ausente o inválido."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "FORBIDDEN",
+                  "message": "Rol sin permiso."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "NOT_FOUND",
+                  "message": "Registro inexistente."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "SERVICE_UNAVAILABLE",
+                  "message": "Almacenamiento no disponible o suma monetaria fuera de rango; no se presenta un total parcial como completo."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1431,7 +1571,7 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1,
-            "maximum": 9223372036854775807
+            "maximum": 9223372036854776000
           },
           "observedAt": {
             "type": "string",
@@ -1452,7 +1592,7 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "nullable": true,
             "description": "Costo de la membresía informado por el productor, en unidades menores de currency; null indica desconocido. Perfil propuesto, pendiente de confirmación: costo neto por mes completo, importe neto dividido por meses contratados; meses parciales null hasta acuerdo. No es el pago cobrado ni se calcula en Car Cruds."
           },
@@ -1460,7 +1600,7 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "nullable": true,
             "description": "Gasto del empleado informado por el productor para el período, en unidades menores de currency; null indica desconocido. Perfil propuesto, pendiente de confirmación: pagos efectivos del mes hasta el corte, separados del costo imputado; ajustes negativos requieren acuerdo y no se convierten a cero."
           },
@@ -1559,7 +1699,7 @@
                 "type": "integer",
                 "format": "int64",
                 "minimum": 1,
-                "maximum": 9223372036854775807
+                "maximum": 9223372036854776000
               },
               "observedAt": {
                 "type": "string",
@@ -1580,7 +1720,7 @@
                 "type": "integer",
                 "format": "int64",
                 "minimum": 0,
-                "maximum": 9223372036854775807,
+                "maximum": 9223372036854776000,
                 "nullable": true,
                 "description": "Costo de la membresía informado por el productor, en unidades menores de currency; null indica desconocido."
               },
@@ -1588,7 +1728,7 @@
                 "type": "integer",
                 "format": "int64",
                 "minimum": 0,
-                "maximum": 9223372036854775807,
+                "maximum": 9223372036854776000,
                 "nullable": true,
                 "description": "Gasto del empleado informado por el productor para el período, en unidades menores de currency; null indica desconocido."
               },
@@ -1622,7 +1762,7 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "nullable": true,
             "description": "Costo de la membresía informado por el productor, en unidades menores de currency; null indica desconocido."
           },
@@ -1630,7 +1770,7 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "nullable": true,
             "description": "Gasto del empleado informado por el productor para el período, en unidades menores de currency; null indica desconocido."
           },
@@ -1638,14 +1778,14 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "description": "Cantidad de instantáneas con costo conocido que participan en este total."
           },
           "spendingRecords": {
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "description": "Cantidad de instantáneas con gasto conocido que participan en este total."
           }
         }
@@ -1685,21 +1825,21 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "description": "Cantidad total de registros que cumplen la consulta, no solo de la página."
           },
           "missingEvidence": {
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "description": "Empleados sin instantánea para el período en todo el informe."
           },
           "incompleteEvidence": {
             "type": "integer",
             "format": "int64",
             "minimum": 0,
-            "maximum": 9223372036854775807,
+            "maximum": 9223372036854776000,
             "description": "Empleados sin instantánea o con al menos un hecho desconocido en todo el informe."
           },
           "items": {
@@ -1768,6 +1908,108 @@
         "example": {
           "employeeId": "employee-001",
           "active": false
+        }
+      },
+      "MembershipHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "employeeId",
+          "period",
+          "items"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Empleado consultado."
+          },
+          "period": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Período consultado."
+          },
+          "items": {
+            "type": "array",
+            "description": "Cada versión recibida, ordenada por versión; incluye las que llegaron atrasadas y no reemplazaron la vigente.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "sourceApp",
+                "sourceReference",
+                "observedAt",
+                "receivedAt",
+                "member",
+                "used",
+                "costMinor",
+                "spendingMinor",
+                "currency"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 1,
+                  "maximum": 9223372036854776000
+                },
+                "sourceApp": {
+                  "type": "string",
+                  "description": "Aplicación emisora identificada por su token."
+                },
+                "sourceReference": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "description": "Identificador opaco sin espacios exteriores ni controles."
+                },
+                "observedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Fecha de observación de la evidencia; puede ser null si todavía no se observó."
+                },
+                "receivedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Instante en que Car Cruds guardó esa versión."
+                },
+                "member": {
+                  "type": "boolean",
+                  "nullable": true,
+                  "description": "Afiliación informada por el gimnasio; null u omisión indica desconocida. Perfil propuesto, pendiente de confirmación: membresía vigente en algún tramo del mes hasta observedAt; null si desconocido. Vinculación no habilita membresía."
+                },
+                "used": {
+                  "type": "boolean",
+                  "nullable": true,
+                  "description": "Uso informado para el período; null u omisión indica desconocido y no significa no uso. Perfil propuesto, pendiente de confirmación: al menos un ingreso efectivo registrado hasta el corte; reservar una clase no prueba asistencia."
+                },
+                "costMinor": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0,
+                  "maximum": 9223372036854776000,
+                  "nullable": true,
+                  "description": "Costo de la membresía informado por el productor, en unidades menores de currency; null indica desconocido. Perfil propuesto, pendiente de confirmación: costo neto por mes completo, importe neto dividido por meses contratados; meses parciales null hasta acuerdo. No es el pago cobrado ni se calcula en Car Cruds."
+                },
+                "spendingMinor": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0,
+                  "maximum": 9223372036854776000,
+                  "nullable": true,
+                  "description": "Gasto del empleado informado por el productor para el período, en unidades menores de currency; null indica desconocido. Perfil propuesto, pendiente de confirmación: pagos efectivos del mes hasta el corte, separados del costo imputado; ajustes negativos requieren acuerdo y no se convierten a cero."
+                },
+                "currency": {
+                  "type": "string",
+                  "pattern": "^([A-Z]{3})?$",
+                  "description": "Moneda obligatoria si hay importes. Perfil propuesto ARS en centavos; otras monedas siguen admitidas y separadas por compatibilidad."
+                }
+              }
+            }
+          }
         }
       }
     }

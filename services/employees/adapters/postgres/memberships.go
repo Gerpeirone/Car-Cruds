@@ -124,3 +124,43 @@ func (r *Repository) MembershipReport(ctx context.Context, period string, page d
 	report.SortTotals()
 	return report, nil
 }
+
+var _ application.MembershipHistory = (*Repository)(nil)
+
+func (r *Repository) MembershipHistory(ctx context.Context, employeeID, period string) ([]domain.MembershipHistoryEntry, error) {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	var exists bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM employees WHERE employee_id=$1)`, employeeID).Scan(&exists); err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, domain.ErrNotFound
+	}
+	rows, err := tx.Query(ctx, `SELECT source_app,payload,received_at FROM membership_evidence_history WHERE employee_id=$1 AND period=$2 ORDER BY version`, employeeID, period)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	entries := []domain.MembershipHistoryEntry{}
+	for rows.Next() {
+		var entry domain.MembershipHistoryEntry
+		var payload []byte
+		if err = rows.Scan(&entry.SourceApp, &payload, &entry.ReceivedAt); err != nil {
+			return nil, err
+		}
+		// The payload is the exact snapshot persisted by ReceiveMembership.
+		if err = json.Unmarshal(payload, &entry.Snapshot); err != nil {
+			return nil, err
+		}
+		entry.ReceivedAt = entry.ReceivedAt.UTC()
+		entries = append(entries, entry)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return entries, tx.Commit(ctx)
+}
