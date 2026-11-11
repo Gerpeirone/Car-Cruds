@@ -26,6 +26,9 @@ type Repository interface {
 	ExecuteOnce(context.Context, string, string, string, func(context.Context, UnitOfWork) (Result, error)) (Result, error)
 	Available(context.Context, string, domain.Period) (bool, error)
 	Get(context.Context, string) (domain.Reservation, error)
+	// List pages a driver's reservations, newest start first. An empty
+	// ownerApp means every application (administrative reads).
+	List(ctx context.Context, customerID, ownerApp string, page, pageSize int) ([]domain.Reservation, int64, error)
 	Transition(context.Context, domain.Actor, string, domain.Status) (domain.Reservation, error)
 	Maintenance(context.Context, string, string, domain.Period) (string, error)
 }
@@ -160,6 +163,29 @@ func (s *Service) Get(ctx context.Context, actor domain.Actor, id string) (domai
 		return domain.Reservation{}, domain.Fail("NOT_FOUND", "Reserva inexistente.")
 	}
 	return r, nil
+}
+
+type Page struct {
+	Items          []domain.Reservation
+	Page, PageSize int
+	Total          int64
+}
+
+// List returns the reservations of the authenticated driver (client) or of the
+// requested driver (admin/service). The identity never comes from the client.
+func (s *Service) List(ctx context.Context, actor domain.Actor, requested string, page, pageSize int) (Page, error) {
+	if page < 1 || page > 10000 || pageSize < 1 || pageSize > 50 {
+		return Page{}, domain.Fail("INVALID_INPUT", "page debe ser 1..10000 y pageSize 1..50.")
+	}
+	customerID, ownerApp, p := actor.ListScope(requested)
+	if p != nil {
+		return Page{}, p
+	}
+	items, total, err := s.Repo.List(ctx, customerID, ownerApp, page, pageSize)
+	if err != nil {
+		return Page{}, err
+	}
+	return Page{Items: items, Page: page, PageSize: pageSize, Total: total}, nil
 }
 func (s *Service) Cancel(ctx context.Context, actor domain.Actor, id string) (domain.Reservation, error) {
 	return s.Repo.Transition(ctx, actor, id, domain.Cancelled)

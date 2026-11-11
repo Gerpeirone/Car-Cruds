@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-11",
+  "branch": "feat/mis-alquileres-demo",
+  "environment": "Compose desechable en loopback (Caddy HTTPS, gateway, Clientes, Flota x2 con NGINX, Alquileres, Empleados, PostgreSQL, MongoDB, Redis, RabbitMQ, Solr). Sin Azure, sin Hospital ni Gimnasio reales.",
+  "seed": {
+    "first_run": "29 registros creados: 6 clientes, 5 empleados, 14 vehículos, 4 reservas (2 retiradas como alquiler activo)",
+    "second_run": "0 creados, 29 existentes; sin observaciones",
+    "pre_existing_records": "cli-001, cli-blocked, employee-001 y employee-002 sin cambios (comparación antes/después)",
+    "search": "vehículos demo encontrados por la búsqueda Solr",
+    "cleanup": "reservas futuras demo canceladas, autos y empleados demo desactivados; los 2 alquileres activos se conservan sin -return-active",
+    "secrets_in_output": 0
+  },
+  "browser": "scripts/ui-review/rentals.mjs (Edge headless, 1366x900 y 390x844): PASS /acceso → registro y catálogo; Mis alquileres con reservas propias; otro customerId 403; alquiler activo sin cancelación; cancelación con confirmación; DELETE repetido 200 CANCELLED; búsqueda Kangoo",
+  "regression": "scripts/ui-review/accounts.mjs PASS; cmd/smoke PASS (78 solicitudes)",
+  "screenshots": ["img/mis-alquileres-2026-11-11.png", "img/mis-alquileres-movil-2026-11-11.png", "img/cancelar-confirmacion-2026-11-11.png", "img/acceso-2026-11-11.png", "img/busqueda-demo-2026-11-11.png"]
+}

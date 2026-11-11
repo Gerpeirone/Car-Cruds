@@ -18,6 +18,7 @@ El dominio en `domain/` no importa HTTP, PostgreSQL ni plataforma. `application/
 | --- | --- | --- |
 | `GET /v1/availability` | Cotización y agenda por vehicleId, startsOn, endsOn | admin, service, client |
 | `POST /v1/reservations` | Crear con Idempotency-Key y precio esperado | admin, service; client para su CustomerID |
+| `GET /v1/reservations` | Listar reservas de un conductor, paginadas (`page`, `pageSize` ≤ 50), inicio más reciente primero | client: solo su CustomerID y su aplicación, derivados de la credencial (otro `customerId`: 403); admin/service con `customerId` obligatorio |
 | `GET /v1/reservations/{id}` | Consultar el estado actual | admin/service; client dentro de su aplicación y perfil |
 | `DELETE /v1/reservations/{id}` | Cancelar RESERVED; repetir CANCELLED | Igual que consulta |
 | `POST /v1/reservations/{id}/pickup` | Revalidar conductor y registrar retiro vigente | admin, service |
@@ -33,6 +34,8 @@ Clientes responde `GET /v1/customers/{id}`; la tarifa se obtiene por `GET /v1/ve
 La creación serializa una misma aplicación/operación/clave en PostgreSQL, recupera su respuesta antes de revalidar fechas o dependencias y compara la huella de la solicitud. Reserva, agenda y respuesta se confirman en una transacción. Un rechazo de negocio queda asociado a esa clave; para corregirlo se utiliza otra. Un fallo técnico revierte la transacción y permite repetir.
 
 Desde la revisión del 15 de octubre se consulta primero la respuesta guardada mediante una lectura breve. Si no existe, Clientes y Flota se validan sin conexión ni transacción retenidas. Al escribir, se toma el bloqueo de la clave y se comprueba nuevamente la respuesta antes de insertar: una solicitud competidora nunca sobrescribe la primera respuesta confirmada. El precio leído se congela como antes. Las pruebas de regresión incluyen un pool de una conexión disponible durante la validación y doce confirmaciones simultáneas con la misma clave. No se declara una mejora de capacidad sin una medición de carga nueva.
+
+**Cancelar, retirar y devolver son operaciones distintas.** El cliente solo puede cancelar (`RESERVED → CANCELLED`), y solo mientras no retiró el auto. Retirar (`RESERVED → ACTIVE`) y devolver (`ACTIVE → COMPLETED`) los registra el operador. Un alquiler `ACTIVE` no se cancela ni se «da de baja»: termina con la devolución. Cada transición bloquea la fila (`SELECT … FOR UPDATE`), comprueba la propiedad (una reserva ajena responde 404) y actualiza con la condición del estado leído. Repetir la cancelación devuelve `CANCELLED` sin efectos nuevos; cualquier otra transición inválida devuelve `409 INVALID_STATE`.
 
 La cancelación conserva el registro y libera la agenda una sola vez. Una creación repetida devuelve su respuesta original, aunque luego se haya cancelado; GET muestra el estado actual. El retiro exclusivo se protege por índice único parcial incluso si otro alquiler ACTIVE venció su fecha prevista.
 

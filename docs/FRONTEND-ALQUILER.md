@@ -15,7 +15,7 @@ Permitir el recorrido buscar → consultar disponibilidad → reservar → consu
 
 Esta primera etapa cubre catálogo, búsqueda, ficha, fechas, cotización, confirmación, consulta por código y cancelación previa al retiro. Se excluyen de F3-01 las pantallas de administración, retiro/devolución, mantenimiento, personal e integraciones; siguen previstas en otras etapas de la presentación. Tampoco se incorporan pagos, registro público, recuperación de contraseña ni una gestión de cuentas inexistente en el backend.
 
-No existe `GET /v1/reservations` para listar reservas. Por ello se ofrece **Consultar reserva por código**, y no una pantalla que prometa un historial completo. No se agrega un endpoint para suplir esa ausencia en esta etapa.
+**Actualización (feat/mis-alquileres-demo):** Alquileres agrega `GET /v1/reservations` y la interfaz ofrece **Mis alquileres** (`/mis-alquileres`). El listado deriva al conductor de la credencial validada y nunca envía un `customerId`. La consulta por código se conserva.
 
 ## 2. Ingreso y contexto del cliente
 
@@ -33,11 +33,12 @@ Las rutas siguientes son propuestas de navegación del navegador, no nuevos endp
 
 | Ruta web | Pantalla y contenido | Acción principal |
 | --- | --- | --- |
-| `/acceso` | Credencial e identificador de laboratorio; explicación breve del acceso | Entrar y consultar el perfil autorizado |
+| `/acceso` | Credencial e identificador de laboratorio; explicación breve del acceso. Debajo, «¿Todavía no tenés una cuenta?» con **Crear cuenta gratis** (`/registro`) y **Explorar catálogo** (`/catalogo`), y la diferencia entre cuenta personal (catálogo) y credencial de alquiler (reservas) | Entrar y consultar el perfil autorizado, o ir al registro o al catálogo |
 | `/autos` | Texto, filtros, orden, página y tarjetas con marca/modelo, categoría, transmisión, plazas y tarifa diaria | Buscar y abrir ficha |
 | `/autos/:vehicleId` | Características, estado, fechas y resultado de disponibilidad con días y total | Consultar disponibilidad y revisar reserva |
 | `/reservar` | Resumen del vehículo, cliente, período y total de la cotización vigente | Confirmar reserva |
 | `/reservas/consultar` | Campo para código de reserva | Abrir una reserva propia |
+| `/mis-alquileres` | Tarjetas por reserva: marca y modelo (leídos de Flota), identificador del auto, código, retiro, devolución, estado, tarifa diaria, días y total acordado. Estado vacío con acceso al catálogo | Ver detalle y cancelar una `RESERVED` con confirmación |
 | `/reservas/:reservationId` | Código, vehículo, fechas, precio congelado y estado actual | Consultar estado y cancelar si está reservada |
 
 ```mermaid
@@ -116,7 +117,7 @@ El usuario introduce un código y la UI consulta su estado al servidor. Un códi
 | `COMPLETED` | Finalizada | Consultar |
 | `CANCELLED` | Cancelada | Consultar |
 
-El diálogo de cancelación muestra código y fechas y ofrece mantener o cancelar. El éxito se muestra solo tras respuesta del servidor. Ante timeout se consulta el estado actual antes de ofrecer repetir DELETE; no se transforma una reserva desconocida en cancelada. Un conflicto de estado actualiza la vista. Alcanzar la fecha de devolución no finaliza por sí solo una reserva `ACTIVE`.
+La ficha y **Mis alquileres** comparten el mismo diálogo. Muestra código y fechas, informa las consecuencias conocidas (libera las fechas, no se puede deshacer y una nueva reserva usa la tarifa vigente) y ofrece mantener o cancelar. El éxito se muestra solo tras respuesta del servidor. Ante timeout se consulta el estado actual antes de ofrecer repetir DELETE; no se transforma una reserva desconocida en cancelada. Un conflicto de estado actualiza la vista. Alcanzar la fecha de devolución no finaliza por sí solo una reserva `ACTIVE`.
 
 ## 9. Estados de error y mensajes
 

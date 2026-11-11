@@ -281,7 +281,7 @@ export default function App() {
     }
   }, [location.pathname]);
   useEffect(() => {
-    document.title = `Car Cruds · ${location.pathname.startsWith("/operador") ? "Panel del operador" : location.pathname.startsWith("/reservas") ? "Tu reserva" : location.pathname === "/acceso" ? "Bienvenido" : "Tu próximo viaje"}`;
+    document.title = `Car Cruds · ${location.pathname.startsWith("/operador") ? "Panel del operador" : location.pathname.startsWith("/reservas") ? "Tu reserva" : location.pathname === "/mis-alquileres" ? "Mis alquileres" : location.pathname === "/acceso" ? "Bienvenido" : "Tu próximo viaje"}`;
     document.querySelector<HTMLElement>("main h1")?.focus();
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -349,6 +349,7 @@ export default function App() {
           <Route path="/autos/:vehicleId" element={<VehicleDetail />} />
           <Route path="/reservar" element={<Checkout />} />
           <Route path="/reservas/consultar" element={<Lookup />} />
+          <Route path="/mis-alquileres" element={<MyRentals />} />
           <Route
             path="/reservas/:reservationId"
             element={<ReservationDetail />}
@@ -359,7 +360,7 @@ export default function App() {
               <Navigate
                 to={
                   typeof location.state?.from === "string" &&
-                  /^\/(autos|reservar|reservas)(\/|\?|$)/.test(
+                  /^\/(autos|reservar|reservas|mis-alquileres)(\/|\?|$)/.test(
                     location.state.from,
                   )
                     ? location.state.from
@@ -544,6 +545,33 @@ function Login({ onLogin }: { onLogin: (c: Customer, t: string) => void }) {
               credencial no se guarda en este navegador.
             </p>
           </div>
+          <section className="access-signup" aria-labelledby="access-signup-title">
+            <span className="eyebrow">NUEVO EN CAR CRUDS</span>
+            <h3 id="access-signup-title">¿Todavía no tenés una cuenta?</h3>
+            <p>
+              Creá una cuenta para explorar nuestro catálogo de vehículos y
+              conocer todas las opciones disponibles.
+            </p>
+            <div className="access-signup-actions">
+              <Link className="button" to="/registro">
+                Crear cuenta gratis <ArrowRight size={17} />
+              </Link>
+              <Link className="button secondary" to="/catalogo">
+                Explorar catálogo <CarFront size={17} />
+              </Link>
+            </div>
+            <ul className="access-difference">
+              <li>
+                <strong>Cuenta personal:</strong> explorás el catálogo y las
+                fichas de los autos.
+              </li>
+              <li>
+                <strong>Credencial de alquiler:</strong> la entrega Car Cruds al
+                habilitarte como conductor y permite reservar. Crear una cuenta
+                no la otorga automáticamente.
+              </li>
+            </ul>
+          </section>
           <Link to="/operador/acceso" className="back-link">
             Soy operador <ArrowUpRight size={15} />
           </Link>
@@ -594,6 +622,13 @@ function Shell({ children }: { children: ReactNode }) {
           >
             <Ticket size={17} />
             Consultar reserva
+          </NavLink>
+          <NavLink
+            to="/mis-alquileres"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <CalendarDays size={17} />
+            Mis alquileres
           </NavLink>
         </nav>
         <div className="profile">
@@ -1120,7 +1155,7 @@ function VehicleDetail() {
             <strong>{money(v.dailyRateMinor)}</strong>
             <span>/ día orientativo</span>
           </div>
-          {personal ? <p className="muted">Para reservar necesitás una credencial de alquiler.</p> : <>
+          {personal ? <><p className="muted">Para reservar necesitás una credencial de alquiler.</p><p className="field-hint">Tu cuenta personal permite explorar el catálogo. La credencial la entrega Car Cruds al habilitarte como conductor. <Link to="/acceso">Ya tengo una credencial</Link></p></> : <>
           <p className="muted">Elegí tus fechas y consultá disponibilidad.</p>
           {!v.active ? (
             <div className="notice warning">
@@ -1612,31 +1647,14 @@ function ReservationDetail() {
   const [confirm, setConfirm] = useState(false);
   const [cancelUnknown, setCancelUnknown] = useState(false);
   const [copied, setCopied] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const location = useLocation();
-  useEffect(() => {
-    if (confirm) {
-      dialog.current?.showModal();
-    } else if (dialog.current?.open) {
-      dialog.current.close();
-      trigger.current?.focus();
-    }
-  }, [confirm]);
   async function cancel() {
     if (!r) return;
     setCancelError(undefined);
     await run(async () => {
       try {
-        const result = checked(
-          await call<Reservation>(
-            `/v1/reservations/${encodeURIComponent(r.id)}`,
-            { method: "DELETE" },
-          ),
-          isReservation,
-        );
-        if (result.id !== r.id || result.status !== "CANCELLED")
-          throw new ApiError(0, "INVALID_RESPONSE");
+        await cancelReservation(call, r);
         setCancelUnknown(false);
         setConfirm(false);
         retry();
@@ -1791,50 +1809,358 @@ function ReservationDetail() {
           )}
         </aside>
       </div>
-      <dialog
-        ref={dialog}
-        className="cancel-dialog"
-        onCancel={(e) => {
-          if (busy) e.preventDefault();
-          else setConfirm(false);
-        }}
+      <CancelReservationDialog
+        reservation={r}
+        open={confirm}
+        busy={busy}
         onClose={() => {
           setConfirm(false);
           trigger.current?.focus();
         }}
-        aria-labelledby="cancel-title"
+        onConfirm={() => void cancel()}
+      />
+    </>
+  );
+}
+
+// DELETE is the only client transition the domain allows (RESERVED →
+// CANCELLED). It is idempotent in Rentals: repeating it returns CANCELLED.
+async function cancelReservation(call: Call, r: Reservation) {
+  const result = checked(
+    await call<Reservation>(`/v1/reservations/${encodeURIComponent(r.id)}`, {
+      method: "DELETE",
+    }),
+    isReservation,
+  );
+  if (result.id !== r.id || result.status !== "CANCELLED")
+    throw new ApiError(0, "INVALID_RESPONSE");
+  return result;
+}
+
+function CancelReservationDialog({
+  reservation: r,
+  open,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  reservation: Reservation;
+  open: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (open) dialog.current?.showModal();
+    else if (dialog.current?.open) dialog.current.close();
+  }, [open]);
+  return (
+    <dialog
+      ref={dialog}
+      className="cancel-dialog"
+      onCancel={(e) => {
+        if (busy) e.preventDefault();
+        else onClose();
+      }}
+      onClose={() => {
+        if (open) onClose();
+      }}
+      aria-labelledby="cancel-title"
+      aria-describedby="cancel-consequences"
+    >
+      <button
+        className="icon-button dialog-close"
+        aria-label="Cerrar diálogo"
+        disabled={busy}
+        onClick={onClose}
       >
-        <button
-          className="icon-button dialog-close"
-          aria-label="Cerrar diálogo"
-          disabled={busy}
-          onClick={() => setConfirm(false)}
+        <X />
+      </button>
+      <span className="lookup-icon">
+        <Ticket size={28} />
+      </span>
+      <h2 id="cancel-title">¿Cambiaron los planes?</h2>
+      <p>
+        Vas a cancelar la reserva{" "}
+        <strong className="break-word">{r.id}</strong>, del{" "}
+        {dateLabel(r.startsOn)} al {dateLabel(r.endsOn)}.
+      </p>
+      <ul id="cancel-consequences" className="cancel-consequences">
+        <li>La reserva pasa a «{statusLabels.CANCELLED}» y libera las fechas del auto.</li>
+        <li>
+          No se puede deshacer. Para viajar en esas fechas vas a tener que hacer
+          una reserva nueva, con la tarifa vigente en ese momento.
+        </li>
+      </ul>
+      <div className="dialog-actions">
+        <Button className="secondary" disabled={busy} onClick={onClose}>
+          Mantener reserva
+        </Button>
+        <Button className="danger" busy={busy} onClick={onConfirm}>
+          Sí, cancelar
+        </Button>
+      </div>
+    </dialog>
+  );
+}
+
+type ReservationPage = {
+  items: Reservation[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+const rentalsPageSize = 12;
+const isReservationPage = (v: ReservationPage) =>
+  v &&
+  Array.isArray(v.items) &&
+  v.items.every(isReservation) &&
+  Number.isInteger(v.page) &&
+  Number.isInteger(v.pageSize) &&
+  Number.isInteger(v.total) &&
+  v.total >= v.items.length;
+const rentalHelp: Record<Reservation["status"], string> = {
+  RESERVED: "Podés cancelarla mientras no hayas retirado el auto.",
+  ACTIVE:
+    "Alquiler en curso. No se cancela: la devolución la registra el operador en la sucursal.",
+  COMPLETED: "Alquiler finalizado y devuelto.",
+  CANCELLED: "Reserva cancelada. Sus fechas quedaron libres.",
+};
+
+// "Mis alquileres": the list comes from Rentals for the driver of the validated
+// credential; no customer identifier is sent from the browser.
+function MyRentals() {
+  const { call } = useAccess();
+  const [page, setPage] = useState(1);
+  const { data, error, loading, retry } = useResource<ReservationPage>(
+    `/v1/reservations?page=${page}&pageSize=${rentalsPageSize}`,
+    isReservationPage,
+  );
+  const [vehicles, setVehicles] = useState<Record<string, Vehicle | null>>({});
+  const [target, setTarget] = useState<Reservation | null>(null);
+  const [uncertain, setUncertain] = useState<Set<string>>(() => new Set());
+  const [outcome, setOutcome] = useState<{ ok?: string; error?: unknown }>({});
+  const { busy, run } = useBusy();
+  const triggers = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    const missing = [
+      ...new Set((data?.items ?? []).map((r) => r.vehicleId)),
+    ].filter((id) => !(id in vehicles));
+    if (!missing.length) return;
+    const controller = new AbortController();
+    void Promise.all(
+      missing.map((id) =>
+        call<Vehicle>(`/v1/vehicles/${encodeURIComponent(id)}`, {
+          signal: controller.signal,
+        })
+          .then((v) => [id, isVehicle(v) && v.vehicleId === id ? v : null] as const)
+          .catch(() => [id, null] as const),
+      ),
+    ).then((entries) => {
+      if (!controller.signal.aborted)
+        setVehicles((current) => ({ ...current, ...Object.fromEntries(entries) }));
+    });
+    return () => controller.abort();
+  }, [data, call, vehicles]);
+  function close() {
+    const id = target?.id;
+    setTarget(null);
+    if (id) triggers.current.get(id)?.focus();
+  }
+  async function cancel() {
+    const r = target;
+    if (!r) return;
+    setOutcome({});
+    await run(async () => {
+      try {
+        await cancelReservation(call, r);
+        setOutcome({ ok: `Cancelamos la reserva ${r.id}.` });
+      } catch (err) {
+        // The result may be unknown: no second attempt until the state is read again.
+        setUncertain((current) => new Set(current).add(r.id));
+        setOutcome({ error: err });
+      } finally {
+        setTarget(null);
+        retry();
+      }
+    });
+  }
+  const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
+  return (
+    <>
+      <PageHeading eyebrow="TUS VIAJES, EN UN LUGAR" title="Mis alquileres">
+        <Button
+          className="secondary"
+          onClick={() => {
+            setUncertain(new Set());
+            retry();
+          }}
         >
-          <X />
-        </button>
-        <span className="lookup-icon">
-          <Ticket size={28} />
-        </span>
-        <h2 id="cancel-title">¿Cambiaron los planes?</h2>
-        <p>
-          Vas a cancelar la reserva{" "}
-          <strong className="break-word">{r.id}</strong>, del{" "}
-          {dateLabel(r.startsOn)} al {dateLabel(r.endsOn)}. Esta acción libera
-          tu reserva.
-        </p>
-        <div className="dialog-actions">
-          <Button
-            className="secondary"
-            disabled={busy}
-            onClick={() => setConfirm(false)}
-          >
-            Mantener reserva
-          </Button>
-          <Button className="danger" busy={busy} onClick={() => void cancel()}>
-            Sí, cancelar
-          </Button>
+          Actualizar <RefreshCw size={16} />
+        </Button>
+      </PageHeading>
+      {outcome.ok && (
+        <div className="notice success" role="status">
+          <CheckCheck size={20} />
+          {outcome.ok}
         </div>
-      </dialog>
+      )}
+      {!!outcome.error && (
+        <>
+          <ErrorBox error={outcome.error} />
+          <div className="notice warning">
+            Volvimos a consultar tus reservas después del intento. Revisá el
+            estado antes de intentar de nuevo.
+          </div>
+        </>
+      )}
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorBox error={error} retry={retry} />
+      ) : !data?.items.length ? (
+        <div className="empty-state rentals-empty">
+          <CarFront size={38} />
+          <h2>Todavía no tenés autos alquilados.</h2>
+          <p>Explorá nuestro catálogo y encontrá tu próximo vehículo.</p>
+          <Link className="button" to="/autos">
+            Explorar catálogo <ArrowRight size={17} />
+          </Link>
+        </div>
+      ) : (
+        <>
+          <p className="muted rentals-summary">
+            {data.total === 1
+              ? "1 reserva registrada"
+              : `${data.total} reservas registradas`}{" "}
+            · Fechas de la sucursal Argentina
+          </p>
+          <div className="rentals-grid">
+            {data.items.map((r, index) => {
+              const v = vehicles[r.vehicleId];
+              return (
+                <article
+                  key={r.id}
+                  className="rental-card"
+                  aria-labelledby={`rental-${r.id}`}
+                >
+                  <div className={`rental-picture tone-${index % 3}`}>
+                    <CarArt />
+                    <span className={`status status-${r.status.toLowerCase()}`}>
+                      <span />
+                      {statusLabels[r.status]}
+                    </span>
+                  </div>
+                  <div className="rental-body">
+                    <span className="vehicle-brand">
+                      {v ? v.brand : "Vehículo"}
+                    </span>
+                    <h3 id={`rental-${r.id}`}>{v ? v.model : r.vehicleId}</h3>
+                    {v && (
+                      <p className="field-hint">
+                        {v.category} ·{" "}
+                        {v.transmission === "automatic" ? "Automático" : "Manual"}{" "}
+                        · {v.seats} plazas
+                      </p>
+                    )}
+                    <dl className="rental-facts">
+                      <div>
+                        <dt>Identificador del auto</dt>
+                        <dd>{r.vehicleId}</dd>
+                      </div>
+                      <div>
+                        <dt>Código de reserva</dt>
+                        <dd className="break-word">{r.id}</dd>
+                      </div>
+                      <div>
+                        <dt>Retiro</dt>
+                        <dd>{dateLabel(r.startsOn)}</dd>
+                      </div>
+                      <div>
+                        <dt>Devolución</dt>
+                        <dd>{dateLabel(r.endsOn)}</dd>
+                      </div>
+                      <div>
+                        <dt>Tarifa diaria</dt>
+                        <dd>{money(r.dailyRateMinor)}</dd>
+                      </div>
+                      <div>
+                        <dt>
+                          Total acordado · {r.days} {r.days === 1 ? "día" : "días"}
+                        </dt>
+                        <dd>
+                          <strong>{money(r.totalMinor)}</strong>
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="rental-help">{rentalHelp[r.status]}</p>
+                    <div className="rental-actions">
+                      <Link
+                        className="button secondary"
+                        to={`/reservas/${encodeURIComponent(r.id)}`}
+                      >
+                        Ver detalle
+                      </Link>
+                      {r.status === "RESERVED" &&
+                        (uncertain.has(r.id) ? (
+                          <span className="field-hint">
+                            Actualizá el estado antes de volver a intentar.
+                          </span>
+                        ) : (
+                          <button
+                            ref={(node) => {
+                              if (node) triggers.current.set(r.id, node);
+                              else triggers.current.delete(r.id);
+                            }}
+                            className="cancel-button rental-cancel"
+                            disabled={busy}
+                            onClick={() => {
+                              setOutcome({});
+                              setTarget(r);
+                            }}
+                          >
+                            Cancelar reserva
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {pages > 1 && (
+            <nav className="rentals-pager" aria-label="Páginas de alquileres">
+              <Button
+                className="secondary"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                <ArrowLeft size={16} /> Anterior
+              </Button>
+              <span>
+                Página {data.page} de {pages}
+              </span>
+              <Button
+                className="secondary"
+                disabled={page >= pages}
+                onClick={() => setPage(page + 1)}
+              >
+                Siguiente <ArrowRight size={16} />
+              </Button>
+            </nav>
+          )}
+        </>
+      )}
+      {target && (
+        <CancelReservationDialog
+          reservation={target}
+          open
+          busy={busy}
+          onClose={close}
+          onConfirm={() => void cancel()}
+        />
+      )}
     </>
   );
 }

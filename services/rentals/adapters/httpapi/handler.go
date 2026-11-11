@@ -9,6 +9,7 @@ import (
 	"github.com/Gerpeirone/Car-Cruds/services/rentals/domain"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -50,6 +51,36 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			value["unavailableReason"] = v.Reason
 		}
 		platform.WriteJSON(w, 200, value)
+	case r.URL.Path == "/v1/reservations" && r.Method == "GET":
+		q := r.URL.Query()
+		page, pageSize := 1, 20
+		for key, values := range q {
+			if len(values) != 1 || (key != "customerId" && key != "page" && key != "pageSize") {
+				platform.Error(w, 400, "INVALID_INPUT", "Parámetros admitidos: customerId, page y pageSize, una vez cada uno.")
+				return
+			}
+		}
+		for key, target := range map[string]*int{"page": &page, "pageSize": &pageSize} {
+			if raw := q.Get(key); raw != "" {
+				n, err := strconv.Atoi(raw)
+				if err != nil || strconv.Itoa(n) != raw {
+					platform.Error(w, 400, "INVALID_INPUT", key+" debe ser un entero.")
+					return
+				}
+				*target = n
+			}
+		}
+		result, err := h.Service.List(ctx, actor, q.Get("customerId"), page, pageSize)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		items := make([]wire.Reservation, 0, len(result.Items))
+		for _, v := range result.Items {
+			items = append(items, wire.FromDomain(v))
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		platform.WriteJSON(w, 200, map[string]any{"items": items, "page": result.Page, "pageSize": result.PageSize, "total": result.Total})
 	case r.URL.Path == "/v1/reservations" && r.Method == "POST":
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || mediaType != "application/json" {
@@ -158,6 +189,8 @@ func routePattern(r *http.Request) string {
 		return "GET /v1/availability"
 	case r.URL.Path == "/v1/reservations" && r.Method == http.MethodPost:
 		return "POST /v1/reservations"
+	case r.URL.Path == "/v1/reservations" && r.Method == http.MethodGet:
+		return "GET /v1/reservations"
 	case r.URL.Path == "/v1/maintenance" && r.Method == http.MethodPost:
 		return "POST /v1/maintenance"
 	case strings.HasPrefix(r.URL.Path, "/v1/reservations/"):

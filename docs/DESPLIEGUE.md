@@ -356,6 +356,30 @@ Verificación sin cuentas reales: `curl -s -o /dev/null -w '%{http_code}
 
 **Volver atrás:** `for s in customers gateway fleet-a fleet-b web; do docker tag car-cruds-$s:antes-$FECHA car-cruds-$s:latest; done`, `git checkout --detach "$(cat ~/respaldos/$FECHA/commit-anterior.txt)"`, `docker compose $F up -d --no-deps --wait customers gateway fleet-a fleet-b web` y, por último, `docker compose $F up -d --no-deps --force-recreate --wait fleet-lb`. Las tablas de cuentas no cambian, así que no hay que tocar el esquema.
 
+### I. En la VM: actualizar «Mis alquileres» y la pantalla de acceso
+
+**Requiere autorización del equipo.** Corresponde a `feat/mis-alquileres-demo` integrada en `main`. Se reconstruyen `rentals` (nuevo `GET /v1/reservations`) y `web` (Mis alquileres y `/acceso`). No hay migraciones ni variables nuevas, y Clientes, Flota, Empleados, Hospital y Gimnasio no cambian.
+
+```bash
+cd ~/Car-Cruds
+F="-f compose.yaml -f compose.frontend.yaml -f compose.deploy.yaml"
+FECHA=$(date +%F-%H%M); mkdir -p ~/respaldos/$FECHA && chmod 700 ~/respaldos/$FECHA
+git rev-parse --short HEAD | tee ~/respaldos/$FECHA/commit-anterior.txt
+for s in rentals web; do docker tag car-cruds-$s:latest car-cruds-$s:antes-$FECHA; done
+git fetch origin && git checkout --detach origin/main && git log -1 --oneline
+docker compose $F config --quiet
+docker compose $F build rentals web
+docker compose $F up -d --no-deps --wait rentals web
+docker compose $F ps rentals web gateway
+```
+
+Verificación: `curl -s -o /dev/null -w '%{http_code}
+' https://57-156-56-201.sslip.io/v1/reservations` da 401. En el navegador, con la credencial de alquiler, **Mis alquileres** lista solo las reservas de ese conductor.
+
+**Datos de demostración:** no se cargan con el despliegue. Si el equipo decide mostrarlos en la VM, se ejecuta en la VM contra su gateway local, que lee el `.env` sin copiarlo, con `docker run --rm --network host -v "$PWD":/src -w /src golang:1.26.1-alpine go run ./cmd/demoseed -apply`. Antes conviene ver el plan sin `-apply`, y para retirarlos se usa `-cleanup`. Ver [cmd/demoseed](../cmd/demoseed/README.md).
+
+**Volver atrás:** `for s in rentals web; do docker tag car-cruds-$s:antes-$FECHA car-cruds-$s:latest; done && docker compose $F up -d --no-deps --wait rentals web`.
+
 ## 7. Pendientes
 
 1. Crear la VM, fijar la IP y ejecutar el despliegue; registrar aquí y en el [contrato](contracts/README.md) la URL y la fecha.

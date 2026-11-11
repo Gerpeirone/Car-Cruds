@@ -180,7 +180,7 @@ func TestAccountSessionAcrossGatewayCustomersAndFleet(t *testing.T) {
 	}
 	for _, c := range []struct{ method, path string }{
 		{"GET", "/v1/admin/employees"}, {"GET", "/v1/employees/clinic/doctors"}, {"GET", "/v1/vehicles/auto-001/quote"},
-		{"POST", "/v1/vehicles"}, {"GET", "/v1/reservations/r-1"}, {"POST", "/v1/reservations"}, {"GET", "/v1/customers/cli-001"},
+		{"POST", "/v1/vehicles"}, {"GET", "/v1/reservations/r-1"}, {"GET", "/v1/reservations"}, {"POST", "/v1/reservations"}, {"GET", "/v1/customers/cli-001"},
 	} {
 		body := ""
 		if c.method == "POST" {
