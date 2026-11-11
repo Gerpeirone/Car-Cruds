@@ -15,7 +15,9 @@ Permitir el recorrido buscar → consultar disponibilidad → reservar → consu
 
 Esta primera etapa cubre catálogo, búsqueda, ficha, fechas, cotización, confirmación, consulta por código y cancelación previa al retiro. Se excluyen de F3-01 las pantallas de administración, retiro/devolución, mantenimiento, personal e integraciones; siguen previstas en otras etapas de la presentación. Tampoco se incorporan pagos, registro público, recuperación de contraseña ni una gestión de cuentas inexistente en el backend.
 
-**Actualización (feat/mis-alquileres-demo):** Alquileres agrega `GET /v1/reservations` y la interfaz ofrece **Mis alquileres** (`/mis-alquileres`). El listado deriva al conductor de la credencial validada y nunca envía un `customerId`. La consulta por código se conserva.
+**Actualización (feat/mis-alquileres-demo):** Alquileres agrega `GET /v1/reservations` y la interfaz ofrece **Mis alquileres** (`/mis-alquileres`). El listado solicita `GET /v1/reservations?customerId={conductor de la sesión}&page&pageSize`. Alquileres autoriza ese valor: con la credencial de alquiler (`client`) solo admite el conductor propio (otro responde `403`); con la credencial del operador (`admin`), que el formulario de acceso también acepta, el parámetro es obligatorio. La interfaz rechaza además una página que contenga reservas de otro conductor. La consulta por código se conserva.
+
+**Corrección (fix/mis-alquileres-credencial-operador):** la primera versión omitía `customerId`. Con la credencial del operador, Alquileres respondía `400 INVALID_INPUT` y la pantalla quedaba sin reservas. La regla del servidor no cambió; el cliente web envía el conductor de la sesión y las pruebas de regresión reproducen el caso.
 
 ## 2. Ingreso y contexto del cliente
 

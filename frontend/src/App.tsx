@@ -1928,14 +1928,24 @@ const rentalHelp: Record<Reservation["status"], string> = {
   CANCELLED: "Reserva cancelada. Sus fechas quedaron libres.",
 };
 
-// "Mis alquileres": the list comes from Rentals for the driver of the validated
-// credential; no customer identifier is sent from the browser.
+// "Mis alquileres": the list comes from Rentals for the driver of the session.
+// The driver is sent explicitly because the access form also admits the
+// operator credential, for which Rentals requires customerId (without it the
+// list answered 400). Rentals still authorizes it: a driver credential may only
+// ask for its own driver (403 otherwise). A page with another driver's rows is
+// rejected here as well.
 function MyRentals() {
-  const { call } = useAccess();
+  const { call, customer } = useAccess();
   const [page, setPage] = useState(1);
+  const ownPage = useCallback(
+    (v: ReservationPage) =>
+      isReservationPage(v) &&
+      v.items.every((r) => r.customerId === customer.id),
+    [customer.id],
+  );
   const { data, error, loading, retry } = useResource<ReservationPage>(
-    `/v1/reservations?page=${page}&pageSize=${rentalsPageSize}`,
-    isReservationPage,
+    `/v1/reservations?customerId=${encodeURIComponent(customer.id)}&page=${page}&pageSize=${rentalsPageSize}`,
+    ownPage,
   );
   const [vehicles, setVehicles] = useState<Record<string, Vehicle | null>>({});
   const [target, setTarget] = useState<Reservation | null>(null);
