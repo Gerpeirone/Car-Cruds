@@ -20,7 +20,7 @@
 
 Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra empleados, membresías y seguimiento administrativo de turnos. El gimnasio consumirá su lista y aportará membresías/gastos; el hospital de Octi provee Turnos para socios 1.0.0. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a ese contrato; acuerdos operativos y aceptación conjunta siguen pendientes.
 
-Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; frontend, acceso público y consumo real del gimnasio no están implementados o validados. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
+Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; la interfaz incluye alquiler, Personal, Hospital y Gimnasio. La verificación autenticada de Azure desde Gimnasio sigue abierta. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
 ## 2. Contexto — C4, nivel 1
 
@@ -33,12 +33,11 @@ flowchart TB
     Gym["Gimnasio de Pablo<br/>Sistema consumidor"]
     Clinic["Hospital de Octi<br/>Sistema proveedor"]
 
-    Client -->|"API; web prevista"| System
+    Client -->|"React por HTTPS"| System
     Operator -->|"Catálogo y alquileres"| System
     Personnel -->|"Administración propia"| System
-    Gym -.->|"Lista; contrato y acceso pendientes"| System
-    System -.->|"Membresías/uso/costos pendientes"| Gym
-    System -.->|"Consultas/turnos pendientes"| Clinic
+    Gym -->|"Consulta personal y envía evidencia"| System
+    System -->|"Consume Turnos para socios"| Clinic
 
     classDef person fill:#16324f,color:#fff,stroke:#16324f;
     classDef system fill:#2f80ed,color:#fff,stroke:#2f80ed;
@@ -48,7 +47,7 @@ flowchart TB
     class Gym,Clinic external;
 ```
 
-**Figura 1. Contexto del sistema.** Las líneas continuas representan acceso propio disponible por API; las discontinuas representan integración externa pendiente. Una persona registrada como empleado no adquiere por ello habilitación de conductor. Los informes no infieren diagnóstico, aptitud ni contratación.
+**Figura 1. Contexto del sistema.** Las flechas indican quién inicia cada interacción. El estado de aceptación se registra en la matriz de Entrega 3. Una persona registrada como empleado no adquiere por ello habilitación de conductor. Los informes no infieren diagnóstico, aptitud ni contratación.
 
 ## 3. Contenedores — C4, nivel 2
 
@@ -56,7 +55,7 @@ flowchart TB
 flowchart TB
     User["Aplicaciones autorizadas<br/>Laboratorio local"]
     Gym["Gimnasio<br/>Consumo externo pendiente"]
-    Clinic["Hospital<br/>Contrato pendiente"]
+    Clinic["Hospital<br/>Turnos para socios 1.0.0"]
     subgraph System["Car Cruds"]
         Edge["Caddy<br/>HTTPS público"]
         Web["Frontend web<br/>React · NGINX"]
@@ -76,7 +75,7 @@ flowchart TB
 
         Edge -->|"/v1/*"| GW
         Edge -->|"Interfaz"| Web
-        Web -->|"/v1/* mismo origen"| GW
+        Web -.->|"Proxy local /v1/*"| GW
         GW --> Customers
         GW --> Rentals
         GW --> Employees
@@ -92,8 +91,8 @@ flowchart TB
         B --> FDB
     end
     User -->|"HTTPS con Bearer"| Edge
-    Gym -.->|"Lista propia; acceso por acordar"| GW
-    Employees -.->|"Cliente observado; acceso compartido pendiente"| Clinic
+    Gym -->|"HTTPS y Bearer gym"| Edge
+    Employees -->|"HTTPS y X-API-Key"| Clinic
     classDef app fill:#2f80ed,color:#fff,stroke:#2f80ed;
     classDef data fill:#27ae60,color:#fff,stroke:#207c48;
     classDef support fill:#c98b2b,color:#fff,stroke:#91631e;
@@ -104,9 +103,9 @@ flowchart TB
     class Gym,Clinic pending;
 ```
 
-**Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. El hospital se consumirá directamente desde Empleados; no a través de frontend ni gateway propio.
+**Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. Empleados llama al Hospital directamente desde su adaptador.
 
-En local, gateway y web se publican únicamente en loopback. En la VM, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway y el resto a la interfaz estática. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
+En local, gateway y web se publican únicamente en loopback. En la VM, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway, sirve el OpenAPI en la ruta exacta del Caddyfile y deriva la interfaz a NGINX. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
 
 ```mermaid
 flowchart TB
@@ -134,7 +133,7 @@ flowchart TB
     class Broker support;
 ```
 
-**Figura 3. Mensajería y lecturas derivadas.** La línea discontinua indica evento interno; no significa componente pendiente en esta figura. El indexador es un componente de Flota. Gimnasio y hospital no participan de RabbitMQ porque su mecanismo no fue acordado.
+**Figura 3. Mensajería y lecturas derivadas.** La línea discontinua indica evento interno; no significa componente pendiente en esta figura. El indexador es un componente de Flota. Las integraciones externas usan HTTP. RabbitMQ distribuye eventos internos.
 
 ### Propiedad de datos
 
@@ -149,6 +148,58 @@ flowchart TB
 
 ## 4. Arquitectura interna y tecnologías
 
+### Responsabilidades, contratos y operación
+
+Los ejecutables en `cmd/` comparten Go y `net/http`. Las aplicaciones HTTP escuchan en 8080 dentro de Compose. El balanceador de Flota escucha en 80 dentro de la red. Los roles y códigos por operación están en [API.md](API.md). Los endpoints de diagnóstico se protegen con Bearer `admin` o `service`.
+
+| Servicio | Operaciones y entidades | Validaciones, permisos y dependencias | Verificación |
+| --- | --- | --- | --- |
+| Clientes | `/v1/customers`, `/v1/customers/{id}`. Cliente, licencia, inbox e historial. | La capa de negocio valida el cliente y la licencia. El adaptador HTTP verifica rol y ámbito de cliente. PostgreSQL conserva perfiles e historial. RabbitMQ entrega el evento de devolución. | [Unitarios](../services/customers/business/service_test.go) y [persistencia e inbox](../services/customers/data/postgres_integration_test.go). |
+| Flota | `/v1/vehicles`, `/v1/vehicles/search`, ficha, tarifa y reindexación. Vehículo con versión y eventos embebidos. | Escrituras de operador validan ficha, moneda, tarifa y versión. MongoDB es fuente. Redis acelera fichas. Solr permite búsqueda y RabbitMQ alimenta el indexador. Cuando falla el índice, la búsqueda informa indisponibilidad. | [Pruebas de MongoDB](../services/fleet/mongo_integration_test.go), [Solr](../services/fleet/solr_integration_test.go) y [Redis](../services/fleet/redis_eviction_integration_test.go). |
+| Alquileres | `/v1/reservations`, `/v1/availability`, retiro, devolución y mantenimiento. Reserva, agenda e idempotencia. | Valida fechas, licencia, importe esperado y transiciones. Cliente limitado a sus reservas y operador a acciones autorizadas. Consulta Clientes y Flota con credencial interna. PostgreSQL excluye solapamientos y confirma devolución y outbox juntos. | [Pruebas del núcleo](../services/rentals/application/service_test.go) y [concurrencia en PostgreSQL](../services/rentals/adapters/postgres/repository_integration_test.go). |
+| Empleados | `/v1/employees`, administración, membresías y `/v1/employees/clinic/*`. Empleado, fotografía mensual, vínculo e intención de turno. | Valida empleado activo para nuevas acciones clínicas, versiones de evidencia y permisos por rol. PostgreSQL es la fuente local. El adaptador usa `X-API-Key` al consultar el Hospital. Conserva incertidumbre ante respuestas técnicas. | [Contrato de Gimnasio sobre PostgreSQL](../services/employees/adapters/postgres/gym_http_test.go), [adaptador Hospital](../services/employees/adapters/clinic/client_test.go) y [contrato del proveedor](../integration/cliniccontract/contract_test.go). |
+
+### Seguridad y diagnóstico de una solicitud
+
+La credencial de aplicación es un Bearer opaco. El gateway autentica, aplica admisión y reenvía la solicitud. Los servicios vuelven a autenticar y limitan las operaciones por rol. Los tokens `admin`, `client`, `gym` y `service` son distintos. `gym` puede tener un vencimiento RFC3339. La clave del Hospital reside en Empleados. Las credenciales y los respaldos del entorno quedan fuera de Git. La autorización de operador es por aplicación y no identifica individualmente a cada persona. [Middleware](../internal/platform/http.go) · [Gateway](../cmd/gateway/main.go) · [Operación segura](DESPLIEGUE.md#4-credenciales)
+
+```mermaid
+sequenceDiagram
+    participant B as Navegador React
+    participant C as Caddy HTTPS
+    participant N as NGINX web
+    participant G as Gateway
+    participant E as Empleados
+    participant P as PostgreSQL
+    B->>C: GET /operador/gimnasio
+    C->>N: Sirve SPA y assets
+    N-->>B: HTML y JavaScript
+    B->>C: GET /v1/admin/employees con Bearer
+    C->>G: Proxy /v1/*
+    G->>E: Reenvía credencial y X-Request-ID
+    E->>P: Consulta autorizada
+    P-->>E: Resultados
+    E-->>B: Respuesta por gateway y Caddy
+```
+
+En el despliegue de referencia Caddy reenvía la API directamente al gateway. En la variante local, NGINX web también puede derivar `/v1/*` al gateway para mantener el mismo origen del navegador. El runtime registra ruta, estado, duración, request ID y trace ID. Para comprobarlo, correlacionar el encabezado de respuesta con los logs JSON y con la traza de Jaeger. Prometheus y Grafana requieren su superposición de Compose y comprobación de operación. [ADR de observabilidad](adr/ADR-011-observabilidad.md) · [Traza de laboratorio](evidence/trace-reservation-2026-11-08.json)
+
+### Persistencia operativa
+
+```mermaid
+flowchart LR
+    C[Clientes] --> CP[(PostgreSQL customers)]
+    R[Alquileres] --> RP[(PostgreSQL rentals)]
+    E[Empleados] --> EP[(PostgreSQL employees)]
+    F[Flota] --> M[(MongoDB fleet.vehicles)]
+    M --> O[Outbox embebido]
+    CP --- CI[Perfil, inbox e historial]
+    RP --- RI[Reserva, agenda, idempotencia y outbox]
+    EP --- EI[Empleados, membresías, vínculos e intenciones]
+```
+
+Un servidor PostgreSQL aloja tres bases con credenciales separadas. Las relaciones y transacciones de un servicio permanecen en su propia base. Empleados conserva la evidencia vigente en `membership_evidence`, su historia en `membership_evidence_history`, el vínculo en `clinic_patient_links` y el seguimiento en `clinic_review_requests` y `clinic_appointment_history`. El Hospital conserva su propia agenda y facturación. Flota escribe vehículo y outbox en un documento de MongoDB. Redis y Solr son estructuras derivadas. Compose monta volúmenes para los datos autoritativos. Las migraciones, verificaciones de persistencia y procedimiento de respaldo están enlazados en [D3](adr/ADR-015-persistencia-v2.md) y [Despliegue](DESPLIEGUE.md#6-actualizar-la-vm-de-azure).
+
 | Servicio | Estilo implementado | Separación |
 | --- | --- | --- |
 | Clientes | Capas | Presentación HTTP → negocio → datos PostgreSQL |
@@ -156,7 +207,7 @@ flowchart TB
 | Alquileres | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP, PostgreSQL y mensajería |
 | Empleados | Hexagonal | Dominio/aplicación → puertos → adaptadores HTTP/PostgreSQL y cliente del contrato Turnos para socios |
 
-El núcleo hexagonal no depende de HTTP, SQL ni SDK de infraestructura. Repository, Adapter e inyección por constructores aíslan cambios y permiten unitarios con falsos. Outbox y consumidor idempotente protegen efectos derivados; cache-aside optimiza exploración. Circuit Breaker sigue previsto y no se incluye entre los mecanismos implementados.
+El núcleo hexagonal no depende de HTTP, SQL ni SDK de infraestructura. Repository, Adapter e inyección por constructores aíslan cambios y permiten unitarios con falsos. Outbox y consumidor idempotente protegen efectos derivados; cache-aside optimiza exploración. Flota usa un circuit breaker para acotar esperas ante fallas de Redis.
 
 Los ejecutables están en `cmd/` y utilizan Go 1.26.1/`net/http`. La infraestructura real se define en `compose.yaml`; imágenes fijadas por digest y credenciales generadas fuera de Git. No se propone Event Sourcing, CQRS completo ni programación reactiva sin necesidad adicional.
 
@@ -175,13 +226,13 @@ La revisión del 15 de octubre alinea la implementación con esa separación: le
 
 [D4](adr/ADR-004-consistencia-concurrencia.md) utiliza exclusión de rangos, índice único parcial de alquiler activo y transiciones condicionales. La suite y el recorrido sobre PostgreSQL verificaron una sola ganadora concurrente, repetición y persistencia. El alquiler activo impide otro retiro aunque haya vencido su fin previsto.
 
-## 6. Personal e integración pendiente
+## 6. Personal e integraciones
 
 La lista propia activa devuelve únicamente `employeeId` y `displayName`. Conteo e ítems de una página utilizan READ ONLY REPEATABLE READ; el orden es estable. No hay instantánea entre páginas, ni debe inferirse una baja a partir de un recorrido incompleto. El gimnasio consulta la lista mínima y envía evidencia de membresías; no administra empleados ni accede a datos médicos.
 
 Los informes externos deben distinguir afiliación, uso, gastos y evidencia faltante. El hospital deberá permitir identificar necesidad de consulta, solicitar turnos y conciliar cancelaciones/reprogramaciones. Se conservarán referencias y estados sin interpretar un timeout como “sin turno”. Tarifas, períodos, identidad y protocolos están pendientes en [INTEGRACIONES](INTEGRACIONES.md).
 
-El flujo clínico conserva vínculo explícito con paciente, intención durable, solicitud, consulta e informe. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta POST/GET a `/v1` con clave privada de consumidor e idempotencia. Antes de la red se guardan contrato, clave estable igual a `requestId` y espera durable. Cada acción explícita realiza como máximo un intento HTTP; no hay reintentos automáticos. Los recuperables reutilizan clave/datos al vencer `nextAttemptAt`; 429 respeta `Retry-After`. El vínculo, la intención y cada POST que pueda crear comprueban empleado activo en la transacción local. Una baja permite consulta y `refresh` de evidencia anterior sin cancelar. Las intenciones antiguas enviadas sin procedencia idempotente jamás se reenvían; su lectura exige pertenencia verificable al consumidor. `personKind` conserva únicamente `employee`. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) detalla incertidumbre, errores operativos e historia. La adaptación no incorpora catálogo, cancelación saliente, facturación, frontend ni despliegue.
+El flujo clínico conserva vínculo explícito con paciente, intención durable, solicitud, consulta e informe. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta POST/GET a `/v1` con clave privada de consumidor e idempotencia. Antes de la red se guardan contrato, clave estable igual a `requestId` y espera durable. Cada acción explícita realiza como máximo un intento HTTP; no hay reintentos automáticos. Los recuperables reutilizan clave/datos al vencer `nextAttemptAt`; 429 respeta `Retry-After`. El vínculo, la intención y cada POST que pueda crear comprueban empleado activo en la transacción local. Una baja permite consulta y `refresh` de evidencia anterior sin cancelar. Las intenciones antiguas enviadas sin procedencia idempotente jamás se reenvían; su lectura exige pertenencia verificable al consumidor. `personKind` conserva únicamente `employee`. [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) detalla incertidumbre, errores operativos e historia. La versión actual muestra catálogo y cargos consultados al Hospital. Car Cruds mantiene el seguimiento local y no ejecuta cancelaciones externas.
 
 ## 7. Mensajería, índice y caché
 
@@ -195,7 +246,7 @@ Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un 
 
 NGINX distribuye a dos réplicas con detección pasiva. Los tiempos e intentos están en [D12](adr/ADR-012-balanceo-carga.md); el límite de lectura del proxy mide inactividad, no un deadline total. Alquileres limita las validaciones internas de confirmación a 1 s por llamada y conserva el presupuesto propio. Dos réplicas no eliminan los puntos únicos de gateway, LB y fuentes.
 
-Se implementaron deadlines, bulkheads, pools, fallback, outbox y un circuit breaker en la caché de Flota (cinco fallas consecutivas lo abren por 2 s; después pasa una sola sonda). Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). Los proveedores externos no se ensayaron.
+Se implementaron deadlines, bulkheads, pools, fallback, outbox y un circuit breaker en la caché de Flota (cinco fallas consecutivas lo abren por 2 s; después pasa una sola sonda). Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). La prueba real histórica del Hospital y la aceptación aún pendiente de Gimnasio están documentadas en la matriz de Entrega 3.
 
 Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. Jaeger exportó una traza de reserva con siete spans en cuatro servicios. Las métricas tienen rutas estables y exposición interna. La superposición de observabilidad agrega Prometheus (recolección cada 5 s y cinco reglas de alerta) y un tablero de Grafana; el contexto de traza por AMQP sigue pendiente. [D11](adr/ADR-011-observabilidad.md) diferencia instrumentación de operación.
 
@@ -207,7 +258,7 @@ Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila in
 
 | Tema | Situación actual | Tipo | Mitigación o próximo paso |
 | --- | --- | --- | --- |
-| Publicación cloud | Caddy, interfaz y script de VM verificados con HTTPS local; no hay VM ni URL pública | Pendiente de infraestructura | Ejecutar [deploy-vm.sh](../scripts/deploy-vm.sh) en la VM de D13 y `checkshared` desde fuera |
+| Publicación cloud | Caddy, interfaz y script de VM verificados con HTTPS local; Azure responde por HTTPS; el OpenAPI público devuelve HTML | Pendiente de publicación del contrato | Verificar SHA y Caddy efectivos y ejecutar `checkshared` desde fuera |
 | Gimnasio | Lista propia, recepción de evidencia e informe implementados; sin consumo real ni contrato aceptado | Externa | Entregar URL y token del gimnasio por canal privado; registrar su consumo |
 | Hospital | Conectado a la API publicada del grupo de Octi: un turno real reservado, confirmado, consultado y facturado una sola vez ([evidencia](evidence/hospital-live-2026-11-10.json)) | Resuelto | Copiar URL y clave al `.env` de la VM; falta la aceptación formal |
 | Caída de Redis | Las lecturas siguen respondiendo desde MongoDB. Un circuit breaker evita esperar el deadline de 150 ms en cada lectura: con concurrencia 1 pasó de p50 155 ms a 1,6 ms ([antes](evidence/cache-comparison-2026-11-09.json), [después](evidence/cache-breaker-2026-11-09.json)) | Resuelto | La invalidación no se omite nunca; alerta `CacheFlotaSinRedis` |

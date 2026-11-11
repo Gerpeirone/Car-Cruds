@@ -23,6 +23,60 @@ Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> C
 
 ## 2. Requisitos de la VM
 
+### Inventario de Azure y alcance de la verificación
+
+| Dato | Estado de evidencia |
+| --- | --- |
+| Proveedor y recurso | El registro operativo del equipo identifica una Azure Virtual Machine llamada `vm-carcruds`. |
+| SO y acceso | Antecedentes de operación: Ubuntu Server 24.04 LTS, usuario `azureuser`, autenticación por clave SSH y checkout en `~/Car-Cruds`. Confirmar en la VM antes de actualizar. |
+| IP y nombre público | El 11/11/2026 respondió por HTTPS `57-156-56-201.sslip.io`. El nombre codifica la IP de referencia `57.156.56.201`. |
+| Capacidad y red Azure | SKU, región, arquitectura CPU, vCPU, RAM, tamaño de disco, NIC, tipo de asignación de IP y reglas NSG efectivas quedan por confirmar en Azure. Las recomendaciones de dimensionamiento de esta guía son para reproducir el entorno. |
+| Revisión y servicios activos | Los GET públicos acreditan el borde y las respuestas indicadas abajo. El SHA, los archivos Compose efectivos, los volúmenes, los healthchecks y la observabilidad activa requieren acceso autorizado al host. |
+
+```mermaid
+flowchart LR
+    Net["Internet y DNS sslip.io"] -->|"80 redirección / 443 TLS"| Edge
+    Admin["Operador con clave SSH"] -.->|"22 restringido por NSG"| VM
+    subgraph VM["Azure VM vm-carcruds · topología de referencia en Git"]
+        Edge["Caddy"]
+        Web["React servido por NGINX"]
+        Gateway["Gateway Go"]
+        Services["Clientes · Flota · Alquileres · Empleados"]
+        Data[("Volúmenes PostgreSQL y MongoDB")]
+        Edge -->|"SPA y assets"| Web
+        Edge -->|"/v1/*"| Gateway
+        Gateway --> Services
+        Services --> Data
+    end
+```
+
+### Preparación reproducible
+
+1. Crear la VM Ubuntu 24.04 LTS, una NIC con IP pública estable y un NSG que permita TCP 80/443 desde Internet. Limitar 22 al origen de administración. Confirmar el kernel compatible indicado abajo.
+2. Asociar la clave **pública** al usuario administrador. En PowerShell, conectar con `ssh azureuser@57.156.56.201`. Usar `-i` con la ruta privada propia solo si hace falta. Verificar la huella del servidor por un canal acordado.
+3. Clonar en `~/Car-Cruds` y seleccionar el SHA revisado. Preparar Docker y el plugin Compose mediante el script o la instalación soportada por Ubuntu. Cargar `PUBLIC_HOST` y las credenciales en el `.env` privado. No habilitar datos demo en un entorno con datos reales sin acordarlo.
+4. Ejecutar los pasos de [puesta en marcha](#3-puesta-en-marcha). Compose construye imágenes, crea la red y los volúmenes del proyecto y espera readiness. Caddy escucha 80/443, obtiene y renueva el certificado cuando DNS y red permiten la validación. El nombre `sslip.io` resuelve la IP codificada y no reemplaza el control de red ni la verificación TLS.
+5. Confirmar en la VM con `git rev-parse HEAD`, `docker compose ls` y `docker compose ps`. Contrastar desde otra red con la tabla de verificación y seguir el procedimiento de actualización y rollback de la sección 6.
+
+### Composición exacta
+
+| Archivo | Aporte |
+| --- | --- |
+| [compose.yaml](../compose.yaml) | Proyecto `car-cruds`, red por defecto, gateway, cuatro servicios de dominio, dos réplicas de Flota, balanceador, indexador y dependencias. Declara volúmenes y puertos de apoyo ligados a loopback. |
+| [compose.frontend.yaml](../compose.frontend.yaml) | Agrega el servicio `web` construido desde React y NGINX. El puerto de host queda en loopback para desarrollo. |
+| [compose.deploy.yaml](../compose.deploy.yaml) | Agrega Caddy, sus volúmenes y el montaje de OpenAPI. Puede declarar `web` por sí mismo sin puerto de host. La receta histórica con los tres archivos conserva el puerto local si la superposición de frontend lo agrega. |
+
+En la VM se usan los mismos `-f`, en el mismo orden, para consultar, construir, actualizar y recuperar. `docker compose ls` identifica los archivos del despliegue existente. Caddy sirve el OpenAPI en una ruta exacta, bloquea `/internal/*`, reenvía `/v1/*` al gateway y envía la interfaz a NGINX. NGINX también se usa por separado como balanceador interno de Flota. [Caddyfile](../infra/caddy/Caddyfile) · [NGINX web](../frontend/nginx.conf)
+
+### Observación externa del 11/11/2026
+
+| GET sin credenciales | Resultado desde fuera |
+| --- | --- |
+| `/`, `/operador/hospital`, `/operador/gimnasio` | HTTPS válido y 200 HTML. La respuesta acredita el acceso a la SPA. |
+| `/v1/employees`, `/v1/employees/clinic/doctors` | 401 JSON. La verificación autenticada queda pendiente. |
+| `/internal/ready` | 404. |
+| `/contracts/employees-openapi.json` | 200 **HTML**, distinto del JSON 0.5.0 previsto en Git. Verificar configuración y SHA efectivos antes de acreditar publicación. |
+
 - **Kernel Linux menor que 6.19.** MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores por un error de TCMalloc/rseq ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). La excepción para 7.0.14+ no se aplica en Ubuntu, porque `uname -r` informa `7.0.0` ([SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848), abierto). Usar Ubuntu 24.04 con su kernel estándar 6.8, sin HWE, y no Ubuntu 26.04. Comprobar con `uname -r` antes de desplegar.
 - Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo. Lightsail figura en D13 como una estimación de laboratorio, no como proveedor obligatorio; el enunciado no fija proveedor. Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
 - Puertos abiertos en el firewall del proveedor: 22 (SSH), 80 y 443. No abrir otros.
@@ -116,7 +170,7 @@ La capacidad compartida debe permanecer accesible hasta finalizar la evaluación
 
 ## 6. Actualizar la VM de Azure
 
-La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. Al 11/11/2026 su interfaz no incluye Personal, Hospital ni Gimnasio, y sirve la interfaz con configuración local que no está en Git. Este procedimiento actualiza la VM sin perder datos. **Requiere autorización del equipo.**
+La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. El 11/11/2026 respondieron las rutas de la SPA. El SHA y la configuración efectiva requieren acceso autorizado a la VM. Este procedimiento actualiza la VM sin perder datos. **Requiere autorización del equipo.**
 
 **Por qué no se pierden datos:** `compose.yaml` fija `name: car-cruds`, así que los volúmenes (`car-cruds_postgres-data`, `car-cruds_mongo-data`, etc.) son siempre los mismos y `up` los reutiliza. La versión no agrega migraciones, por lo que volver atrás no exige tocar el esquema. **Nunca usar `down`, `rm` ni la opción `-v`.**
 
@@ -124,8 +178,8 @@ La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. Al 
 
 ```bash
 git fetch origin
-gh run list --branch integracion/panel-integraciones --limit 2   # ambas en success para el commit a desplegar
-git rev-parse --short origin/integracion/panel-integraciones       # commit a desplegar (<COMMIT>)
+gh run list --branch main --limit 2   # confirmar el SHA aprobado y ambos flujos en success
+git rev-parse --short origin/main     # commit a desplegar (<COMMIT>)
 ssh <usuario>@57.156.56.201
 ```
 
@@ -150,7 +204,7 @@ docker compose exec -T postgres psql -U postgres -d employees -c "SELECT employe
 docker compose exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;" | tee ~/respaldos/$FECHA/historial-antes.txt
 ```
 
-Si `docker compose ls` muestra archivos distintos de `compose.yaml` y `compose.deploy.yaml`, detenerse y adaptar el paso C: la VM fue levantada de otra forma.
+Registrar el conjunto y orden de archivos de `docker compose ls`. Los ejemplos C usan dos archivos. Si la VM usa además `compose.frontend.yaml`, incluirlo entre ambos en todas las operaciones.
 
 ### C. En la VM: actualizar
 
@@ -182,7 +236,7 @@ curl -s https://57-156-56-201.sslip.io/ | grep -o '/assets/index-[^"]*\.js'     
 curl -s https://57-156-56-201.sslip.io<BUNDLE> | grep -c "Gimnasio – Membresías"          # 1 o más
 ```
 
-En el panel, Gimnasio con período `2026-11` muestra `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital muestra el turno confirmado y el cargo de ARS 25.000. No hacer reservas nuevas: cada una se factura.
+Como antecedente operativo pendiente de reconfirmar, Gimnasio con período `2026-11` mostró `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital muestra el turno confirmado y el cargo de ARS 25.000. No hacer reservas nuevas: cada una se factura.
 
 ### E. En la VM: volver atrás
 
@@ -190,7 +244,7 @@ En el panel, Gimnasio con período `2026-11` muestra `employee-001`, origen `gim
 cd ~/Car-Cruds
 git checkout --detach $(cat ~/respaldos/<FECHA>/commit-anterior.txt)
 git stash list                          # "vm-local-<FECHA>"
-git stash pop
+git stash show --stat stash@{0}     # inspeccionar; aplicar solo si corresponde al SHA recuperado
 docker compose <los mismos -f anotados en el paso B> up -d --build --wait --wait-timeout 600
 ```
 
@@ -228,7 +282,7 @@ docker compose $F exec -T postgres psql -U postgres -d employees -c "SELECT requ
 docker compose $F exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;"   # igual que antes
 ```
 
-Todas son lecturas: no se crean turnos ni cargos. La facturación se lee en vivo del hospital y muestra el cargo del turno del 10/11 (`1b083266-…`), aunque esa solicitud no esté en la base de la VM. El informe de Hospital solo muestra solicitudes registradas en esta base. Una intención nueva no puede conciliarse con un turno anterior sin un envío previo, y ese envío no debe hacerse para la demostración.
+Todas son lecturas: no se crean turnos ni cargos. La facturación se lee en vivo del hospital. La evidencia histórica registra el cargo del turno del 10/11 (`1b083266-…`), aunque esa solicitud no esté en la base de la VM. El informe de Hospital solo muestra solicitudes registradas en esta base. Una intención nueva no puede conciliarse con un turno anterior sin un envío previo, y ese envío no debe hacerse para la demostración.
 
 **Volver atrás:** `cp ~/respaldos/$FECHA/env-antes-hospital .env && chmod 600 .env && docker compose $F up -d --no-deps --wait employees`. Sin `CLINIC_BASE_URL`, Empleados vuelve al modo local: envío y consulta responden `503 NOT_CONFIGURED`, y el Gimnasio continúa igual.
 
@@ -245,6 +299,8 @@ git rev-parse --short HEAD | tee ~/respaldos/$FECHA/commit-anterior.txt
 git status --short | tee ~/respaldos/$FECHA/git-status.txt    # con cambios locales: git stash push --include-untracked -m "vm-local-$FECHA"
 docker image inspect car-cruds-employees --format '{{.Id}} {{.Created}}' | tee ~/respaldos/$FECHA/imagen-employees.txt
 docker tag car-cruds-employees:latest car-cruds-employees:antes-$FECHA
+docker image save car-cruds-employees:antes-$FECHA | gzip > ~/respaldos/$FECHA/employees.tar.gz
+gzip -t ~/respaldos/$FECHA/employees.tar.gz
 docker compose $F exec -T postgres psql -U postgres -d employees -tAc "SELECT count(*) FROM membership_evidence_history;" | tee ~/respaldos/$FECHA/historial-gimnasio-antes.txt
 git fetch origin && git checkout --detach origin/main && git log -1 --oneline
 docker compose $F config --quiet

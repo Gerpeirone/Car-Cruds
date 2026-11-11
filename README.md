@@ -39,7 +39,7 @@ La [revisión del 8 de noviembre](docs/REVISION-E2-2026-11-08.md) registra 155 p
 | Empleados | Servicio Go hexagonal; gestión de empleados, PostgreSQL propio y lista mínima de empleados activos |
 | Gateway y balanceador | Gateway Go con autenticación y límites de concurrencia; NGINX interno distribuye a dos réplicas de Flota |
 | Infraestructura | Docker Compose con almacenes, RabbitMQ, indexador y Jaeger; imágenes fijadas por digest |
-| Interfaz web | Frontend del alquiler (F3-01) y panel del operador (F3-02) implementados en [`frontend/`](frontend/README.md) con pruebas locales; interfaz de personal, revisión visual en navegador y publicación cloud pendientes |
+| Interfaz web | Frontend del alquiler (F3-01) y panel del operador (F3-02) implementados en [`frontend/`](frontend/README.md) con pruebas locales; Personal, Hospital y Gimnasio incluidos en el panel. El acceso HTTPS responde y la aceptación externa queda en la matriz de entrega |
 | Integraciones externas | Gimnasio: lista y recepción de evidencia. Hospital: solicitud y seguimiento de turnos desde Empleados, con intención durable e informe; acuerdos y despliegue pendientes |
 | Mock de entrega 1 | Conservado en un módulo independiente; no representa la API real completa |
 
@@ -102,9 +102,11 @@ Consultar disponibilidad no bloquea un auto. Reservar vuelve a validar las fecha
 
 `GET /v1/employees` devuelve únicamente `employeeId` y `displayName` de empleados activos. El ID es estable y no se reasigna a otra persona. Gimnasio vincula manualmente al socio, completa DNI/email de su lado y envía evidencia a `POST /v1/employees/membership-evidence`. Puede verificar bajas mediante `GET /v1/employees/{id}/status`, que devuelve solo ID y estado laboral y no cancela membresías. No puede administrar empleados ni consultar informes internos.
 
-El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.4.0, es una propuesta propia provisional: agrega `/status` y conserva la lista y el cuerpo de evidencia de 0.3.0. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo; [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md) responde sus preguntas y propone el perfil mensual: ingresos efectivos, pagos del mes y costo neto por meses iguales. Meses parciales quedan en `null` hasta acordar su tratamiento. Se aceptan fotografías provisionales y correcciones históricas. La confirmación semántica bilateral, el acceso público y la prueba conjunta siguen pendientes.
+El [contrato implementado](docs/contracts/employees-openapi.json), versión 0.5.0, suma historial administrativo y conserva lista, estado y evidencia para Gimnasio. [COMUNICACION-GIMNASIO](docs/COMUNICACION-GIMNASIO.md) explica direcciones, cuerpo, correcciones, informe y trabajo pendiente del equipo de Pablo; [ACUERDO-GIMNASIO](docs/ACUERDO-GIMNASIO.md) responde sus preguntas y propone el perfil mensual: ingresos efectivos, pagos del mes y costo neto por meses iguales. Meses parciales quedan en `null` hasta acordar su tratamiento. Se aceptan fotografías provisionales y correcciones históricas. Azure responde públicamente. La confirmación semántica, el JSON servido y la prueba conjunta siguen pendientes.
 
 ## Documentación
+
+Para presentar y reproducir el sistema, consultar [Arquitectura](docs/ARCHITECTURE.md), [operación en Azure](docs/DESPLIEGUE.md), [matriz del enunciado](docs/ENTREGA-3.md#trazabilidad-del-enunciado) y [guion de defensa](docs/GUION-PRESENTACION.md).
 
 | Archivo | Contenido |
 | --- | --- |

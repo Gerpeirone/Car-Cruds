@@ -47,6 +47,22 @@ El diagnóstico local de la falla intermitente de CI encontró tres problemas en
 
 **Deuda observada:** al expirar una entrada, cada solicitud concurrente lee MongoDB (no hay *single-flight*). El impacto está acotado por el límite de 32 lecturas de fuente simultáneas por réplica.
 
+## Reproducir la línea base sin caché
+
+En un proyecto Compose aislado, mantener Redis activo. Guardar una superposición temporal fuera de Git con este contenido:
+
+```yaml
+services:
+  fleet-a:
+    environment:
+      REDIS_ADDR: ""
+  fleet-b:
+    environment:
+      REDIS_ADDR: ""
+```
+
+Con las credenciales de laboratorio configuradas, ejecutar `go run ./cmd/load -gateway "$ORIGEN_LOCAL" -path /v1/vehicles/auto-001 -role client -concurrency 8 -duration 20s` en cada fase. Ver los resultados en [D7](adr/ADR-007-cache.md#comparación-equivalente-de-la-candidata--10112026). Para la fase fría, esperar el vencimiento de la ficha y comprobar que no existe en Redis. Repetir inmediatamente para la fase caliente. Para la línea base, añadir la superposición temporal a los mismos archivos Compose, ejecutar `up -d --no-deps --wait fleet-a fleet-b` y reiniciar `fleet-lb`. Repetir el comando de carga y tomar deltas de lecturas fuente y caché en ambas réplicas. Restaurar las réplicas con los archivos originales y reiniciar el balanceador de laboratorio.
+
 ## Límites
 
 - Generador y servicios pueden compartir equipo; CPU, memoria y red deben registrarse antes de comparar máquinas.

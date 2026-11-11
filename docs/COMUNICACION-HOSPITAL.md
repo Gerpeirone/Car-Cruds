@@ -9,7 +9,7 @@
 
 Adaptación del 23 de octubre de 2026 a **Turnos para socios 1.0.0**, limitada a solicitar y consultar turnos para empleados. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) sustituye D9 anterior y complementa [ADR-018](adr/ADR-018-empleados-sin-candidatos.md). No se modifica el repositorio del hospital.
 
-## Contrato consumido y alcance de entrega 2
+## Contrato consumido y alcance de entrega 2 (antecedente)
 
 Referencia: [OpenAPI oficial publicado](https://github.com/OctiDelFabro/portal-paciente-clinica/blob/c0b65f45867f884e0bdc8f7c23eb0f344f646bb2/docs/contracts/turnos-partner-v1.openapi.json), rama `feature/entrega-2`, commit `c0b65f45867f884e0bdc8f7c23eb0f344f646bb2`. La [copia local](contracts/providers/octi-turnos-partner-v1.openapi.json) conserva el contenido del proveedor. El [contrato observado anterior](contracts/providers/octi-turnos-observed.openapi.json), fijado a `5e4c210`, permanece como antecedente.
 
@@ -38,6 +38,49 @@ La base incluye `/v1`; el cliente agrega `/appointments` o `/appointments/{id}`.
 Sin URL, Empleados inicia y permite vínculos, intenciones y consultas locales; enviar/actualizar devuelve `503 NOT_CONFIGURED`. Con URL configurada se requiere clave; URL, clave o timeout inválidos impiden iniciar. Timeout configurable 100 ms–5 s, predeterminado 2 s; máximo ocho llamadas simultáneas, sin cola ilimitada ni redirecciones. Cada acción explícita ejecuta como máximo una llamada HTTP: no hay bucles ni reintentos en segundo plano. Se propagan trazas y `X-Correlation-ID`, sin reenviar el Bearer administrativo ni publicar la clave clínica.
 
 ## Uso de nuestra API
+
+Desde [Hospital en el panel](https://57-156-56-201.sslip.io/operador/hospital), el operador inicia sesión con su Bearer y elige un empleado activo, su paciente vinculado, un médico del catálogo y fecha/hora. Guardar crea una intención local. El envío requiere confirmación explícita en la ficha. El adaptador de Empleados llama al Hospital por HTTPS y guarda el resultado y el identificador externo cuando el proveedor lo confirma. El informe usa PostgreSQL local. La pestaña de cargos consulta al proveedor por período.
+
+```mermaid
+sequenceDiagram
+    actor O as Operador
+    participant W as React
+    participant G as Caddy y gateway
+    participant E as Empleados
+    participant P as PostgreSQL local
+    participant H as Turnos para socios
+    O->>W: Elige empleado y médico
+    W->>G: GET /v1/employees/clinic/doctors
+    G->>E: Bearer admin
+    E->>H: GET /v1/doctors con X-API-Key
+    H-->>W: Catálogo a través de Empleados y gateway
+    O->>W: Vincula paciente y guarda intención
+    W->>G: POST patient-links y POST requests
+    G->>E: Rutas administrativas
+    E->>P: Vínculo e intención ready
+    O->>W: Confirma envío
+    W->>G: POST requests/id/submit
+    G->>E: Envía intención existente
+    E->>P: Persiste clave estable antes de llamar
+    E->>H: POST /v1/appointments con X-API-Key e Idempotency-Key
+    H-->>E: Turno, rechazo o error técnico
+    E->>P: Persiste estado, ID externo e historial cuando corresponde
+    E-->>W: Resultado administrativo a través del gateway
+    Note over W,H: Refresh consulta el turno conocido. Usage consulta cargos del período.
+```
+
+### Interpretar el resultado y preparar la demo
+
+| Resultado del Hospital | Interpretación en Car Cruds |
+| --- | --- |
+| `UNKNOWN_PATIENT`, `PATIENT_NOT_ENABLED`, `UNKNOWN_DOCTOR` | Rechazo conocido si coincide el código con el HTTP previsto. Revisar vínculo, habilitación y catálogo. |
+| `SLOT_UNAVAILABLE` (409), `LEAD_TIME_TOO_SHORT` y `OUTSIDE_SCHEDULE` (422) | Rechazos de negocio. El PR #11 incorporó el último caso. La agenda semanal y la anticipación se validan en el proveedor. |
+| Timeout, 5xx, cuerpo ilegible, código inesperado o combinación HTTP/código desconocida | Resultado incierto. La interfaz puede indicar `CLINIC_UNAVAILABLE`; conservar la intención, consultar o recuperar según la historia persistida y respetar el próximo intento permitido. |
+| HTTP 200 en Car Cruds | Acredita que la API local pudo devolver el estado. Para afirmar que existe turno, comprobar el estado y el ID externo en la respuesta. |
+
+Los identificadores `pat-001` y `pat-003` habilitados y `pat-002` no habilitado son fixtures comunicados por el proveedor. La agenda de referencia del proveedor, expresada en Argentina UTC−3, es lunes a viernes 09:00–13:00 cada 30 minutos para `doc-001` y 14:00–18:00 cada 20 minutos para `doc-002`. La anticipación de 24 h corresponde a las condiciones del proveedor. Consultar el catálogo y el contrato vigentes antes de usar ejemplos. Un intervalo válido puede estar ocupado: la API de socios revisada ofrece catálogo, cargos y operaciones sobre turnos, y no ofrece un endpoint de disponibilidad libre/ocupada. Car Cruds conoce el resultado al enviar y trata el conflicto como rechazo. [Contrato del proveedor](contracts/providers/octi-turnos-partner-v1.openapi.json) · [Mapeo HTTP](../services/employees/adapters/clinic/client.go) · [PR #11](https://github.com/Gerpeirone/Car-Cruds/pull/11)
+
+La evidencia versionada de noviembre acredita **un cargo de ARS 25.000** y un reenvío del mismo turno sin nuevo cargo. La observación posterior de dos cargos por ARS 50.000 mencionada por el equipo queda sin respaldo versionado o verificación autenticada en esta auditoría. Los importes corresponden al período y a la cuenta consultados. Cancelar no implica reintegro según el contrato publicado y Car Cruds no ofrece cancelación hacia el Hospital. Para la defensa, abrir el informe o usar [la evidencia histórica](evidence/hospital-live-2026-11-10.json).
 
 Contrato propio [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json), versión **0.3.0**. Las acciones requieren `Authorization: Bearer <AUTH_ADMIN_TOKEN>`, diferente de la credencial del hospital. `personKind` conserva únicamente `employee`.
 
@@ -132,7 +175,7 @@ La confirmación no acredita asistencia ni aptitud médica. Leer el informe no g
 
 ## Condiciones y acuerdos pendientes
 
-El proveedor documenta un cargo por reserva nueva, sin duplicarlo ante repetición idempotente, y cancelación sin reintegro. La tarifa publicada de **ARS 25.000 permanece pendiente de aceptación bilateral**: no se fija en código ni se implementa facturación propia o consumo de `/v1/usage`.
+El proveedor documenta un cargo por reserva nueva, sin duplicarlo ante repetición idempotente, y cancelación sin reintegro. La tarifa y los cargos se consultan al proveedor mediante `/v1/usage`. Car Cruds muestra ese resultado y no emite facturas propias. El valor histórico de ARS 25.000 por reserva no fija una tarifa permanente.
 
 Faltan URL compartida, clave privada, procedimiento de alta/vinculación/habilitación de pacientes reales, correspondencia de médicos, datos controlados para prueba conjunta, tratamiento de turnos anteriores y confirmación económica. No hay consulta de disponibilidad ni indicación clínica de quién necesita atención; puede iniciarse por indicación administrativa local. Ver [INTEGRACIONES](INTEGRACIONES.md).
 

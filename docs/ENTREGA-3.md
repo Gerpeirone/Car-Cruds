@@ -1,5 +1,26 @@
 # Entrega 3 — preparación de la presentación grupal
 
+## Trazabilidad del enunciado
+
+Corte del 11/11/2026 sobre `main` `49cf84b`, con evidencia histórica identificada por revisión. Fuente académica: [transcripción del enunciado](../Enunciado%20TP%20Final.md), §2, §4.1 y Presentación Grupal, contrastada con el PDF original, páginas 8–9. «Cumplido» indica evidencia técnica suficiente en el alcance indicado. «Parcial» identifica un requisito con implementación y una prueba de aceptación abierta.
+
+| Requisito | Implementación | Evidencia | Estado |
+| --- | --- | --- | --- |
+| Frontend de punta a punta | React, Alquileres, Personal, Hospital y Gimnasio | [Pruebas de interfaz](EVIDENCIA-FRONTEND.md) y [panel de Personal](PERSONAL-OPERADOR.md). Los GET públicos solo verifican la SPA. | Cumplido en laboratorio |
+| Entrada única | Caddy, gateway, Bearer y límite de admisión | [Gateway](../cmd/gateway/main_test.go), [verificación pública](DESPLIEGUE.md#observación-externa-del-11112026) | Cumplido |
+| Tres servicios operativos | Clientes, Flota, Alquileres y Empleados | [Compose](../compose.yaml), [CI del backend](https://github.com/Gerpeirone/Car-Cruds/actions?query=branch%3Amain) | Cumplido |
+| Capacidad propia pública | Empleados, OpenAPI 0.5.0, Caddy | HTTPS y 401 comprobados. El OpenAPI público devolvió HTML y falta la lectura autenticada. | Parcial |
+| Proveedor en un flujo importante | Hospital desde Empleados y el panel | [Turno confirmado e informe](evidence/hospital-live-2026-11-10.json), [test contra el proveedor original](../integration/cliniccontract/contract_test.go) | Cumplido con evidencia histórica |
+| Dos tipos de almacenamiento | PostgreSQL y MongoDB | [Persistencia y reinicios](evidence/runtime-persistence.json), [pruebas por servicio](ARCHITECTURE.md#responsabilidades-contratos-y-operación) | Cumplido |
+| Caché con comparación | Redis para ficha de Flota | [D7](adr/ADR-007-cache.md) registra lecturas y latencia, con límites del ensayo. | Cumplido con el alcance medido |
+| Dos estilos internos | Clientes por capas, Alquileres hexagonal | [Arquitectura interna](ARCHITECTURE.md#4-arquitectura-interna-y-tecnologías) | Cumplido |
+| Evento, consumidor idempotente y fallidos | `RentalCompleted.v1`, outbox, inbox y DLQ | [Mensaje rechazado](evidence/message-failure.json), [D5](adr/ADR-016-comunicacion-v2.md) | Cumplido |
+| Búsqueda indexada | Solr, filtros, orden, paginación y actualización por eventos | [D6](adr/ADR-006-busqueda.md), [pruebas reales de Solr](../services/fleet/solr_integration_test.go) | Cumplido en operación normal |
+| Decisiones con evidencia | D1–D13 y verificaciones por revisión | [Índice ADR](adr/README.md), [evidencias](evidence/) | Cumplido en laboratorio |
+| Limitaciones y deuda | Sección 9 de Arquitectura | [Estado y mitigaciones](ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada) | Cumplido |
+
+La aceptación conjunta desde el sistema de Gimnasio sigue pendiente. Para la defensa individual, el [postmortem](POSTMORTEM.md), [D11](adr/ADR-011-observabilidad.md), [D12](adr/ADR-012-balanceo-carga.md) y [D13](adr/ADR-013-capacidad-costos.md) reúnen ensayos de fallas, observabilidad, balanceo y capacidad. Los resultados de laboratorio conservan sus límites y fechas.
+
 | Campo | Valor |
 | --- | --- |
 | Fecha | 9 de noviembre de 2026 |
