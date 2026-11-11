@@ -20,7 +20,10 @@ done
 [[ -f .env ]] || { echo "Falta .env; ejecutar go run ./cmd/devsetup" >&2; exit 2; }
 
 mkdir -p output tmp
-suffix=$( [[ "${OS:-}" == Windows_NT ]] && echo .exe )
+# Un if y no $( [[ ... ]] && ... ): fuera de Windows esa sustitución termina
+# con código 1 y set -e cortaría el script sin mensaje.
+suffix=
+if [[ "${OS:-}" == Windows_NT ]]; then suffix=.exe; fi
 bin="tmp/sustained-load$suffix"
 smoke="tmp/sustained-smoke$suffix"
 go build -mod=readonly -o "$bin" ./cmd/load

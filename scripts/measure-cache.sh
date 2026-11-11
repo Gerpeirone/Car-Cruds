@@ -14,7 +14,8 @@ if [[ ! "$seconds" =~ ^[0-9]+$ ]] || ((seconds < 3 || seconds > 30)); then
   exit 1
 fi
 mkdir -p output tmp
-bin="tmp/cache-load$( [[ "${OS:-}" == Windows_NT ]] && echo .exe )"
+bin=tmp/cache-load
+if [[ "${OS:-}" == Windows_NT ]]; then bin=$bin.exe; fi
 go build -mod=readonly -o "$bin" ./cmd/load
 
 route=/v1/vehicles/auto-001
