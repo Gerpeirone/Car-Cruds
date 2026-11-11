@@ -4,6 +4,8 @@ Fecha: 9 de noviembre de 2026. Estado: implementado en `feature/entrega-3-pendie
 
 ## Acceso y navegación
 
+> **11/11/2026:** el menú del operador se agrupa en Resumen, Operaciones y Gestión de personal. Hospital y Gimnasio son secciones propias; las rutas anteriores `/operador/personal/turnos` y `/operador/personal/membresias` redirigen. La ficha del empleado resume su estado en ambas integraciones con enlaces. Las dos integraciones tienen sentido inverso: Car Cruds consume la API del hospital desde Empleados; el gimnasio consume nuestra API y nos envía evidencia que Empleados guarda en PostgreSQL. El navegador solo llama al gateway propio.
+
 Se usa el mismo acceso administrativo del [panel del operador](PANEL-OPERADOR.md) (`GET /v1/session` con `role=admin`). La sección **Personal** del menú lateral agrupa tres pestañas.
 
 | Ruta web | Funcionalidad | API consumida |
@@ -11,9 +13,9 @@ Se usa el mismo acceso administrativo del [panel del operador](PANEL-OPERADOR.md
 | `/operador/personal` | Lista paginada de altas y bajas, y consulta por ID | `GET /v1/admin/employees`, `GET /v1/employees/{id}` |
 | `/operador/personal/nuevo` | Alta con nombre administrativo y estado | `POST /v1/employees` |
 | `/operador/personal/:id` | Edición de nombre y estado, y baja lógica con confirmación | `PUT` y `DELETE /v1/employees/{id}` |
-| `/operador/personal/membresias` | Informe por período: contadores, totales por moneda y evidencia por empleado | `GET /v1/employees/reports/memberships` |
-| `/operador/personal/turnos` | Nueva solicitud de turno e informe de la última solicitud por empleado | `POST /v1/employees/clinic/patient-links`, `POST /v1/employees/clinic/requests`, `GET /v1/employees/reports/clinic` |
-| `/operador/personal/turnos/:requestId` | Estado, clasificación y evidencia; envío y conciliación con el hospital | `GET`, `POST …/submit` y `POST …/refresh` |
+| `/operador/hospital` | **Hospital – Gestión de turnos médicos**: indicadores calculados con el informe, nueva solicitud (empleado activo, paciente, médico del catálogo, fecha) con resumen y confirmación, facturación mensual y última solicitud por empleado | `GET /v1/employees/reports/clinic`, `GET /v1/admin/employees`, `GET /v1/employees/clinic/doctors`, `GET /v1/employees/clinic/usage`, `POST /v1/employees/clinic/patient-links`, `POST /v1/employees/clinic/requests` |
+| `/operador/hospital/:requestId` | Estado, clasificación y evidencia; envío y conciliación con el hospital | `GET`, `POST …/submit` y `POST …/refresh` |
+| `/operador/gimnasio` | **Gimnasio – Membresías de empleados**: informe por período con origen, detalle de cada evidencia e historial de versiones recibidas | `GET /v1/employees/reports/memberships`, `GET /v1/employees/{id}/membership-evidence` |
 
 No se agregaron endpoints: la interfaz usa los contratos [employees-openapi.json](contracts/employees-openapi.json) 0.3.0 y [clinic-integration-openapi.json](contracts/clinic-integration-openapi.json) 0.3.0. El gimnasio y el hospital nunca se llaman desde el navegador: Empleados es el único que habla con el hospital.
 

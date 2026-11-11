@@ -93,7 +93,39 @@ Definir `CAR_CRUDS_URL` con el origen HTTPS de la VM y ajustar `-employee` al ID
 
 La capacidad compartida debe permanecer accesible hasta finalizar la evaluación: no detener la VM sin acordarlo con el gimnasio.
 
-## 6. Pendientes
+## 6. Actualizar la VM de Azure
+
+La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. Al 11/11/2026 su interfaz no incluye Personal, Hospital ni Gimnasio. Además, la VM sirve la interfaz aunque el Caddyfile de `main` envía todo al gateway: tiene configuración local que no está en Git. Por eso el primer paso es revisar y guardar esos cambios. **Estos comandos no se ejecutaron; requieren autorización del equipo.**
+
+```bash
+cd ~/Car-Cruds                      # ruta real del checkout en la VM
+uname -r                             # debe ser menor que 6.19 (MongoDB 8)
+git status --short                   # cambios locales de la VM
+git diff > ~/vm-cambios-$(date +%F).patch   # guardarlos antes de tocar nada
+cp .env ~/env-respaldo-$(date +%F)          # copia privada, nunca a Git
+git log --oneline -1                 # anotar este commit para volver atrás
+git fetch origin
+git stash push -m "vm-local-$(date +%F)"    # solo si git status mostró cambios
+git checkout integracion/panel-integraciones   # o main, cuando el equipo la integre
+grep -c '^CLINIC_' .env              # debe dar 2: CLINIC_BASE_URL y CLINIC_API_KEY
+docker compose -f compose.yaml -f compose.deploy.yaml config --quiet
+docker compose -f compose.yaml -f compose.deploy.yaml up -d --build --wait --wait-timeout 600
+```
+
+No usar `down -v` ni borrar volúmenes: conservan PostgreSQL (con la evidencia real del gimnasio y el turno del hospital), MongoDB y los certificados de Caddy. Si falta `CLINIC_API_KEY`, agregar las dos líneas de [COMUNICACION-HOSPITAL](COMUNICACION-HOSPITAL.md) antes del `up`: con la URL y sin clave, Empleados no inicia.
+
+Verificación desde fuera de la VM:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/operador/hospital   # 200 (SPA)
+curl -s -o /dev/null -w "%{http_code}\n" https://57-156-56-201.sslip.io/v1/employees        # 401
+npm --prefix scripts/ui-review ci
+BASE_URL=https://57-156-56-201.sslip.io BROWSER="<Chrome o Edge>" ADMIN_TOKEN=... CLIENT_TOKEN=... node scripts/ui-review/review.mjs
+```
+
+En el panel, Gimnasio con período `2026-11` debe mostrar la evidencia de `employee-001` con origen `gimnasio-pablo`. Para volver atrás: `git checkout <commit anotado>`, repetir el `up` y, si había cambios locales, `git stash pop`.
+
+## 7. Pendientes
 
 1. Crear la VM, fijar la IP y ejecutar el despliegue; registrar aquí y en el [contrato](contracts/README.md) la URL y la fecha.
 2. Prueba conjunta con el gimnasio contra la URL pública.
