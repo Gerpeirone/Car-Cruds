@@ -1,26 +1,22 @@
 # Documento de arquitectura — Car Cruds
 
-> **Cierre de entrega 3 — 09/11/2026:** [F3-03](PERSONAL-OPERADOR.md) agrega al panel del operador empleados, informe de membresías del gimnasio y seguimiento de turnos médicos. La entrada pública de [DESPLIEGUE](DESPLIEGUE.md) sirve ahora la interfaz por Caddy y deriva `/v1/*` al gateway; se verificó con HTTPS local, sin VM pública todavía. La revisión en navegador real, la comparación de caché y las limitaciones actualizadas se registran en [EVIDENCIA-FRONTEND](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre) y en la sección 9.
-
-> **Panel del operador — 08/11/2026:** [F3-02](PANEL-OPERADOR.md) implementa gestión de flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento. Acceso administrativo verificado por el gateway; pruebas locales y límites documentados.
-
-> **Planificación de entrega 3 — 08/11/2026 (actualizada 09/11):** [etapas](ENTREGA-3.md) y [especificación F3-01](FRONTEND-ALQUILER.md) documentan el frontend del alquiler sobre la API vigente. La revisión visual en navegador se completó el 9 de noviembre; la publicación cloud sigue pendiente.
+> **Cierre de la entrega 3 — 11/11/2026:** `main` `309a443` está desplegado en Azure (`https://57-156-56-201.sslip.io`) con CI aprobada. Caddy publica la interfaz, la API y el contrato de Empleados 0.5.0. El balanceador de Flota resuelve sus réplicas por DNS ([D12](adr/ADR-012-balanceo-carga.md)). Lo verificado en Azure y lo probado en CI o laboratorio se distingue en [DESPLIEGUE](DESPLIEGUE.md#verificación-en-azure-del-11112026). Los avisos del 8 y 9 de noviembre se conservan en [ENTREGA-3](ENTREGA-3.md) y en el historial de Git.
 
 **Alcance vigente — 23/10/2026:** [ADR-018](adr/ADR-018-empleados-sin-candidatos.md) sustituye D1/D3 en el alcance de personal: Empleados se limita a personal registrado, membresías y seguimiento administrativo de turnos; las tablas, migraciones y referencias históricas se conservan sin acceso activo. Los cuatro servicios y sus tecnologías se mantienen. Nuevos vínculos, intenciones y primer envío de turnos requieren empleado activo; historia y actualización de evidencia previa de inactivos continúan disponibles. Las evidencias fechadas corresponden a sus revisiones.
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.5 |
-| Fecha | 9 de noviembre de 2026 |
-| Estado | Backend, frontend de cliente/operador/personal y entrada pública preparados; VM pública y aceptación externa pendientes |
+| Versión documental | 0.6 |
+| Fecha | 11 de noviembre de 2026 |
+| Estado | Backend, frontend y entrada pública desplegados en Azure (`main` `309a443`); aceptación desde el backend de Gimnasio pendiente |
 | Hito | Presentación grupal — 11 o 13 de noviembre de 2026 |
 | Decisiones | D1–D13, con historial de reemplazos en [el índice ADR](adr/README.md) |
 
 ## 1. Propósito y alcance operativo
 
-Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra empleados, membresías y seguimiento administrativo de turnos. El gimnasio consumirá su lista y aportará membresías/gastos; el hospital de Octi provee Turnos para socios 1.0.0. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a ese contrato; acuerdos operativos y aceptación conjunta siguen pendientes.
+Car Cruds administra alquileres por período y tarifa. Alquileres conserva precio y agenda; retiro/devolución controlan la ocupación física. Empleados administra empleados, membresías y seguimiento administrativo de turnos. El gimnasio consume su lista y aporta membresías/gastos; el hospital de Octi provee Turnos para socios 1.0.0. [ADR-019](adr/ADR-019-consumo-turnos-socios.md) adapta el flujo existente a ese contrato. La aceptación formal de ambos grupos sigue pendiente.
 
-Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché están implementados en el entorno Docker local. La lista de empleados funciona por API propia provisional; la interfaz incluye alquiler, Personal, Hospital y Gimnasio. La verificación autenticada de Azure desde Gimnasio sigue abierta. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
+Los cuatro servicios propios, gateway, NGINX, persistencia, mensajería, índice y caché se ejecutan con Docker Compose en local y en Azure. La lista de empleados funciona por API propia; la interfaz incluye alquiler, registro y sesión de clientes, Mis alquileres, Personal, Hospital y Gimnasio. La evidencia de aceptación desde el backend de Gimnasio sigue pendiente. [ESTADO-IMPLEMENTACION](ESTADO-IMPLEMENTACION.md) contiene la evidencia del recorrido, pruebas, reinicio y traza.
 
 ## 2. Contexto — C4, nivel 1
 
@@ -53,8 +49,8 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    User["Aplicaciones autorizadas<br/>Laboratorio local"]
-    Gym["Gimnasio<br/>Consumo externo pendiente"]
+    User["Navegador y aplicaciones autorizadas"]
+    Gym["Gimnasio<br/>Aceptación pendiente"]
     Clinic["Hospital<br/>Turnos para socios 1.0.0"]
     subgraph System["Car Cruds"]
         Edge["Caddy<br/>HTTPS público"]
@@ -63,7 +59,7 @@ flowchart TB
         Customers["Clientes · Go<br/>Capas"]
         Rentals["Alquileres · Go<br/>Hexagonal"]
         Employees["Empleados · Go<br/>Hexagonal"]
-        LB["NGINX interno<br/>Round-robin"]
+        LB["NGINX interno<br/>Round-robin y DNS dinámico"]
         subgraph Replicas["Flota · Go · Capas"]
             A["Flota A"]
             B["Flota B"]
@@ -100,12 +96,14 @@ flowchart TB
     class GW,Customers,Rentals,Employees,A,B app;
     class CDB,RDB,EDB,FDB data;
     class LB,Edge,Web support;
-    class Gym,Clinic pending;
+    classDef external fill:#888,color:#fff,stroke:#606060;
+    class Clinic external;
+    class Gym pending;
 ```
 
-**Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El gateway y Alquileres utilizan el mismo balanceador. Empleados llama al Hospital directamente desde su adaptador.
+**Figura 2. Servicios y fuentes operativas.** Flota A/B son réplicas del mismo servicio; hay cuatro servicios de negocio. El borde discontinuo indica la aceptación externa pendiente. El gateway y Alquileres utilizan el mismo balanceador. Empleados llama al Hospital directamente desde su adaptador.
 
-En local, gateway y web se publican únicamente en loopback. En la VM, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway, sirve el OpenAPI en la ruta exacta del Caddyfile y deriva la interfaz a NGINX. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
+En local, gateway y web se publican únicamente en loopback. En la VM de Azure, Caddy es la única entrada pública (80/443): termina HTTPS, responde 404 en `/internal/*`, envía `/v1/*` al gateway, sirve el OpenAPI en la ruta exacta del Caddyfile y deriva la interfaz a NGINX. Las llamadas internas son HTTP/JSON autenticadas. Cada base PostgreSQL tiene nombre y credenciales propios dentro del servidor local; no hay JOIN ni claves foráneas entre servicios.
 
 ```mermaid
 flowchart TB
@@ -222,7 +220,7 @@ Los ejecutables están en `cmd/` y utilizan Go 1.26.1/`net/http`. La infraestruc
 
 La reserva no emite un evento sin consumidor definido. Los precios y la habilitación se leen antes de la transacción; esa ventana se acepta congelando la tarifa leída y revalidando conductor al retirar. No existe una transacción global entre servicios.
 
-La revisión del 15 de octubre alinea la implementación con esa separación: lectura breve de idempotencia, validación HTTP sin retener conexión y transacción corta con segunda lectura bajo bloqueo. Solicitudes simultáneas pueden repetir lecturas externas, pero solo una respuesta por clave se confirma. La preparación cloud incorpora reinicio automático de servicios permanentes; su funcionamiento en VM y el acceso público permanecen pendientes. Ver [revisión de E2](REVISION-E2-2026-10-15.md).
+La revisión del 15 de octubre alinea la implementación con esa separación: lectura breve de idempotencia, validación HTTP sin retener conexión y transacción corta con segunda lectura bajo bloqueo. Solicitudes simultáneas pueden repetir lecturas externas, pero solo una respuesta por clave se confirma. La preparación cloud incorpora reinicio automático de servicios permanentes; el acceso público funciona en Azure desde la entrega 3. Ver [revisión de E2](REVISION-E2-2026-10-15.md).
 
 [D4](adr/ADR-004-consistencia-concurrencia.md) utiliza exclusión de rangos, índice único parcial de alquiler activo y transiciones condicionales. La suite y el recorrido sobre PostgreSQL verificaron una sola ganadora concurrente, repetición y persistencia. El alquiler activo impide otro retiro aunque haya vencido su fin previsto.
 
@@ -244,7 +242,7 @@ Redis utiliza TTL de 60 s en fichas y marcas de versión sin TTL. Lua impide un 
 
 ## 8. Balanceo, resiliencia y observabilidad
 
-NGINX distribuye a dos réplicas con detección pasiva. Los tiempos e intentos están en [D12](adr/ADR-012-balanceo-carga.md); el límite de lectura del proxy mide inactividad, no un deadline total. Alquileres limita las validaciones internas de confirmación a 1 s por llamada y conserva el presupuesto propio. Dos réplicas no eliminan los puntos únicos de gateway, LB y fuentes.
+NGINX distribuye a dos réplicas con detección pasiva. Los tiempos e intentos están en [D12](adr/ADR-012-balanceo-carga.md); el límite de lectura del proxy mide inactividad, no un deadline total. Desde el 11 de noviembre, NGINX vuelve a resolver `fleet-a` y `fleet-b` por el DNS de Docker cada 10 s (`resolver 127.0.0.11`, `zone` y `resolve`). Antes conservaba las direcciones del arranque: con la secuencia de actualización de Azure, reproducida en laboratorio, una dirección reasignada a Clientes recibía tráfico de Flota. La corrección se reprodujo en laboratorio y la auditoría la verificó en Azure; no es un registro de servicios. Alquileres limita las validaciones internas de confirmación a 1 s por llamada y conserva el presupuesto propio. Dos réplicas no eliminan los puntos únicos de gateway, LB y fuentes.
 
 Se implementaron deadlines, bulkheads, pools, fallback, outbox y un circuit breaker en la caché de Flota (cinco fallas consecutivas lo abren por 2 s; después pasa una sola sonda). Solr caído afecta búsqueda; Redis caído permite lectura fuente; broker detenido conserva pendientes. Los ensayos completos y sus límites se registran en [D10](adr/ADR-010-resiliencia.md). La prueba real histórica del Hospital y la aceptación aún pendiente de Gimnasio están documentadas en la matriz de Entrega 3.
 
@@ -254,23 +252,24 @@ Logs JSON y trazas HTTP propagan request ID, identidad de instancia y contexto. 
 
 ## 9. Limitaciones conocidas y deuda técnica aceptada
 
-Actualizado el 9 de noviembre de 2026 para la presentación grupal. Cada fila indica si es una limitación externa, una deuda aceptada conscientemente o un pendiente de operación.
+Actualizado el 11 de noviembre de 2026 para la presentación grupal. Cada fila indica si es una limitación externa, una deuda aceptada conscientemente o un pendiente de operación.
 
 | Tema | Situación actual | Tipo | Mitigación o próximo paso |
 | --- | --- | --- | --- |
-| Publicación cloud | Caddy, interfaz y script de VM verificados con HTTPS local; Azure responde por HTTPS; el OpenAPI público devuelve HTML | Pendiente de publicación del contrato | Verificar SHA y Caddy efectivos y ejecutar `checkshared` desde fuera |
-| Gimnasio | Lista propia, recepción de evidencia e informe implementados; sin consumo real ni contrato aceptado | Externa | Entregar URL y token del gimnasio por canal privado; registrar su consumo |
-| Hospital | Conectado a la API publicada del grupo de Octi: un turno real reservado, confirmado, consultado y facturado una sola vez ([evidencia](evidence/hospital-live-2026-11-10.json)) | Resuelto | Copiar URL y clave al `.env` de la VM; falta la aceptación formal |
+| Publicación cloud | Azure ejecuta `main` `309a443` con 16 contenedores; HTTPS, interfaz, API y OpenAPI 0.5.0 en JSON verificados ([DESPLIEGUE](DESPLIEGUE.md#verificación-en-azure-del-11112026)) | Resuelto | Mantener la VM disponible hasta finalizar la evaluación |
+| Gimnasio | Lista propia, estado, recepción de evidencia e informe publicados en Azure; las consultas responden. Falta la evidencia de aceptación desde el backend del Gimnasio | Externa | Ejecutar la [prueba conjunta](contracts/INTEGRACION_GIMNASIO.md#prueba-conjunta) desde su backend y registrar la evidencia |
+| Hospital | Conectado a la API publicada del grupo de Octi: un turno real reservado, confirmado, consultado y facturado una sola vez ([evidencia](evidence/hospital-live-2026-11-10.json)) | Resuelto | Configurado en Azure; las consultas se verificaron. Falta la aceptación formal |
 | Caída de Redis | Las lecturas siguen respondiendo desde MongoDB. Un circuit breaker evita esperar el deadline de 150 ms en cada lectura: con concurrencia 1 pasó de p50 155 ms a 1,6 ms ([antes](evidence/cache-comparison-2026-11-09.json), [después](evidence/cache-breaker-2026-11-09.json)) | Resuelto | La invalidación no se omite nunca; alerta `CacheFlotaSinRedis` |
 | Marcas de versión en Redis | No tienen TTL y crecen con la cantidad de vehículos | Deuda aceptada | Política de limpieza; aceptable con la flota de laboratorio |
-| Identidad | Tokens por aplicación (cliente, operador, gimnasio, servicio); no hay cuentas personales ni auditoría por persona | Deuda aceptada | Proveedor de identidad; la interfaz mantiene el token solo en memoria |
+| Identidad | Tokens por aplicación (cliente, operador, gimnasio, servicio). Las cuentas personales de clientes solo habilitan el catálogo; reservar sigue requiriendo la credencial de alquiler. No hay auditoría por persona | Deuda aceptada | Proveedor de identidad; la interfaz mantiene el token solo en memoria |
 | Escrituras sin idempotencia | Alta de empleado, alta de mantenimiento y edición de empleado (sin versión, último escritor gana) | Deuda aceptada | La interfaz bloquea reenvíos inciertos y pide verificar antes de repetir |
-| API incompleta | No hay listado general de reservas, ni edición/baja de clientes, ni consulta/cancelación de mantenimiento | Deuda aceptada | Consulta por código o ID; la interfaz no simula operaciones inexistentes |
+| API incompleta | El listado de reservas es por conductor (Mis alquileres); no hay listado general, ni edición/baja de clientes, ni consulta/cancelación de mantenimiento | Deuda aceptada | Consulta por código o ID; la interfaz no simula operaciones inexistentes |
 | Puntos únicos de falla | Una VM, un gateway, un balanceador y una instancia de cada almacén | Deuda aceptada (D13) | Dos réplicas de Flota; la alta disponibilidad queda fuera del laboratorio |
+| Direcciones del balanceador | NGINX conservaba las IP del arranque; tras una actualización parcial, una IP reasignada a Clientes recibía tráfico de Flota (síntoma en Azure, causa reproducida en laboratorio) | Resuelto | Resolución DNS dinámica cada 10 s ([D12](adr/ADR-012-balanceo-carga.md)); durante esa validez puede persistir una dirección vieja |
 | Observabilidad | Logs JSON, trazas HTTP en Jaeger, Prometheus con cinco alertas y tablero de Grafana ([compose.observability.yaml](../compose.observability.yaml), [simulacro](evidence/alert-drill-2026-11-09.json)); no hay notificación saliente ni contexto de traza por AMQP | Deuda aceptada | Canal de notificación y propagación de trazas por mensajería (D11) |
-| CI y kernel | El runner `ubuntu-24.04` usa el kernel `7.0.0-1017-azure` y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912), [SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848)). La CI usa MongoDB 7.0 mediante [compose.ci.yaml](../compose.ci.yaml) y volvió a pasar completa | Externa, mitigada | La CI prueba una versión mayor distinta de la de local y VM; volver a 8 cuando MongoDB corrija la detección. La VM debe usar un kernel menor que 6.19 ([DESPLIEGUE](DESPLIEGUE.md)) |
-| Operación | Sin respaldos, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
-| Evidencia | La caché se midió caliente y con Redis detenido; Solr cumplió una cota de 5 s para alta, cambio y baja en CI; faltan fase fría y carga sostenida | Pendiente | Ampliar en la defensa individual |
+| CI y kernel | El runner `ubuntu-24.04` usa el kernel `7.0.0-1017-azure` y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912), [SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848)). La CI usa MongoDB 7.0 mediante [compose.ci.yaml](../compose.ci.yaml); sobre `main` `309a443` aprobaron todos los trabajos ([backend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684), [frontend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829457)) | Externa, mitigada | La CI prueba una versión mayor distinta de la de local y VM; volver a 8 cuando MongoDB corrija la detección. La VM debe usar un kernel menor que 6.19 ([DESPLIEGUE](DESPLIEGUE.md)) |
+| Operación | Respaldo manual documentado en [DESPLIEGUE §6](DESPLIEGUE.md#6-actualizar-la-vm-de-azure); sin respaldos programados, retención de eventos ni reproceso operativo de DLQ | Pendiente | D10 y D11 |
+| Evidencia | La caché se midió caliente y con Redis detenido en laboratorio; Solr cumplió una cota de 5 s para alta, cambio y baja en CI. La evidencia de fallas provocadas proviene de laboratorio, no de Azure. Faltan fase fría y carga sostenida | Pendiente | Ampliar en la defensa individual |
 | Revisión | Aceptación del equipo y de la cátedra; toda integración a `main` requiere aprobación del equipo mediante pull request | Pendiente | Ver [AGENTS.md](../AGENTS.md) |
 
 ## 10. Referencias e historial
@@ -285,3 +284,4 @@ Los ADR-001/003/005/008 conservan su cuerpo histórico y fueron reemplazados por
 | 0.2 | 10 de octubre de 2026 | Empleados, integración administrativa y balanceador |
 | 0.3 | 14 de octubre de 2026 | Arquitectura del backend implementado y límites de evidencia/operación |
 | 0.5 | 9 de noviembre de 2026 | Frontend completo, Caddy con interfaz y limitaciones/deuda técnica para la presentación grupal |
+| 0.6 | 11 de noviembre de 2026 | Despliegue en Azure verificado, CI de `309a443`, resolución DNS del balanceador y diferencia entre Azure y laboratorio |

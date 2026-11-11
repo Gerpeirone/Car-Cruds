@@ -3,10 +3,10 @@
 | Campo | Valor |
 | --- | --- |
 | Decisión del enunciado | D12: balanceo de carga |
-| Versión documental | 0.3 |
-| Fecha | 14 de octubre de 2026 |
-| Estado | Distribución, retirada y recuperación verificadas localmente |
-| Hito | Entrega 2 — 23 de octubre de 2026 |
+| Versión documental | 0.4 |
+| Fecha | 11 de noviembre de 2026 |
+| Estado | Distribución, retirada y recuperación verificadas localmente; resolución DNS dinámica en producción, verificada en la auditoría de Azure |
+| Hito | Entrega 2 — 23 de octubre de 2026; corrección para la presentación grupal |
 
 ## 1. Contexto
 
@@ -56,7 +56,7 @@ Integrar LB dentro del gateway reduce componentes, pero mezcla la demostración 
 
 ## 4. Consecuencias y límites
 
-El LB único, gateway, MongoDB y demás dependencias continúan siendo puntos únicos de falla. Dos réplicas de Flota aportan tolerancia a una instancia caída; no constituyen alta disponibilidad completa. La topología inicial será explícita; cambios de direcciones/nombres deberán actualizarse mediante un procedimiento documentado, sin afirmar discovery automático.
+El LB único, gateway, MongoDB y demás dependencias continúan siendo puntos únicos de falla. Dos réplicas de Flota aportan tolerancia a una instancia caída; no constituyen alta disponibilidad completa. La topología es explícita: el upstream enumera `fleet-a` y `fleet-b`. Desde el 11 de noviembre NGINX vuelve a resolver esos nombres por el DNS de Docker (sección 6). Eso sigue las direcciones nuevas de las mismas réplicas, pero no constituye un registro de servicios: agregar o quitar una réplica exige cambiar la configuración.
 
 ## 5. Validación pendiente
 
@@ -66,7 +66,32 @@ Identificar instancia en logs/métricas internas y demostrar tráfico desde gate
 
 [nginx.conf](../../load-balancer/nginx.conf) configura round-robin, dos destinos, max_fails=3/fail_timeout=30s y keepalive 32. El cambio de destino está limitado a dos intentos y 1 s total; el cliente Alquileres aplica su propio deadline de 1 s sin reintento adicional. Las solicitudes exploratorias poseen perfil separado; read timeout de 3 s es un límite de inactividad, no el plazo total de confirmación. El recorrido real utilizó ambas réplicas. El [ensayo](../evidence/resilience.json) detuvo B: de 20 solicitudes hubo tres fallas iniciales 503 y 17 éxitos en A, con 16 consecutivos al final. B reapareció 29 315,18 ms después del inicio del sondeo tras restaurarla, conforme al fail_timeout de 30 s. La detección pasiva admite esos errores iniciales; no es una transición sin fallas. Compose configura restart:true en las dependencias fleet-a/fleet-b del LB: al recrear las réplicas mediante una operación Compose, reinicia NGINX para renovar sus direcciones. El rebuild y arranque posteriores resultaron saludables. Esta coordinación no es discovery dinámico ni cubre todo reinicio espontáneo. No hay chequeo activo NGINX. Ver [componente](../../load-balancer/README.md).
 
-## 6. Referencias e historial
+## 6. Corrección de resolución DNS — 11 de noviembre de 2026
+
+**Problema.** NGINX resolvía `fleet-a` y `fleet-b` una sola vez, al arrancar. En Azure, la sesión de clientes se cerraba al abrir fichas de vehículos. La causa se reprodujo en laboratorio con la secuencia de actualización de Azure: recrear `customers`, `gateway`, `fleet-a`, `fleet-b` y `web` sin recrear `fleet-lb`. Docker reasignó a `customers` la dirección anterior de una réplica de Flota, y el balanceador siguió enviando ahí parte del tráfico de Flota. Clientes respondía 401 a `/v1/vehicles/{id}` y la interfaz lo interpretaba como sesión vencida. La coordinación `restart: true` de Compose descrita en el avance del 14 de octubre no cubre ese caso, porque el balanceador no se reinicia cuando se recrea otro servicio.
+
+**Decisión.** [nginx.conf](../../load-balancer/nginx.conf) usa el DNS interno de Docker y vuelve a resolver los nombres durante la ejecución:
+
+| Directiva | Efecto |
+| --- | --- |
+| `resolver 127.0.0.11 valid=10s ipv6=off` | Consulta el DNS de Docker y conserva cada respuesta como máximo 10 s |
+| `resolver_timeout 2s` | Limita la espera de cada resolución |
+| `zone fleet 64k` | Memoria compartida del upstream, necesaria para actualizar direcciones en ejecución |
+| `server … resolve` | Cada réplica se resuelve de nuevo al vencer la validez |
+
+Se mantienen round-robin, `max_fails=3`, `fail_timeout=30s`, `keepalive 32` y los límites de cambio de destino. La imagen fijada en [compose.yaml](../../compose.yaml) es NGINX 1.30.5. La opción `resolve` en `upstream` está disponible en NGINX Open Source desde la versión 1.27.3. Se incorporó en `30334f7` (PR #14) y forma parte de `main`.
+
+**Verificación.**
+
+| Entorno | Resultado |
+| --- | --- |
+| Laboratorio | Se reprodujo la falla con la secuencia de Azure y se comprobó la corrección |
+| Azure, `main` `309a443` | La auditoría del despliegue verificó la resolución dinámica |
+| Comando de control | `docker compose $F exec -T fleet-lb grep -c ' resolve;' /etc/nginx/nginx.conf` devuelve 2 ([DESPLIEGUE §6.H](../DESPLIEGUE.md#h-en-la-vm-actualizar-cuentas-de-clientes-y-flota)) |
+
+**Límites.** Durante la validez de 10 s, una dirección reasignada todavía puede recibir solicitudes. La detección pasiva sigue sin chequeos activos. El balanceador continúa siendo un punto único de falla.
+
+## 7. Referencias e historial
 
 Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-7-balanceo-nginx.md`. Fuentes oficiales consultadas el 10 de octubre de 2026; semántica de timeouts contrastada el 12 de octubre de 2026. [D5](ADR-016-comunicacion-v2.md), [D10](ADR-010-resiliencia.md), [D11](ADR-011-observabilidad.md). [Componente](../../load-balancer/README.md).
 
@@ -74,3 +99,4 @@ Material en `clases.zip`: `teoria/06-gateway-lb-discovery.md` y `practica/clase-
 | --- | --- | --- |
 | 0.2 | 10 de octubre de 2026 | Primera propuesta de LB interno y dos réplicas de Flota |
 | 0.3 | 14 de octubre de 2026 | Implementación propia, evidencia local y pendientes registrados |
+| 0.4 | 11 de noviembre de 2026 | Resolución DNS dinámica del upstream y su verificación en laboratorio y Azure |

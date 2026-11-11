@@ -2,31 +2,31 @@
 
 ## Trazabilidad del enunciado
 
-Corte del 11/11/2026 sobre `main` `49cf84b`, con evidencia histórica identificada por revisión. Fuente académica: [transcripción del enunciado](../Enunciado%20TP%20Final.md), §2, §4.1 y Presentación Grupal, contrastada con el PDF original, páginas 8–9. «Cumplido» indica evidencia técnica suficiente en el alcance indicado. «Parcial» identifica un requisito con implementación y una prueba de aceptación abierta.
+Corte del 11/11/2026 sobre `main` `309a443`, el mismo commit desplegado en Azure, con CI aprobada ([backend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684), [frontend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829457)). La evidencia histórica conserva su revisión. Fuente académica: [transcripción del enunciado](../Enunciado%20TP%20Final.md), §2, §4.1 y Presentación Grupal, contrastada con el PDF original, páginas 8–9. «Cumplido» indica evidencia técnica suficiente en el alcance indicado. La columna de evidencia separa lo verificado en **Azure** de lo probado en **CI o laboratorio**. Una aceptación externa abierta se indica en el estado.
 
 | Requisito | Implementación | Evidencia | Estado |
 | --- | --- | --- | --- |
-| Frontend de punta a punta | React, Alquileres, Personal, Hospital y Gimnasio | [Pruebas de interfaz](EVIDENCIA-FRONTEND.md) y [panel de Personal](PERSONAL-OPERADOR.md). Los GET públicos solo verifican la SPA. | Cumplido en laboratorio |
-| Entrada única | Caddy, gateway, Bearer y límite de admisión | [Gateway](../cmd/gateway/main_test.go), [verificación pública](DESPLIEGUE.md#observación-externa-del-11112026) | Cumplido |
-| Tres servicios operativos | Clientes, Flota, Alquileres y Empleados | [Compose](../compose.yaml), [CI del backend](https://github.com/Gerpeirone/Car-Cruds/actions?query=branch%3Amain) | Cumplido |
-| Capacidad propia pública | Empleados, OpenAPI 0.5.0, Caddy | HTTPS y 401 comprobados. El OpenAPI público devolvió HTML y falta la lectura autenticada. | Parcial |
-| Proveedor en un flujo importante | Hospital desde Empleados y el panel | [Turno confirmado e informe](evidence/hospital-live-2026-11-10.json), [test contra el proveedor original](../integration/cliniccontract/contract_test.go) | Cumplido con evidencia histórica |
-| Dos tipos de almacenamiento | PostgreSQL y MongoDB | [Persistencia y reinicios](evidence/runtime-persistence.json), [pruebas por servicio](ARCHITECTURE.md#responsabilidades-contratos-y-operación) | Cumplido |
-| Caché con comparación | Redis para ficha de Flota | [D7](adr/ADR-007-cache.md) registra lecturas y latencia, con límites del ensayo. | Cumplido con el alcance medido |
+| Frontend de punta a punta | React: registro y sesión de clientes, catálogo, reserva, Mis alquileres, panel del operador, Personal, Hospital y Gimnasio | **Azure:** registro, inicio de sesión, catálogo y Mis alquileres ([verificación](DESPLIEGUE.md#verificación-en-azure-del-11112026)). **Laboratorio:** [pruebas de interfaz](EVIDENCIA-FRONTEND.md) y [panel de Personal](PERSONAL-OPERADOR.md) | Cumplido |
+| Entrada única | Caddy, gateway, Bearer y límite de admisión | **Azure:** HTTPS, `/v1/*` con 401 sin credencial, `/internal/*` cerrado ([verificación](DESPLIEGUE.md#verificación-en-azure-del-11112026)). **CI:** [pruebas del gateway](../cmd/gateway/main_test.go) | Cumplido |
+| Tres servicios operativos | Clientes, Flota, Alquileres y Empleados | **Azure:** 16 contenedores en ejecución sobre `309a443`. **CI:** [Compose y recorrido persistente](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684) | Cumplido |
+| Capacidad propia pública | Empleados, OpenAPI 0.5.0, Caddy | **Azure:** OpenAPI 0.5.0 publicado en JSON y consultas de Gimnasio verificadas ([integración](contracts/INTEGRACION_GIMNASIO.md)) | Cumplido del lado de Car Cruds; **aceptación desde el backend de Gimnasio pendiente** |
+| Proveedor en un flujo importante | Hospital desde Empleados y el panel | **Azure:** consultas al Hospital verificadas. **Histórico:** [turno confirmado e informe](evidence/hospital-live-2026-11-10.json). **CI:** [test contra el proveedor original](../integration/cliniccontract/contract_test.go) | Cumplido |
+| Dos tipos de almacenamiento | PostgreSQL y MongoDB | **Azure:** ambos en ejecución con los datos del despliegue. **Laboratorio y CI:** [persistencia y reinicios](evidence/runtime-persistence.json), [pruebas por servicio](ARCHITECTURE.md#responsabilidades-contratos-y-operación) | Cumplido |
+| Caché con comparación | Redis para ficha de Flota | **Laboratorio:** [D7](adr/ADR-007-cache.md) registra lecturas y latencia, con límites del ensayo | Cumplido con el alcance medido |
 | Dos estilos internos | Clientes por capas, Alquileres hexagonal | [Arquitectura interna](ARCHITECTURE.md#4-arquitectura-interna-y-tecnologías) | Cumplido |
-| Evento, consumidor idempotente y fallidos | `RentalCompleted.v1`, outbox, inbox y DLQ | [Mensaje rechazado](evidence/message-failure.json), [D5](adr/ADR-016-comunicacion-v2.md) | Cumplido |
-| Búsqueda indexada | Solr, filtros, orden, paginación y actualización por eventos | [D6](adr/ADR-006-busqueda.md), [pruebas reales de Solr](../services/fleet/solr_integration_test.go) | Cumplido en operación normal |
-| Decisiones con evidencia | D1–D13 y verificaciones por revisión | [Índice ADR](adr/README.md), [evidencias](evidence/) | Cumplido en laboratorio |
+| Evento, consumidor idempotente y fallidos | `RentalCompleted.v1`, outbox, inbox y DLQ | **Laboratorio:** [mensaje rechazado](evidence/message-failure.json), [D5](adr/ADR-016-comunicacion-v2.md) | Cumplido |
+| Búsqueda indexada | Solr, filtros, orden, paginación y actualización por eventos | **Azure:** indexación, búsqueda, filtros y paginación sobre 19 vehículos. **CI:** [D6](adr/ADR-006-busqueda.md), [pruebas reales de Solr](../services/fleet/solr_integration_test.go) | Cumplido en operación normal |
+| Decisiones con evidencia | D1–D13 y verificaciones por revisión | [Índice ADR](adr/README.md), [evidencias](evidence/). D12 incluye la corrección DNS verificada en Azure ([ADR-012](adr/ADR-012-balanceo-carga.md)) | Cumplido (CI, laboratorio y auditoría de Azure) |
 | Limitaciones y deuda | Sección 9 de Arquitectura | [Estado y mitigaciones](ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada) | Cumplido |
 
-La aceptación conjunta desde el sistema de Gimnasio sigue pendiente. Para la defensa individual, el [postmortem](POSTMORTEM.md), [D11](adr/ADR-011-observabilidad.md), [D12](adr/ADR-012-balanceo-carga.md) y [D13](adr/ADR-013-capacidad-costos.md) reúnen ensayos de fallas, observabilidad, balanceo y capacidad. Los resultados de laboratorio conservan sus límites y fechas.
+La evidencia de aceptación desde el backend del grupo de Gimnasio sigue pendiente. Para la defensa individual, el [postmortem](POSTMORTEM.md), [D11](adr/ADR-011-observabilidad.md), [D12](adr/ADR-012-balanceo-carga.md) y [D13](adr/ADR-013-capacidad-costos.md) reúnen ensayos de fallas, observabilidad, balanceo y capacidad. Los resultados de laboratorio conservan sus límites y fechas.
 
 | Campo | Valor |
 | --- | --- |
-| Fecha | 9 de noviembre de 2026 |
-| Rama | `feature/entrega-3-pendientes`, sobre `feature/entrega-3` |
-| Base | `main`, `19c4e06` |
-| Estado | F3-01 a F3-03 implementados y revisados en navegador; entrada pública verificada con HTTPS local; falta la VM pública y los accesos externos |
+| Fecha | 11 de noviembre de 2026 |
+| Rama | `main` |
+| Base | `309a443`, desplegado en Azure |
+| Estado | F3-01 a F3-05 implementados; Azure publicado y verificado; aceptación desde el backend de Gimnasio pendiente |
 | Referencia académica | [Enunciado](../Enunciado%20TP%20Final.md), presentación grupal |
 
 ## 1. Objetivo y alcance del hito
@@ -42,8 +42,8 @@ La presentación exige frontend completo, entrada única autenticada, servicios 
 | F3-01: frontend del alquiler | Acceso de laboratorio, búsqueda, ficha, disponibilidad, reserva, consulta por código y cancelación | Implementado; [evidencia](EVIDENCIA-FRONTEND.md) y [revisión en navegador](EVIDENCIA-FRONTEND.md#6-revisión-en-navegador-real--9-de-noviembre) sin violaciones WCAG AA |
 | F3-02: operación administrativa | Flota, alta/consulta de clientes, reservas por código, retiro/devolución y mantenimiento | [Implementado y probado con servicios reales](PANEL-OPERADOR.md); revisado en navegador |
 | F3-03: personal e integraciones | Empleados registrados, informes de membresías y seguimiento administrativo de turnos | [Implementado](PERSONAL-OPERADOR.md) y probado contra Empleados real; gimnasio y hospital reales pendientes de acuerdos |
-| F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Caddy sirve la interfaz y deriva `/v1/*` al gateway; [verificado con HTTPS local](DESPLIEGUE.md). Falta crear la VM, el DNS y los accesos externos |
-| F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | [Comparación de caché](evidence/cache-comparison-2026-11-09.json) y [limitaciones y deuda técnica](ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada) actualizadas; repetir el recorrido sobre la URL pública |
+| F3-04: publicación y ensayo conjunto | Entrada HTTPS, interfaz publicada y acceso real de gimnasio/hospital | Publicado en Azure el 11/11/2026 sobre `309a443` ([verificación](DESPLIEGUE.md#verificación-en-azure-del-11112026)). Hospital consultado desde Empleados; falta la aceptación desde el backend de Gimnasio |
+| F3-05: evidencia final | Recorrido completo, mediciones comparativas y limitaciones actualizadas | [Comparación de caché](evidence/cache-comparison-2026-11-09.json) y [limitaciones y deuda técnica](ARCHITECTURE.md#9-limitaciones-conocidas-y-deuda-técnica-aceptada) actualizadas; recorrido de registro, inicio de sesión, catálogo y Mis alquileres verificado en Azure |
 
 F3-01 incluye ahora código de interfaz, dependencias fijadas, build, pruebas y una entrada estática local con NGINX. Se conservan los endpoints de negocio existentes. No se incorporan pagos ni funciones ajenas al alquiler documentado.
 
@@ -55,11 +55,11 @@ La [especificación funcional](FRONTEND-ALQUILER.md) fija contratos, criterios y
 
 ## 4. Dependencias y pendientes
 
-- El cliente de laboratorio debe existir, tener credencial propia y estar vinculado por `AUTH_CLIENT_CUSTOMER_ID`; la credencial se entrega por un canal privado. La interfaz no crea cuentas ni reemplaza la identidad del backend.
+- El cliente de laboratorio debe existir, tener credencial propia y estar vinculado por `AUTH_CLIENT_CUSTOMER_ID`; la credencial se entrega por un canal privado. Las cuentas personales creadas en `/registro` solo habilitan el catálogo; no otorgan la credencial de alquiler ni reemplazan la identidad del backend.
 - Deben existir vehículos activos, un cliente habilitado y fechas vigentes para demostrar reservas. Los fixtures de pruebas se identificarán y limpiarán según su propietario.
 - El fallo de arranque de MongoDB en la [CI de la base](https://github.com/Gerpeirone/Car-Cruds/actions/runs/42516259957) quedó diagnosticado y mitigado en esta entrega (kernel del runner y MongoDB 8.x; ver «CI en verde» más abajo y la sección 9 de [ARCHITECTURE](ARCHITECTURE.md)).
 - El acceso cloud y los acuerdos externos se coordinan en [DESPLIEGUE](DESPLIEGUE.md) e [INTEGRACIONES](INTEGRACIONES.md). No bloquean la documentación ni el desarrollo local de F3-01.
-- La consolidación documental de E2 está propuesta en [PR #7](https://github.com/Gerpeirone/Car-Cruds/pull/7). No se integra esa propuesta en `main` ni se presupone su aceptación por iniciar esta rama.
+- La propuesta de consolidación documental de E2 ([PR #7](https://github.com/Gerpeirone/Car-Cruds/pull/7)) se cerró sin integrarse el 10/11/2026.
 
 ## 5. Estado y verificación de esta etapa
 
@@ -73,7 +73,7 @@ El corte documental inicial se conserva en el historial. El incremento actual im
 - **F3-05.** Se agregó `scripts/measure-cache.sh` (no necesita PowerShell 7) y se hicieron dos corridas, con caché caliente y con Redis detenido. Las limitaciones y la deuda técnica están en ARCHITECTURE §9.
 - **CI.** El trabajo Compose vuelca diagnóstico de los contenedores y los logs de MongoDB cuando falla el arranque. La primera ejecución mostró la causa: el runner usa kernel 7.0 y MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores (ver ARCHITECTURE §9). Elegir la versión de MongoDB queda para el equipo, porque afecta los volúmenes existentes.
 
-Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud), el token y consumo del gimnasio, y la URL y clave del hospital.
+Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud), el token y consumo del gimnasio, y la URL y clave del hospital. *Actualización del 11/11: la VM, la URL pública y la configuración del hospital quedaron resueltas; ver sección 10.*
 
 ## 7. Ampliación del 9 de noviembre (noche)
 
@@ -83,7 +83,7 @@ Siguen pendientes y dependen de terceros: la VM con URL pública (cuenta cloud),
 - **Revisión de interfaz reproducible.** [scripts/ui-review](../scripts/ui-review/review.mjs) recorre 33 pantallas contra cualquier URL y falla si encuentra problemas.
 - **Guion.** [GUION-PRESENTACION](GUION-PRESENTACION.md) incluye el recorrido, los requisitos con su evidencia, preguntas probables y plan B.
 
-Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hospital.
+Siguen pendientes la VM con URL pública y el acceso real del gimnasio y del hospital. *Actualización del 11/11: ver sección 10.*
 
 ## 8. Frescura de búsqueda — 9 de noviembre de 2026
 
@@ -99,3 +99,34 @@ El requisito «decisiones verificadas mediante evidencia del sistema» se consid
 4. pruebas, build y revisión reproducible del frontend satisfactorios.
 
 La evidencia histórica conserva su revisión y alcance. No se traslada automáticamente a un commit nuevo: la ejecución de CI de esa revisión debe quedar enlazada aquí antes de declarar el punto cerrado. La publicación cloud y las pruebas con equipos externos siguen siendo requisitos separados.
+
+## 10. Cierre del 11 de noviembre de 2026
+
+Revisión evaluada: `main` `309a443`, desplegada en Azure en `https://57-156-56-201.sslip.io`.
+
+### Controles de la sección 9
+
+| Control | Resultado sobre `309a443` |
+| --- | --- |
+| 1. Contratos, ejemplos, `API.md` y rutas | Trabajo «Contratos OpenAPI y documentación de endpoints» aprobado ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684)) |
+| 2. Pruebas y análisis estático del backend | Trabajo «Pruebas y análisis estático» aprobado ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684)) |
+| 3. Compose con dependencias reales, recorrido persistente, caché y frescura de Solr | Trabajo «Docker Compose y recorrido persistente» aprobado ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684)) |
+| 4. Pruebas y build del frontend | Trabajo «frontend» aprobado ([ejecución](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829457)). La revisión reproducible en navegador (`scripts/ui-review`) se registró el 9/11 sobre una revisión anterior ([informe](evidence/ui-review-2026-11-09.json)) |
+
+### Verificado en Azure
+
+- La VM ejecuta `309a443` con 16 contenedores en ejecución.
+- La interfaz pública responde por HTTPS. Registro, inicio de sesión, catálogo y Mis alquileres funcionan.
+- El OpenAPI de Empleados 0.5.0 se publica en JSON.
+- El catálogo tiene 19 vehículos y el panel 16 empleados. Solr indexa, busca, filtra y pagina.
+- Las consultas de Hospital y Gimnasio responden.
+- La auditoría verificó la resolución DNS dinámica del balanceador ([D12](adr/ADR-012-balanceo-carga.md)).
+
+### Probado en CI o laboratorio
+
+Caché y circuit breaker de Redis, mensajería con RabbitMQ y cola de fallidos, persistencia tras reinicio, balanceo y fallas controladas. Cada resultado conserva su fecha y revisión en [evidence](evidence/) y en los ADR. La evidencia documentada de estos ensayos proviene de CI y laboratorio, no de Azure.
+
+### Pendiente
+
+- Evidencia de aceptación desde el backend del grupo de Gimnasio ([prueba conjunta](contracts/INTEGRACION_GIMNASIO.md#prueba-conjunta)).
+- Aceptación formal del hospital y de la cátedra.

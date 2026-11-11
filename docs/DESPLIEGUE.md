@@ -2,14 +2,14 @@
 
 | Campo | Valor |
 | --- | --- |
-| Versión documental | 0.2 |
-| Fecha de revisión | 9 de noviembre de 2026 |
-| Estado | Configuración con interfaz web verificada con HTTPS local; VM y URL pública pendientes |
+| Versión documental | 0.3 |
+| Fecha de revisión | 11 de noviembre de 2026 |
+| Estado | Publicado en Azure: `main` `309a443` en `vm-carcruds`, 16 contenedores en ejecución y HTTPS en `https://57-156-56-201.sslip.io` |
 | Objetivo | Publicar la interfaz completa y la capacidad compartida, dar acceso al gimnasio durante la evaluación y acreditar la publicación cloud exigida para la presentación grupal |
 
 ## 1. Topología
 
-Una VM Linux ejecuta el mismo `compose.yaml` del entorno local, más [compose.deploy.yaml](../compose.deploy.yaml), que agrega **Caddy** como única entrada pública:
+Una VM Linux ejecuta el mismo `compose.yaml` del entorno local, más [compose.frontend.yaml](../compose.frontend.yaml) y [compose.deploy.yaml](../compose.deploy.yaml). El último agrega **Caddy** como única entrada pública:
 
 ```text
 Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> Clientes / Flota (NGINX, 2 réplicas) / Alquileres / Empleados
@@ -19,6 +19,7 @@ Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> C
 - Caddy obtiene y renueva el certificado con Let's Encrypt para `PUBLIC_HOST` y redirige HTTP a HTTPS.
 - Las rutas `/internal/*` responden 404 en Caddy. `/v1/*` llega directo al gateway, que exige el token Bearer: gimnasio y hospital usan la misma URL que antes. Cualquier otra ruta la sirve el contenedor `web` (SPA del cliente, del operador y de personal), que no publica puertos propios.
 - PostgreSQL, MongoDB, Redis, RabbitMQ, Solr y Jaeger quedan ligados a `127.0.0.1` de la VM: no son accesibles desde Internet.
+- El balanceador interno `fleet-lb` (NGINX) vuelve a resolver `fleet-a` y `fleet-b` por el DNS de Docker cada 10 s. Así, recrear una réplica u otro servicio no deja al balanceador apuntando a una dirección reasignada ([D12 §6](adr/ADR-012-balanceo-carga.md)).
 - Es la configuración de laboratorio de [D13](adr/ADR-013-capacidad-costos.md): una VM, sin alta disponibilidad.
 
 ## 2. Requisitos de la VM
@@ -29,9 +30,9 @@ Internet ──HTTPS 443──> Caddy ─┬─ /v1/*  ──> gateway ──> C
 | --- | --- |
 | Proveedor y recurso | El registro operativo del equipo identifica una Azure Virtual Machine llamada `vm-carcruds`. |
 | SO y acceso | Antecedentes de operación: Ubuntu Server 24.04 LTS, usuario `azureuser`, autenticación por clave SSH y checkout en `~/Car-Cruds`. Confirmar en la VM antes de actualizar. |
-| IP y nombre público | El 11/11/2026 respondió por HTTPS `57-156-56-201.sslip.io`. El nombre codifica la IP de referencia `57.156.56.201`. |
+| IP y nombre público | `57-156-56-201.sslip.io` responde por HTTPS. El nombre codifica la IP `57.156.56.201`. |
 | Capacidad y red Azure | SKU, región, arquitectura CPU, vCPU, RAM, tamaño de disco, NIC, tipo de asignación de IP y reglas NSG efectivas quedan por confirmar en Azure. Las recomendaciones de dimensionamiento de esta guía son para reproducir el entorno. |
-| Revisión y servicios activos | Los GET públicos acreditan el borde y las respuestas indicadas abajo. El SHA, los archivos Compose efectivos, los volúmenes, los healthchecks y la observabilidad activa requieren acceso autorizado al host. |
+| Revisión y servicios activos | Confirmado el 11/11/2026: la VM ejecuta `309a443`, el mismo commit que `main`, con los 16 contenedores permanentes en ejecución (`rabbit-init` termina tras inicializar). Los archivos Compose en uso son los tres de la sección 1. |
 
 ```mermaid
 flowchart LR
@@ -68,14 +69,25 @@ flowchart LR
 
 En la VM se usan los mismos `-f`, en el mismo orden, para consultar, construir, actualizar y recuperar. `docker compose ls` identifica los archivos del despliegue existente. Caddy sirve el OpenAPI en una ruta exacta, bloquea `/internal/*`, reenvía `/v1/*` al gateway y envía la interfaz a NGINX. NGINX también se usa por separado como balanceador interno de Flota. [Caddyfile](../infra/caddy/Caddyfile) · [NGINX web](../frontend/nginx.conf)
 
-### Observación externa del 11/11/2026
+### Verificación en Azure del 11/11/2026
 
-| GET sin credenciales | Resultado desde fuera |
+Revisión desplegada: `main` `309a443`, con CI aprobada sobre el mismo commit ([backend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829684), [frontend](https://github.com/Gerpeirone/Car-Cruds/actions/runs/43055829457)).
+
+| Aspecto | Resultado en Azure |
 | --- | --- |
-| `/`, `/operador/hospital`, `/operador/gimnasio` | HTTPS válido y 200 HTML. La respuesta acredita el acceso a la SPA. |
-| `/v1/employees`, `/v1/employees/clinic/doctors` | 401 JSON. La verificación autenticada queda pendiente. |
-| `/internal/ready` | 404. |
-| `/contracts/employees-openapi.json` | 200 **HTML**, distinto del JSON 0.5.0 previsto en Git. Verificar configuración y SHA efectivos antes de acreditar publicación. |
+| Contenedores | 16 contenedores permanentes en ejecución |
+| Interfaz | `https://57-156-56-201.sslip.io/` responde por HTTPS. Registro, inicio de sesión, catálogo y **Mis alquileres** funcionan |
+| Contrato | `/contracts/employees-openapi.json` devuelve el OpenAPI de Empleados 0.5.0 en JSON |
+| Datos | 19 vehículos en el catálogo y 16 empleados en el panel |
+| Búsqueda | Solr indexa los cambios; la búsqueda, los filtros y la paginación responden |
+| Integraciones | Las consultas de Hospital y Gimnasio responden |
+| Balanceador | La auditoría verificó la resolución DNS dinámica de `fleet-lb` |
+
+Una observación externa anterior, del mismo día, obtuvo HTML en la ruta del contrato. La verificación posterior sobre `309a443` obtuvo el JSON 0.5.0. Las rutas `/v1/*` sin credencial responden 401 y `/internal/*` responde 404.
+
+**Alcance.** En Azure se verificaron el despliegue y los recorridos indicados. Los ensayos de Redis, RabbitMQ, persistencia tras reinicio, balanceo y fallas controladas se hicieron en CI o en laboratorio, y sus evidencias conservan fecha y revisión ([docs/evidence](evidence/)). La evidencia de aceptación desde el backend de Gimnasio sigue pendiente.
+
+### Requisitos técnicos
 
 - **Kernel Linux menor que 6.19.** MongoDB 8.x se niega a iniciar en kernels 6.19 o superiores por un error de TCMalloc/rseq ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). La excepción para 7.0.14+ no se aplica en Ubuntu, porque `uname -r` informa `7.0.0` ([SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848), abierto). Usar Ubuntu 24.04 con su kernel estándar 6.8, sin HWE, y no Ubuntu 26.04. Comprobar con `uname -r` antes de desplegar.
 - Ubuntu 24.04, **8 GB de memoria** y 2 vCPU como mínimo. Lightsail figura en D13 como una estimación de laboratorio, no como proveedor obligatorio; el enunciado no fija proveedor. Con 4 GB, Solr, MongoDB y RabbitMQ compiten por memoria.
@@ -103,7 +115,7 @@ Desde una máquina externa, ejecutar `bash scripts/check-public.sh https://<PUBL
 
 1. Crear Ubuntu 24.04 con IP fija, 8 GB de RAM y al menos 2 vCPU. Comprobar `uname -r` antes de instalar: el script rechaza kernels 6.19 o superiores.
 2. Abrir 22 solo para administración y 80/443 para acceso público; apuntar el DNS a la IP fija.
-3. Clonar la revisión aprobada para el ensayo y ejecutar el script. Mientras la propuesta esté en revisión, usar `codex/despliegue-vm-entrega-3` (contiene `feature/entrega-3` y `feature/entrega-3-pendientes`); la versión evaluable final debe quedar en `main`.
+3. Clonar el repositorio, seleccionar `main` (la versión evaluable) y ejecutar el script.
 4. Ejecutar los criterios de aceptación desde otra red y registrar la evidencia en este documento.
 
 ```bash
@@ -115,7 +127,7 @@ bash scripts/deploy-vm.sh
 
 [deploy-vm.sh](../scripts/deploy-vm.sh) instala Docker si falta, genera `.env` con credenciales aleatorias (mediante `cmd/devsetup` dentro de un contenedor Go), define `PUBLIC_HOST` y levanta todo con `--wait`. Es repetible: conserva `.env` y los volúmenes de datos. Para actualizar, `git pull` y volver a ejecutarlo.
 
-La preparación de E2, las integraciones y la entrega 3 (interfaz, entrada pública y observabilidad) deben estar integradas en `main` antes de publicar; mientras el equipo no apruebe esa integración, usar la rama de la propuesta aprobada. Antes de publicar, revisar el commit elegido y el estado de CI: la ejecución de `19c4e06` falló al iniciar MongoDB 8 en el runner, y la CI de entrega 3 lo evita con MongoDB 7.0 ([compose.ci.yaml](../compose.ci.yaml)); la VM debe usar un kernel menor que 6.19. La [revisión](REVISION-E2-2026-11-08.md) describe el resultado local de E2 y sus límites. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
+Se publica únicamente un commit de `main` con CI aprobada. La CI usa MongoDB 7.0 por el kernel del runner ([compose.ci.yaml](../compose.ci.yaml)); la VM usa MongoDB 8 y debe tener un kernel menor que 6.19. La [revisión](REVISION-E2-2026-11-08.md) describe el resultado local de E2 y sus límites. El script valida Compose, restringe `.env` a `0600` y comprueba que el motor y el plugin Compose estén disponibles. Todos los servicios permanentes del despliegue tienen `restart: unless-stopped`; `rabbit-init` es una tarea de inicialización y no debe reiniciarse en bucle. La recuperación debe comprobarse reiniciando la VM y ejecutando la verificación externa. `--wait` confirma el estado local de los contenedores; no acredita DNS, emisión del certificado ni acceso desde Internet.
 
 Los controles reproducibles son `bash scripts/test-deploy-vm.sh` (siete escenarios sin instalaciones ni conexiones), `bash -n scripts/deploy-vm.sh` y `docker compose -f compose.yaml -f compose.deploy.yaml config --format json | python3 scripts/check-deploy-config.py` (con `.env` y `PUBLIC_HOST` configurados). La CI además valida el Caddyfile con la imagen de Caddy fijada. Estos controles no sustituyen un ensayo de recuperación en la VM definitiva.
 
@@ -158,19 +170,22 @@ Definir `CAR_CRUDS_URL` con el origen HTTPS de la VM y ajustar `-employee` al ID
 
 ## 5. Operación
 
+En la VM, definir primero `F="-f compose.yaml -f compose.frontend.yaml -f compose.deploy.yaml"` y confirmar con `docker compose ls` que son los archivos en uso.
+
 | Tarea | Comando (en la VM, desde la raíz del repositorio) |
 | --- | --- |
-| Estado | `docker compose -f compose.yaml -f compose.deploy.yaml ps` |
-| Registros de la entrada | `docker compose -f compose.yaml -f compose.deploy.yaml logs -f caddy gateway` |
+| Estado | `docker compose $F ps` |
+| Registros de la entrada | `docker compose $F logs -f caddy gateway` |
+| Balanceador de Flota | `docker compose $F exec -T fleet-lb grep -c ' resolve;' /etc/nginx/nginx.conf` debe devolver 2; `docker compose $F logs --since 10m fleet-lb` muestra la réplica atendida |
 | Trazas (Jaeger) | Túnel SSH: `ssh -L 16686:127.0.0.1:16686 <vm>` y abrir `http://localhost:16686` |
 | Tablero y alertas | Agregar `-f compose.observability.yaml` a los comandos de Compose y `GRAFANA_ADMIN_PASSWORD` al `.env` (`openssl rand -hex 24`). Túnel `ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <vm>`: Grafana en `http://localhost:3000` y alertas en `http://localhost:9090/alerts` |
-| Detener | `docker compose -f compose.yaml -f compose.deploy.yaml down` (conserva datos) |
+| Detener | `docker compose $F down` (conserva datos) |
 
 La capacidad compartida debe permanecer accesible hasta finalizar la evaluación: no detener la VM sin acordarlo con el gimnasio.
 
 ## 6. Actualizar la VM de Azure
 
-La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io`. El 11/11/2026 respondieron las rutas de la SPA. El SHA y la configuración efectiva requieren acceso autorizado a la VM. Este procedimiento actualiza la VM sin perder datos. **Requiere autorización del equipo.**
+La VM `vm-carcruds` (Ubuntu 24.04) publica `https://57-156-56-201.sslip.io` y ejecuta `main` `309a443` desde el 11/11/2026. Este procedimiento actualiza la VM sin perder datos. **Requiere autorización del equipo.** Las subsecciones G, H e I actualizan solo los servicios afectados por una corrección.
 
 **Por qué no se pierden datos:** `compose.yaml` fija `name: car-cruds`, así que los volúmenes (`car-cruds_postgres-data`, `car-cruds_mongo-data`, etc.) son siempre los mismos y `up` los reutiliza. La versión no agrega migraciones, por lo que volver atrás no exige tocar el esquema. **Nunca usar `down`, `rm` ni la opción `-v`.**
 
@@ -204,7 +219,7 @@ docker compose exec -T postgres psql -U postgres -d employees -c "SELECT employe
 docker compose exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;" | tee ~/respaldos/$FECHA/historial-antes.txt
 ```
 
-Registrar el conjunto y orden de archivos de `docker compose ls`. Los ejemplos C usan dos archivos. Si la VM usa además `compose.frontend.yaml`, incluirlo entre ambos en todas las operaciones.
+Registrar el conjunto y orden de archivos de `docker compose ls`. La VM usa los tres archivos de la sección 1; si `docker compose ls` muestra otros, detenerse y revisar antes de continuar.
 
 ### C. En la VM: actualizar
 
@@ -216,11 +231,12 @@ grep -c '^CLINIC_' .env                 # si no da 2, agregar con nano:
 #   CLINIC_API_KEY=<clave de Car Cruds, por canal privado>
 chmod 600 .env
 grep '^PUBLIC_HOST=' .env               # 57-156-56-201.sslip.io
-docker compose -f compose.yaml -f compose.deploy.yaml config --quiet
-docker compose -f compose.yaml -f compose.deploy.yaml build
-docker compose -f compose.yaml -f compose.deploy.yaml up -d --wait --wait-timeout 600
+F="-f compose.yaml -f compose.frontend.yaml -f compose.deploy.yaml"
+docker compose $F config --quiet
+docker compose $F build
+docker compose $F up -d --wait --wait-timeout 600
 git rev-parse --short HEAD              # <COMMIT>
-docker compose -f compose.yaml -f compose.deploy.yaml ps
+docker compose $F ps
 docker compose exec -T postgres psql -U postgres -d employees -c "SELECT employee_id, period, source_app, source_reference, version FROM membership_evidence WHERE employee_id='employee-001' AND period='2026-11';"
 docker compose exec -T postgres psql -U postgres -d employees -c "SELECT count(*) FROM membership_evidence_history;"   # igual que antes
 ```
@@ -236,7 +252,7 @@ curl -s https://57-156-56-201.sslip.io/ | grep -o '/assets/index-[^"]*\.js'     
 curl -s https://57-156-56-201.sslip.io<BUNDLE> | grep -c "Gimnasio – Membresías"          # 1 o más
 ```
 
-Como antecedente operativo pendiente de reconfirmar, Gimnasio con período `2026-11` mostró `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital muestra el turno confirmado y el cargo de ARS 25.000. No hacer reservas nuevas: cada una se factura.
+El 11/11/2026 las consultas de Gimnasio y Hospital respondieron en Azure. Como antecedente operativo, Gimnasio con período `2026-11` mostró `employee-001`, origen `gimnasio-pablo`, versión 1 y referencia `15ae8f6d-ce74-4453-a694-13b23cdf7c64`; Hospital mostró el turno confirmado y el cargo de ARS 25.000. No hacer turnos nuevos en el Hospital: cada uno se factura.
 
 ### E. En la VM: volver atrás
 
@@ -382,6 +398,8 @@ Verificación: `curl -s -o /dev/null -w '%{http_code}
 
 ## 7. Pendientes
 
-1. Crear la VM, fijar la IP y ejecutar el despliegue; registrar aquí y en el [contrato](contracts/README.md) la URL y la fecha.
-2. Prueba conjunta con el gimnasio contra la URL pública.
-3. Para la presentación final: respaldos programados de PostgreSQL y MongoDB, y tablero/alertas según [D11](adr/ADR-011-observabilidad.md).
+1. Evidencia de aceptación desde el backend del grupo de Gimnasio contra la URL pública ([prueba conjunta](contracts/INTEGRACION_GIMNASIO.md#prueba-conjunta)).
+2. Respaldos programados de PostgreSQL y MongoDB; hoy el respaldo es manual (sección 6.B).
+3. Tablero y alertas en la VM según [D11](adr/ADR-011-observabilidad.md), si el equipo decide habilitar `compose.observability.yaml`.
+
+La VM, la IP fija, el DNS `sslip.io`, el certificado HTTPS y la publicación del contrato ya no son pendientes: quedaron verificados el 11/11/2026.
